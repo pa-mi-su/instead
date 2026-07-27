@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "INSTEAD",
+    "slug": "instead",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "instead",
+    "splash": {
+      "backgroundColor": "#F4F0E8"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.instead.mobile"
+    },
+    "android": {
+      "package": "app.instead.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#D9F65A"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "name": "INSTEAD"
+    }
+  }
+}
