@@ -124,8 +124,10 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      - name: Select Xcode 26.3
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_26.3.app/Contents/Developer
+          xcodebuild -version
 
       - name: Set up Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
@@ -147,9 +149,8 @@ jobs:
           npm run env:generate
 
       - name: Install CocoaPods dependencies
-        run: |
-          sudo gem install cocoapods -v 1.16.2 --no-document
-          pod _1.16.2_ install --project-directory=ios
+        working-directory: ios
+        run: pod install
 
       - name: Install iOS signing material
         env:
