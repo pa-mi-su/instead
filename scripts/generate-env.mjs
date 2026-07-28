@@ -1,38 +1,14 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const sourcePath = resolve(projectRoot, '.env');
 const outputPath = resolve(projectRoot, 'src/config/generatedEnv.ts');
 const webOutputPath = resolve(projectRoot, 'web/.env.local');
 
-function parseEnv(contents) {
-  return Object.fromEntries(
-    contents
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(line => line && !line.startsWith('#'))
-      .map(line => {
-        const separator = line.indexOf('=');
-        return separator === -1
-          ? [line, '']
-          : [line.slice(0, separator), line.slice(separator + 1)];
-      }),
-  );
-}
-
-let values = {};
-try {
-  values = parseEnv(await readFile(sourcePath, 'utf8'));
-} catch (error) {
-  if (error?.code !== 'ENOENT') {
-    throw error;
-  }
-}
-
-const supabaseUrl = values.SUPABASE_URL?.trim() ?? '';
-const supabasePublishableKey = values.SUPABASE_PUBLISHABLE_KEY?.trim() ?? '';
+const supabaseUrl = process.env.SUPABASE_URL?.trim() ?? '';
+const supabasePublishableKey =
+  process.env.SUPABASE_PUBLISHABLE_KEY?.trim() ?? '';
 
 if (Boolean(supabaseUrl) !== Boolean(supabasePublishableKey)) {
   throw new Error(
