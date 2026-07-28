@@ -1,10 +1,11 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourcePath = resolve(projectRoot, '.env');
 const outputPath = resolve(projectRoot, 'src/config/generatedEnv.ts');
+const webOutputPath = resolve(projectRoot, 'web/.env.local');
 
 function parseEnv(contents) {
   return Object.fromEntries(
@@ -55,6 +56,16 @@ const generated =
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, generated, { mode: 0o600 });
+
+if (supabaseUrl) {
+  const webGenerated =
+    `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl}\n` +
+    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${supabasePublishableKey}\n`;
+  await writeFile(webOutputPath, webGenerated, { mode: 0o600 });
+} else {
+  await rm(webOutputPath, { force: true });
+}
+
 console.log(
   supabaseUrl
     ? 'Generated Supabase configuration.'

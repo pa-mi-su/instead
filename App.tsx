@@ -23,7 +23,7 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { categories, guides as offlineGuides } from './src/data/guides';
+import { categories } from './src/categories';
 import { fetchPublishedGuides } from './src/lib/supabase';
 import { Guide } from './src/types';
 
@@ -40,11 +40,12 @@ const COLORS = {
 };
 
 const FAVORITES_KEY = 'instead:favorites';
+const GUIDE_CACHE_KEY = 'instead:guide-cache';
 type ViewName = 'home' | 'saved' | 'detail';
 
 function AppContent() {
   const insets = useSafeAreaInsets();
-  const [catalog, setCatalog] = useState<Guide[]>(offlineGuides);
+  const [catalog, setCatalog] = useState<Guide[]>([]);
   const [view, setView] = useState<ViewName>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -53,17 +54,35 @@ function AppContent() {
   const [loadingLive, setLoadingLive] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(FAVORITES_KEY)
-      .then(value => {
-        if (value) setFavorites(JSON.parse(value));
-      })
-      .catch(() => undefined);
+    let active = true;
 
-    fetchPublishedGuides()
-      .then(live => {
-        if (live?.length) setCatalog(live);
-      })
-      .finally(() => setLoadingLive(false));
+    async function loadCatalog() {
+      try {
+        const [savedFavorites, cachedGuides] = await Promise.all([
+          AsyncStorage.getItem(FAVORITES_KEY),
+          AsyncStorage.getItem(GUIDE_CACHE_KEY),
+        ]);
+
+        if (!active) return;
+        if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+        if (cachedGuides) setCatalog(JSON.parse(cachedGuides));
+
+        const live = await fetchPublishedGuides();
+        if (!active || !live?.length) return;
+
+        setCatalog(live);
+        await AsyncStorage.setItem(GUIDE_CACHE_KEY, JSON.stringify(live));
+      } catch {
+        // A previously cached catalog remains usable when the network is down.
+      } finally {
+        if (active) setLoadingLive(false);
+      }
+    }
+
+    loadCatalog();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const selected = catalog.find(item => item.id === selectedId) ?? null;

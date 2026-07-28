@@ -10,8 +10,13 @@ await copyFile(
   resolve(webSharedRoot, 'types.ts'),
 );
 await copyFile(
-  resolve(projectRoot, 'src/data/guides.ts'),
-  resolve(webSharedRoot, 'data/guides.ts'),
+  resolve(projectRoot, 'src/categories.ts'),
+  resolve(webSharedRoot, 'categories.ts'),
+);
+await mkdir(resolve(webSharedRoot, 'lib'), { recursive: true });
+await copyFile(
+  resolve(projectRoot, 'src/lib/guideRows.ts'),
+  resolve(webSharedRoot, 'lib/guideRows.ts'),
 );
 
-console.log('Synchronized shared INSTEAD guide content for the website.');
+console.log('Synchronized shared INSTEAD types for the website.');
