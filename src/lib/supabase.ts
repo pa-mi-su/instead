@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/generatedEnv';
 import { Guide } from '../types';
+import { GuideRow, mapGuideRow } from './guideRows';
 
 const { supabaseUrl: url, supabasePublishableKey: anonKey } = env;
 
@@ -26,29 +27,5 @@ export async function fetchPublishedGuides(): Promise<Guide[] | null> {
     return null;
   }
 
-  return data.map(row => ({
-    id: row.slug,
-    title: row.title,
-    prompt: row.prompt,
-    category: row.category,
-    icon: row.icon,
-    answer: row.answer,
-    answerTone: row.answer_tone,
-    summary: row.summary,
-    time: row.time,
-    estimatedCost: row.estimated_cost,
-    estimatedSavings: row.estimated_savings,
-    difficulty: row.difficulty,
-    supplies: row.supplies,
-    essentials: row.essentials,
-    skipNote: row.skip_note,
-    avoid: row.avoid,
-    options: row.options,
-    safetyNote: row.safety_note,
-    professionalHelp: row.professional_help,
-    evidence: row.evidence,
-    evidenceNote: row.evidence_note,
-    updatedAt: row.updated_at_label,
-    featured: row.featured,
-  }));
+  return data.map(row => mapGuideRow(row as GuideRow));
 }

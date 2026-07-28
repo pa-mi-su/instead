@@ -7,16 +7,16 @@ professional help is the right choice.
 
 ## Technology
 
-| Layer          | Technology                                          |
-| -------------- | --------------------------------------------------- |
-| Mobile         | React Native 0.86, React 19, TypeScript             |
-| Web            | React 19, TypeScript, Vite/vinext                   |
-| Native iOS     | Xcode, Swift application shell                      |
-| Native Android | Gradle, Kotlin application shell                    |
-| Data           | Supabase PostgreSQL with an offline bundled catalog |
-| Local storage  | React Native AsyncStorage                           |
-| Icons          | Lucide React Native                                 |
-| Testing        | Jest, ESLint, Prettier, TypeScript                  |
+| Layer          | Technology                                    |
+| -------------- | --------------------------------------------- |
+| Mobile         | React Native 0.86, React 19, TypeScript       |
+| Web            | Next.js 16, React 19, TypeScript              |
+| Native iOS     | Xcode, Swift application shell                |
+| Native Android | Gradle, Kotlin application shell              |
+| Data           | Supabase PostgreSQL                           |
+| Local storage  | AsyncStorage and browser local storage caches |
+| Icons          | Lucide React Native                           |
+| Testing        | Jest, ESLint, Prettier, TypeScript            |
 
 This is a bare React Native Community CLI project. The native `ios/` and
 `android/` projects are committed and maintained directly. It does not use
@@ -68,8 +68,8 @@ Start the React website:
 npm run web
 ```
 
-Then open `http://localhost:3000`. The website and native apps use the same
-guide catalog; `npm run web` synchronizes that shared content before starting.
+Then open `http://localhost:3000`. The website and native apps load the same
+published guide catalog from Supabase.
 
 Build or test the production website:
 
@@ -80,25 +80,24 @@ npm run web:test
 
 ## Supabase
 
-INSTEAD works offline without any backend configuration. To load published
-content from Supabase:
+Supabase is the source of truth for the guide catalog:
 
 1. Run `supabase/schema.sql` in the Supabase SQL editor.
-2. Copy `.env.example` to `.env`.
-3. Add the project URL and publishable key.
-4. Insert guide rows and set `published = true`.
+2. Run `supabase/seed.sql` to load or update the starter guides.
+3. Copy `.env.example` to `.env`.
+4. Add the project URL and publishable key.
 
 ```text
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-The environment generator writes a gitignored TypeScript configuration before
-development, tests, and builds. Never put a Supabase service-role key in the
-mobile application.
+The environment generator writes gitignored native and web configurations
+before development, tests, and builds. Never put a Supabase secret or
+service-role key in either client application.
 
-If the backend is missing, unavailable, or has no published guides, the app
-automatically uses the bundled catalog in `src/data/guides.ts`.
+After the first successful load, native and web cache the published catalog
+locally so previously viewed content remains available during an outage.
 
 ## Verification
 

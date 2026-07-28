@@ -11,5 +11,6 @@ npm run web
 
 Then open `http://localhost:3000`.
 
-The native app owns the canonical guide catalog in `src/data/guides.ts`.
-Starting or building the website synchronizes that content into `web/shared/`.
+Supabase owns the canonical guide catalog. The root environment generator
+provides the public project URL and publishable key to the website, while
+`npm run web:sync` copies shared TypeScript models and mapping code.
