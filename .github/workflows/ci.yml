@@ -44,10 +44,10 @@ jobs:
       - name: Install web dependencies
         run: npm --prefix web ci
 
-      - name: Reject critical production vulnerabilities
+      - name: Reject production vulnerabilities
         run: |
-          npm audit --omit=dev --audit-level=critical
-          npm --prefix web audit --omit=dev --audit-level=critical
+          npm audit --omit=dev
+          npm --prefix web audit --omit=dev
 
       - name: Verify native code
         run: npm run verify

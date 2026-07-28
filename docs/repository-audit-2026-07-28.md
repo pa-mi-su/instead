@@ -25,8 +25,8 @@ privacy declarations, dependency manifests, and tracked-file secret exposure.
   and iOS asset catalog.
 - React Native, Next.js, Supabase, and related dependencies were updated to
   current compatible patch releases and locked to reviewed native versions.
-- CI now verifies the website as well as native code and rejects critical
-  production dependency advisories.
+- CI now verifies the website as well as native code and rejects every
+  production dependency advisory.
 - Website metadata now accepts a deployment-provided `SITE_URL` and uses a
   localhost default only for local development.
 
@@ -52,19 +52,20 @@ privacy declarations, dependency manifests, and tracked-file secret exposure.
 - The iOS simulator application compiles successfully with code signing
   disabled, and both iOS plist files validate.
 - The web production dependency audit reports zero vulnerabilities.
-- Production dependency audits contain no critical vulnerabilities.
+- Native and web production dependency audits report zero vulnerabilities.
 
-## Residual dependency risk
+## Development tooling
 
-The root production audit currently reports ten high-severity findings through
-React Native's bundled Jest/Istanbul toolchain. npm offers only a breaking
-React Native downgrade as an automatic remediation, so that downgrade was not
-applied. These are build/test dependency paths rather than application runtime
-code. CI blocks critical findings, and this transitive chain should be
-rechecked when React Native publishes an upstream-compatible fix.
+React Native's Jest preset resolves `test-exclude@8.0.0` through a package
+override. Version 8 preserves the coverage library's public API while replacing
+its vulnerable legacy glob implementation. The repository already requires
+Node 22, which satisfies the package's newer runtime requirement.
 
-The full web audit also reports three development-only transitive findings
-(one low and two high). The deployed web dependency graph reports zero.
+The complete audits still report findings in other development-only versions
+of Jest and ESLint dependencies. Those packages are not included in mobile or
+web production artifacts. They were not forcibly replaced with incompatible
+major versions. Production audits are enforced independently in CI and report
+zero vulnerabilities.
 
 ## Release operations not stored in source
 
