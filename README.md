@@ -92,9 +92,16 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-The environment generator writes gitignored native and web configurations
-before development, tests, and builds. Never put a Supabase secret or
-service-role key in either client application.
+`.env` is an optional local-development convenience and is never committed.
+The environment generator reads the same `SUPABASE_URL` and
+`SUPABASE_PUBLISHABLE_KEY` variables directly from CI or deployment
+environments, with local `.env` values used only when those variables have not
+already been injected. It writes gitignored native and web build
+configurations before development, tests, and builds.
+
+The publishable key is intentionally included in client builds and protected by
+Row Level Security. Never put a Supabase secret or service-role key in either
+client application.
 
 After the first successful load, native and web cache the published catalog
 locally so previously viewed content remains available during an outage.

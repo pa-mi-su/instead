@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "env:generate": "node scripts/generate-env.mjs",
+    "env:generate": "node --env-file-if-exists=.env scripts/generate-env.mjs",
     "format:check": "prettier --check \"App.tsx\" \"src/**/*.{ts,tsx}\" \"__tests__/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"*.{js,json,md}\"",
     "icons:generate": "node scripts/generate-icons.mjs",
     "ios": "react-native run-ios",
@@ -15,6 +15,9 @@
     "prestart": "npm run env:generate",
     "pretest": "npm run env:generate",
     "pretypecheck": "npm run env:generate",
+    "preweb": "npm run env:generate",
+    "preweb:build": "npm run env:generate",
+    "preweb:test": "npm run env:generate",
     "start": "react-native start",
     "test": "jest",
     "typecheck": "tsc --noEmit",
