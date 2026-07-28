@@ -52,8 +52,6 @@ test("server-renders the INSTEAD guide directory", async () => {
       /<title>INSTEAD — Practical alternatives for everyday life<\/title>/i,
     );
     assert.match(html, /What are you trying to do\?/);
-    assert.match(html, /Routine pest control/);
-    assert.match(html, /Household Services/);
     assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
   } finally {
     server.kill("SIGTERM");

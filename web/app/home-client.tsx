@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { categories } from "../shared/categories";
-import { fetchPublishedGuides } from "../shared/lib/supabase";
-import type { Guide } from "../shared/types";
+import { categories } from "../../src/categories";
+import { parseCachedGuides } from "../../src/lib/guideRows";
+import type { Guide } from "../../src/types";
+import { fetchPublishedGuides } from "../lib/supabase";
 
 const SAVED_KEY = "instead:web:saved-guides";
 const GUIDE_CACHE_KEY = "instead:web:guide-cache";
@@ -29,10 +30,17 @@ export default function HomeClient({
 
     try {
       const stored = window.localStorage.getItem(SAVED_KEY);
-      if (stored) saved = JSON.parse(stored);
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          saved = parsed.filter(
+            (item): item is string => typeof item === "string",
+          );
+        }
+      }
 
       const cachedCatalog = window.localStorage.getItem(GUIDE_CACHE_KEY);
-      if (cachedCatalog) cached = JSON.parse(cachedCatalog);
+      cached = parseCachedGuides(cachedCatalog);
     } catch {
       // The site remains usable if browser storage is unavailable.
     }
@@ -50,7 +58,7 @@ export default function HomeClient({
 
     fetchPublishedGuides()
       .then((live) => {
-        if (!active || !live.length) return;
+        if (!active) return;
         setCatalog(live);
         try {
           window.localStorage.setItem(GUIDE_CACHE_KEY, JSON.stringify(live));

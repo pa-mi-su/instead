@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,6 +9,7 @@ const webOutputPath = resolve(projectRoot, 'web/.env.local');
 const supabaseUrl = process.env.SUPABASE_URL?.trim() ?? '';
 const supabasePublishableKey =
   process.env.SUPABASE_PUBLISHABLE_KEY?.trim() ?? '';
+const siteUrl = process.env.SITE_URL?.trim() ?? 'http://localhost:3000';
 
 if (Boolean(supabaseUrl) !== Boolean(supabasePublishableKey)) {
   throw new Error(
@@ -21,6 +22,11 @@ if (supabaseUrl) {
   if (!['https:', 'http:'].includes(parsedUrl.protocol)) {
     throw new Error('SUPABASE_URL must use HTTPS or HTTP.');
   }
+}
+
+const parsedSiteUrl = new URL(siteUrl);
+if (!['https:', 'http:'].includes(parsedSiteUrl.protocol)) {
+  throw new Error('SITE_URL must use HTTPS or HTTP.');
 }
 
 const generated =
@@ -36,10 +42,13 @@ await writeFile(outputPath, generated, { mode: 0o600 });
 if (supabaseUrl) {
   const webGenerated =
     `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl}\n` +
-    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${supabasePublishableKey}\n`;
+    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${supabasePublishableKey}\n` +
+    `NEXT_PUBLIC_SITE_URL=${siteUrl}\n`;
   await writeFile(webOutputPath, webGenerated, { mode: 0o600 });
 } else {
-  await rm(webOutputPath, { force: true });
+  await writeFile(webOutputPath, `NEXT_PUBLIC_SITE_URL=${siteUrl}\n`, {
+    mode: 0o600,
+  });
 }
 
 console.log(

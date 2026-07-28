@@ -1,6 +1,6 @@
 import HomeClient from "./home-client";
-import { fetchPublishedGuides } from "../shared/lib/supabase";
-import type { Guide } from "../shared/types";
+import type { Guide } from "../../src/types";
+import { fetchPublishedGuides } from "../lib/supabase";
 
 export const dynamic = "force-dynamic";
 

@@ -1,20 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
+import { parseCachedGuides } from '../lib/guideRows';
 import { fetchPublishedGuides } from '../lib/supabase';
 import type { Guide } from '../types';
 
 const GUIDE_CACHE_KEY = 'instead:guide-cache';
-
-function parseCachedGuides(value: string | null): Guide[] {
-  if (!value) return [];
-
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed) ? (parsed as Guide[]) : [];
-  } catch {
-    return [];
-  }
-}
 
 export function useGuideCatalog() {
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -32,7 +22,7 @@ export function useGuideCatalog() {
 
       try {
         const live = await fetchPublishedGuides();
-        if (!active || !live?.length) return;
+        if (!active || live === null) return;
 
         setGuides(live);
         await AsyncStorage.setItem(GUIDE_CACHE_KEY, JSON.stringify(live));

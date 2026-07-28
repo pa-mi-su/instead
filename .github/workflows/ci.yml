@@ -44,11 +44,18 @@ jobs:
       - name: Install web dependencies
         run: npm --prefix web ci
 
+      - name: Reject critical production vulnerabilities
+        run: |
+          npm audit --omit=dev --audit-level=critical
+          npm --prefix web audit --omit=dev --audit-level=critical
+
       - name: Verify native code
         run: npm run verify
 
-      - name: Build website
-        run: npm run web:build
+      - name: Verify website
+        run: |
+          npm --prefix web run lint
+          npm run web:test
 
       - name: Build Android debug app
         working-directory: android

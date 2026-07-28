@@ -1,14 +1,14 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/generatedEnv';
-import { Guide } from '../types';
-import { GuideRow, mapGuideRow } from './guideRows';
+import type { Guide } from '../types';
+import { mapGuideRows } from './guideRows';
 
-const { supabaseUrl: url, supabasePublishableKey: anonKey } = env;
+const { supabaseUrl: url, supabasePublishableKey: publishableKey } = env;
 
 export const supabase =
-  url && anonKey
-    ? createClient(url, anonKey, {
+  url && publishableKey
+    ? createClient(url, publishableKey, {
         auth: { persistSession: false, autoRefreshToken: false },
       })
     : null;
@@ -22,10 +22,10 @@ export async function fetchPublishedGuides(): Promise<Guide[] | null> {
     .eq('published', true)
     .order('sort_order', { ascending: true });
 
-  if (error || !data?.length) {
-    if (error) console.warn('Supabase guides unavailable:', error.message);
+  if (error) {
+    console.warn('Supabase guides unavailable:', error.message);
     return null;
   }
 
-  return data.map(row => mapGuideRow(row as GuideRow));
+  return mapGuideRows(data ?? []);
 }
