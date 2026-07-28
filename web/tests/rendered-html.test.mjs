@@ -27,7 +27,7 @@ async function waitForServer(url) {
   throw new Error("Next.js server did not start");
 }
 
-test("server-renders the INSTEAD guide directory", async () => {
+test("server-renders the guide directory and policy pages", async () => {
   const port = await availablePort();
   const server = spawn(
     process.execPath,
@@ -52,7 +52,38 @@ test("server-renders the INSTEAD guide directory", async () => {
       /<title>INSTEAD — Practical alternatives for everyday life<\/title>/i,
     );
     assert.match(html, /What are you trying to do\?/);
+    assert.match(html, /href="\/privacy"/);
+    assert.match(html, /href="\/support"/);
     assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
+
+    const policyPages = [
+      ["/privacy", /<title>Privacy Policy — INSTEAD<\/title>/i, /no accounts/i],
+      ["/terms", /<title>Terms of Use — INSTEAD<\/title>/i, /reference tool/i],
+      [
+        "/safety",
+        /<title>Safety — INSTEAD<\/title>/i,
+        /NOT FOR EMERGENCIES/i,
+      ],
+      [
+        "/support",
+        /<title>Support — INSTEAD<\/title>/i,
+        /CONTACT SUPPORT|public support email has not been configured yet/i,
+      ],
+    ];
+
+    for (const [path, title, content] of policyPages) {
+      const pageResponse = await fetch(`http://127.0.0.1:${port}${path}`);
+      assert.equal(pageResponse.status, 200);
+      const pageHtml = await pageResponse.text();
+      assert.match(pageHtml, title);
+      assert.match(pageHtml, content);
+      assert.match(pageHtml, /href="\/privacy"/);
+      assert.match(pageHtml, /href="\/support"/);
+      assert.doesNotMatch(
+        pageHtml,
+        /codex-preview|Your site is taking shape/i,
+      );
+    }
   } finally {
     server.kill("SIGTERM");
     await once(server, "exit");
