@@ -10,7 +10,7 @@ const supabaseUrl = process.env.SUPABASE_URL?.trim() ?? '';
 const supabasePublishableKey =
   process.env.SUPABASE_PUBLISHABLE_KEY?.trim() ?? '';
 const siteUrl = process.env.SITE_URL?.trim() ?? 'http://localhost:3000';
-const supportEmail = process.env.SUPPORT_EMAIL?.trim() ?? '';
+const supportEmail = process.env.SUPPORT_EMAIL?.trim() || 'info@insteadtry.com';
 
 if (Boolean(supabaseUrl) !== Boolean(supabasePublishableKey)) {
   throw new Error(
