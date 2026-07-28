@@ -35,11 +35,10 @@ Expo, Expo Go, or EAS.
 npm install
 ```
 
-For iOS, install the CocoaPods version recorded in `ios/Podfile.lock` once:
+For iOS, install CocoaPods once:
 
 ```bash
-sudo gem install cocoapods -v 1.16.2 --no-document
-pod _1.16.2_ install --project-directory=ios
+pod install --project-directory=ios
 ```
 
 ## Run
