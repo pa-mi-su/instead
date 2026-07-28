@@ -35,11 +35,11 @@ Expo, Expo Go, or EAS.
 npm install
 ```
 
-For iOS, install CocoaPods once:
+For iOS, install the CocoaPods version recorded in `ios/Podfile.lock` once:
 
 ```bash
-bundle install
-bundle exec pod install --project-directory=ios
+sudo gem install cocoapods -v 1.16.2 --no-document
+pod _1.16.2_ install --project-directory=ios
 ```
 
 ## Run
@@ -125,6 +125,50 @@ INSTEAD_UPLOAD_KEY_PASSWORD
 
 Without all four values, Gradle can compile an unsigned release artifact but
 cannot accidentally create a debug-signed production release.
+
+## Mobile release automation
+
+After a change reaches `main` and the `CI` workflow passes, GitHub Actions:
+
+- builds a signed Android App Bundle and uploads it to Google Play Internal
+  Testing;
+- builds a signed iOS archive and uploads it to App Store Connect for
+  TestFlight processing; and
+- retains both signed artifacts in GitHub Actions for 14 days.
+
+The workflow can also be started manually. It uses the protected `production`
+GitHub environment. It does not publish either app to the public stores.
+
+Required environment variables:
+
+```text
+APP_VERSION
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+ANDROID_PLAY_PACKAGE_NAME
+ANDROID_PLAY_TRACK
+ANDROID_PLAY_RELEASE_STATUS
+IOS_TEAM_ID
+IOS_PROFILE_NAME
+APP_STORE_CONNECT_API_KEY_ID
+APP_STORE_CONNECT_API_ISSUER_ID
+```
+
+Required environment secrets:
+
+```text
+ANDROID_UPLOAD_KEYSTORE_BASE64
+ANDROID_UPLOAD_KEYSTORE_PASSWORD
+ANDROID_UPLOAD_KEY_ALIAS
+ANDROID_UPLOAD_KEY_PASSWORD
+ANDROID_PLAY_SERVICE_ACCOUNT_JSON
+IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64
+IOS_DISTRIBUTION_CERTIFICATE_PASSWORD
+IOS_PROVISIONING_PROFILE_BASE64
+APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64
+```
+
+Store signing files and private keys remain outside the repository.
 
 ## Verification
 

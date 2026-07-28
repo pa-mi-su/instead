@@ -76,6 +76,8 @@ def releaseStoreFile = findProperty("INSTEAD_UPLOAD_STORE_FILE") ?: System.geten
 def releaseStorePassword = findProperty("INSTEAD_UPLOAD_STORE_PASSWORD") ?: System.getenv("INSTEAD_UPLOAD_STORE_PASSWORD")
 def releaseKeyAlias = findProperty("INSTEAD_UPLOAD_KEY_ALIAS") ?: System.getenv("INSTEAD_UPLOAD_KEY_ALIAS")
 def releaseKeyPassword = findProperty("INSTEAD_UPLOAD_KEY_PASSWORD") ?: System.getenv("INSTEAD_UPLOAD_KEY_PASSWORD")
+def releaseVersionCode = (findProperty("INSTEAD_VERSION_CODE") ?: System.getenv("INSTEAD_VERSION_CODE") ?: "1").toInteger()
+def releaseVersionName = findProperty("INSTEAD_VERSION_NAME") ?: System.getenv("INSTEAD_VERSION_NAME") ?: "1.0"
 def hasReleaseSigning = [
     releaseStoreFile,
     releaseStorePassword,
@@ -93,8 +95,8 @@ android {
         applicationId "com.pamisu.instead"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode releaseVersionCode
+        versionName releaseVersionName
     }
     signingConfigs {
         debug {
