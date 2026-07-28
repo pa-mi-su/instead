@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { categories } from "../../src/categories";
 import { parseCachedGuides } from "../../src/lib/guideRows";
 import type { Guide } from "../../src/types";
+import { SiteFooter } from "../components/site-chrome";
 import { fetchPublishedGuides } from "../lib/supabase";
 
 const SAVED_KEY = "instead:web:saved-guides";
@@ -129,27 +130,34 @@ export default function HomeClient({
   }
 
   return (
-    <main>
-      <Header
-        savedCount={savedIds.length}
-        savedActive={view === "saved"}
-        onHome={showHome}
-        onSaved={() => setView("saved")}
-      />
-
-      {view === "saved" ? (
-        <SavedGuides guides={savedGuides} onOpen={openGuide} onHome={showHome} />
-      ) : (
-        <GuideDirectory
-          category={category}
-          filteredGuides={filteredGuides}
-          onCategory={setCategory}
-          onOpen={openGuide}
-          onQuery={setQuery}
-          query={query}
+    <>
+      <main>
+        <Header
+          savedCount={savedIds.length}
+          savedActive={view === "saved"}
+          onHome={showHome}
+          onSaved={() => setView("saved")}
         />
-      )}
-    </main>
+
+        {view === "saved" ? (
+          <SavedGuides
+            guides={savedGuides}
+            onOpen={openGuide}
+            onHome={showHome}
+          />
+        ) : (
+          <GuideDirectory
+            category={category}
+            filteredGuides={filteredGuides}
+            onCategory={setCategory}
+            onOpen={openGuide}
+            onQuery={setQuery}
+            query={query}
+          />
+        )}
+      </main>
+      <SiteFooter />
+    </>
   );
 }
 
@@ -389,8 +397,9 @@ function GuideDetail({
         : "IT DEPENDS";
 
   return (
-    <main>
-      <header className="detail-header">
+    <>
+      <main>
+        <header className="detail-header">
         <button aria-label="Back to guides" onClick={onBack} type="button">
           ←
         </button>
@@ -407,9 +416,9 @@ function GuideDetail({
         >
           {isSaved ? "♥" : "♡"}
         </button>
-      </header>
+        </header>
 
-      <article className="detail-shell">
+        <article className="detail-shell">
         <section className="detail-title">
           <p>{guide.category.toUpperCase()}</p>
           <h1>{guide.title}</h1>
@@ -512,8 +521,10 @@ function GuideDetail({
           Educational information only. Use qualified professional help when a
           task is hazardous, regulated, destructive, or beyond your experience.
         </p>
-      </article>
-    </main>
+        </article>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
 
