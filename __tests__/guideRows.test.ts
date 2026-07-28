@@ -1,4 +1,10 @@
-import { GuideRow, mapGuideRow } from '../src/lib/guideRows';
+import {
+  type GuideRow,
+  isGuide,
+  mapGuideRow,
+  mapGuideRows,
+  parseCachedGuides,
+} from '../src/lib/guideRows';
 
 const row: GuideRow = {
   slug: 'sample-guide',
@@ -43,5 +49,23 @@ describe('Supabase guide rows', () => {
         updatedAt: 'July 2026',
       }),
     );
+  });
+
+  it('rejects malformed Supabase payloads before they reach the UI', () => {
+    expect(() =>
+      mapGuideRows([{ ...row, professional_help: 'not-an-array' }]),
+    ).toThrow('Supabase returned an invalid guides payload.');
+  });
+
+  it('maps an entire valid Supabase response', () => {
+    expect(mapGuideRows([row])).toHaveLength(1);
+  });
+
+  it('validates cached guides before rendering them', () => {
+    const guide = mapGuideRow(row);
+
+    expect(isGuide(guide)).toBe(true);
+    expect(parseCachedGuides(JSON.stringify([guide]))).toEqual([guide]);
+    expect(parseCachedGuides(JSON.stringify([{ id: 'broken' }]))).toEqual([]);
   });
 });

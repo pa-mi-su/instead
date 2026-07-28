@@ -12,5 +12,7 @@ npm run web
 Then open `http://localhost:3000`.
 
 Supabase owns the canonical guide catalog. The root environment generator
-provides the public project URL and publishable key to the website, while
-`npm run web:sync` copies shared TypeScript models and mapping code.
+provides the public project URL and publishable key to the website. The website
+imports the shared guide types, categories, and row validation
+directly from the repository-level `src/` directory. There is one source of
+truth for both the mobile and web applications.

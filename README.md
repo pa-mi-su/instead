@@ -90,6 +90,7 @@ Supabase is the source of truth for the guide catalog:
 ```text
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+SITE_URL=http://localhost:3000
 ```
 
 `.env` is an optional local-development convenience and is never committed.
@@ -99,12 +100,31 @@ environments, with local `.env` values used only when those variables have not
 already been injected. It writes gitignored native and web build
 configurations before development, tests, and builds.
 
+Set `SITE_URL` to the final HTTPS website origin in the deployment environment
+so social sharing metadata uses production URLs.
+
 The publishable key is intentionally included in client builds and protected by
 Row Level Security. Never put a Supabase secret or service-role key in either
 client application.
 
 After the first successful load, native and web cache the published catalog
 locally so previously viewed content remains available during an outage.
+
+## Android release signing
+
+Debug builds use the standard public React Native debug keystore. Release
+builds are never signed with that key. A release pipeline supplies the upload
+keystore and these protected variables:
+
+```text
+INSTEAD_UPLOAD_STORE_FILE
+INSTEAD_UPLOAD_STORE_PASSWORD
+INSTEAD_UPLOAD_KEY_ALIAS
+INSTEAD_UPLOAD_KEY_PASSWORD
+```
+
+Without all four values, Gradle can compile an unsigned release artifact but
+cannot accidentally create a debug-signed production release.
 
 ## Verification
 

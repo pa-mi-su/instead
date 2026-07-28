@@ -1,12 +1,14 @@
-import { mapGuideRow, type GuideRow } from "./guideRows";
-import type { Guide } from "../types";
+import { mapGuideRows } from "../../src/lib/guideRows";
+import type { Guide } from "../../src/types";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
 const publishableKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
 
 export async function fetchPublishedGuides(): Promise<Guide[]> {
-  if (!url || !publishableKey) return [];
+  if (!url || !publishableKey) {
+    throw new Error("Supabase web configuration is unavailable.");
+  }
 
   const response = await fetch(
     `${url}/rest/v1/guides?select=*&published=eq.true&order=sort_order.asc`,
@@ -22,6 +24,5 @@ export async function fetchPublishedGuides(): Promise<Guide[]> {
     throw new Error(`Supabase returned ${response.status}`);
   }
 
-  const rows = (await response.json()) as GuideRow[];
-  return rows.map(mapGuideRow);
+  return mapGuideRows(await response.json());
 }
