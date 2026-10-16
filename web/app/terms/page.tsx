@@ -38,7 +38,7 @@ export default function TermsPage() {
       <PolicySection title="2. What INSTEAD provides">
         <p>
           INSTEAD publishes practical, educational guides about alternatives
-          for everyday products and tasks. Verified-email accounts can submit comments, recipes with optional photos, and votes. Recipe concepts and community suggestions are unreviewed unless explicitly stated otherwise. We do not offer paid subscriptions or purchases.
+          for everyday products and tasks. Verified-email accounts can submit comments, recipes with optional photos, and votes. Recipes and community suggestions are unreviewed unless explicitly stated otherwise. We do not offer paid subscriptions or purchases.
         </p>
       </PolicySection>
 

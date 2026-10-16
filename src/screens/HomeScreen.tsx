@@ -51,8 +51,7 @@ export function HomeScreen({
           What would you{'\n'}like to replace?
         </Text>
         <Text style={styles.heroBody}>
-          Search everyday products and explore natural alternative recipe
-          concepts.
+          Search everyday products and explore natural alternatives.
         </Text>
       </View>
 
@@ -144,8 +143,8 @@ export function HomeScreen({
         <Text style={styles.promiseLabel}>THE PROMISE</Text>
         <Text style={styles.promiseTitle}>Natural deserves a closer look.</Text>
         <Text style={styles.promiseBody}>
-          Use at your own risk. Recipe placeholders are not tested instructions.
-          Natural does not automatically mean safe or effective.
+          Use at your own risk. Natural does not automatically mean safe or
+          effective.
         </Text>
       </View>
     </ScrollView>

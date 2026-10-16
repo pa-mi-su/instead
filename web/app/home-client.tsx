@@ -56,7 +56,7 @@ export default function HomeClient({
         category === "All" || guide.category === category;
       const matchesQuery =
         !normalized ||
-        `${guide.title} ${guide.prompt} ${guide.category} $Two alternative concepts to explore. Full recipes will appear after review.`
+        `${guide.title} ${guide.prompt} ${guide.category} ${guide.summary}`
           .toLowerCase()
           .includes(normalized);
 
@@ -195,7 +195,7 @@ function GuideDirectory({
         </p>
         <h1>What would you like to replace?</h1>
         <p className="hero-copy">
-          Search everyday products and explore natural alternative recipe concepts.
+          Search everyday products and explore natural alternatives.
         </p>
       </section>
 
@@ -272,7 +272,7 @@ function GuideDirectory({
         <p>THE PROMISE</p>
         <h2>Natural deserves a closer look.</h2>
         <span>
-          Use at your own risk. Recipe placeholders are not tested instructions. Natural does not automatically mean safe or effective.
+          Use at your own risk. Natural does not automatically mean safe or effective.
         </span>
       </section>
     </div>
@@ -393,32 +393,20 @@ function GuideDetail({
 
         <section className="answer-card">
           <div>
-            <small>RECIPE DIRECTORY · PREVIEW</small>
+            <small>NATURAL ALTERNATIVES</small>
             <b aria-hidden="true">{guide.icon}</b>
           </div>
           <h2>{guide.answer}</h2>
-          <p>Two alternative concepts to explore. Full recipes will appear after review.</p>
         </section>
 
-        <DetailSection number="01" title="RECIPE CHOICES · COMING SOON">
-          <div className="option-list">
-            {guide.options.map(option => (
-              <div key={option.name}>
-                <small>PLACEHOLDER · NOT REVIEWED</small>
-                <h3>{option.name}</h3>
-                <p>{option.detail}</p>
-              </div>
-            ))}
-          </div>
-        </DetailSection>
-        <DetailSection number="02" title="BEFORE YOU TRY ANYTHING">
+        <DetailSection number="01" title="BEFORE YOU TRY ANYTHING">
           <div className="safety-card">
             <small>USE AT YOUR OWN RISK</small>
             <p>{guide.safetyNote}</p>
             <p>{guide.evidenceNote}</p>
           </div>
         </DetailSection>
-        <DetailSection number="03" title="COMMUNITY SUGGESTIONS">
+        <DetailSection number="02" title="COMMUNITY SUGGESTIONS">
           <ProductComments key={guide.id} productId={guide.id} />
         </DetailSection>
         <p className="disclaimer">

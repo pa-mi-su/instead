@@ -66,30 +66,13 @@ export function GuideDetailScreen({
 
         <View style={styles.answerCard}>
           <View style={styles.answerTopRow}>
-            <Text style={styles.answerLabel}>RECIPE DIRECTORY · PREVIEW</Text>
+            <Text style={styles.answerLabel}>NATURAL ALTERNATIVES</Text>
             <Text style={styles.answerIcon}>{guide.icon}</Text>
           </View>
           <Text style={styles.answerText}>{guide.answer}</Text>
-          <Text style={styles.answerSummary}>
-            Two alternative concepts to explore. Full recipes will appear after
-            review.
-          </Text>
         </View>
 
-        <DetailSection number="01" title="RECIPE CHOICES · COMING SOON">
-          <View style={styles.optionList}>
-            {guide.options.map(option => (
-              <View key={option.name} style={styles.optionCard}>
-                <Text style={styles.optionLabel}>
-                  PLACEHOLDER · NOT REVIEWED
-                </Text>
-                <Text style={styles.optionName}>{option.name}</Text>
-                <Text style={styles.optionDetail}>{option.detail}</Text>
-              </View>
-            ))}
-          </View>
-        </DetailSection>
-        <DetailSection number="02" title="BEFORE YOU TRY ANYTHING">
+        <DetailSection number="01" title="BEFORE YOU TRY ANYTHING">
           <View style={styles.safetyCard}>
             <Text style={styles.safetyLabel}>USE AT YOUR OWN RISK</Text>
             <Text style={styles.safetyText}>{guide.safetyNote}</Text>
@@ -97,7 +80,7 @@ export function GuideDetailScreen({
           </View>
         </DetailSection>
 
-        <DetailSection number="03" title="COMMUNITY SUGGESTIONS">
+        <DetailSection number="02" title="COMMUNITY SUGGESTIONS">
           <ProductComments key={guide.id} productId={guide.id} />
         </DetailSection>
         <Text style={styles.disclaimer}>
