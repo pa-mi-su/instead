@@ -399,14 +399,33 @@ function GuideDetail({
           <h2>{guide.answer}</h2>
         </section>
 
-        <DetailSection number="01" title="BEFORE YOU TRY ANYTHING">
+        {guide.recipes?.length ? (
+          <DetailSection number="01" title="RECIPES">
+            <div className="option-list">
+              {guide.recipes.map(recipe => (
+                <div key={recipe.name}>
+                  <h3>{recipe.name}</h3>
+                  <h4>Ingredients</h4>
+                  <ul>{recipe.ingredients.map(item => <li key={item}>{item}</li>)}</ul>
+                  <h4>Equipment</h4>
+                  <ul>{recipe.equipment.map(item => <li key={item}>{item}</li>)}</ul>
+                  <h4>Instructions</h4>
+                  <ol>{recipe.instructions.map(step => <li key={step}>{step}</li>)}</ol>
+                  <h4>Storage</h4><p>{recipe.storage}</p>
+                  <h4>Cautions</h4><p>{recipe.cautions}</p>
+                </div>
+              ))}
+            </div>
+          </DetailSection>
+        ) : null}
+        <DetailSection number={guide.recipes?.length ? "02" : "01"} title="BEFORE YOU TRY ANYTHING">
           <div className="safety-card">
             <small>USE AT YOUR OWN RISK</small>
             <p>{guide.safetyNote}</p>
             <p>{guide.evidenceNote}</p>
           </div>
         </DetailSection>
-        <DetailSection number="02" title="COMMUNITY SUGGESTIONS">
+        <DetailSection number={guide.recipes?.length ? "03" : "02"} title="COMMUNITY SUGGESTIONS">
           <ProductComments key={guide.id} productId={guide.id} />
         </DetailSection>
         <p className="disclaimer">

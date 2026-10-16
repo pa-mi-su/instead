@@ -72,7 +72,44 @@ export function GuideDetailScreen({
           <Text style={styles.answerText}>{guide.answer}</Text>
         </View>
 
-        <DetailSection number="01" title="BEFORE YOU TRY ANYTHING">
+        {guide.recipes?.length ? (
+          <DetailSection number="01" title="RECIPES">
+            <View style={styles.optionList}>
+              {guide.recipes.map(recipe => (
+                <View key={recipe.name} style={styles.optionCard}>
+                  <Text style={styles.optionName}>{recipe.name}</Text>
+                  <Text style={styles.optionLabel}>INGREDIENTS</Text>
+                  {recipe.ingredients.map(item => (
+                    <Text key={item} style={styles.optionDetail}>
+                      • {item}
+                    </Text>
+                  ))}
+                  <Text style={styles.optionLabel}>EQUIPMENT</Text>
+                  {recipe.equipment.map(item => (
+                    <Text key={item} style={styles.optionDetail}>
+                      • {item}
+                    </Text>
+                  ))}
+                  <Text style={styles.optionLabel}>INSTRUCTIONS</Text>
+                  {recipe.instructions.map((step, index) => (
+                    <Text key={step} style={styles.optionDetail}>
+                      {index + 1}. {step}
+                    </Text>
+                  ))}
+                  <Text style={styles.optionLabel}>STORAGE</Text>
+                  <Text style={styles.optionDetail}>{recipe.storage}</Text>
+                  <Text style={styles.optionLabel}>CAUTIONS</Text>
+                  <Text style={styles.optionDetail}>{recipe.cautions}</Text>
+                </View>
+              ))}
+            </View>
+          </DetailSection>
+        ) : null}
+
+        <DetailSection
+          number={guide.recipes?.length ? '02' : '01'}
+          title="BEFORE YOU TRY ANYTHING"
+        >
           <View style={styles.safetyCard}>
             <Text style={styles.safetyLabel}>USE AT YOUR OWN RISK</Text>
             <Text style={styles.safetyText}>{guide.safetyNote}</Text>
@@ -80,7 +117,10 @@ export function GuideDetailScreen({
           </View>
         </DetailSection>
 
-        <DetailSection number="02" title="COMMUNITY SUGGESTIONS">
+        <DetailSection
+          number={guide.recipes?.length ? '03' : '02'}
+          title="COMMUNITY SUGGESTIONS"
+        >
           <ProductComments key={guide.id} productId={guide.id} />
         </DetailSection>
         <Text style={styles.disclaimer}>

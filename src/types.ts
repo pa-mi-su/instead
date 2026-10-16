@@ -18,6 +18,15 @@ export type BetterOption = {
   label: 'USE LESS' | 'SIMPLE SWAP' | 'DIY FIRST' | 'PRODUCT';
 };
 
+export type StarterRecipe = {
+  name: string;
+  ingredients: string[];
+  equipment: string[];
+  instructions: string[];
+  storage: string;
+  cautions: string;
+};
+
 export type Guide = {
   id: string;
   title: string;
@@ -42,4 +51,5 @@ export type Guide = {
   evidenceNote: string;
   updatedAt: string;
   featured?: boolean;
+  recipes?: StarterRecipe[];
 };
