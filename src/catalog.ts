@@ -183,6 +183,27 @@ const surfaceCleanerRecipe: StarterRecipe = {
     'Never mix with bleach, ammonia, disinfectants, or other cleaners. Do not heat. Avoid eyes and breathing spray; use ventilation. Exclude natural-stone and engineered-stone counters, including marble, granite, soapstone, and quartz, as well as wood floors or furniture, grout, screens, and electronics. Acid can damage stone, sealers, finishes, grout, and coatings; the mechanism and susceptibility vary by material. Fiberglass, glazed ceramic, porcelain, laminate, stainless steel, fixtures, stovetops, and microwave interiors are candidates only when their manufacturers allow acidic cleaners; no blanket compatibility is promised. Protect appliance openings and controls and never spray inside a powered appliance. This cleaner is not a sanitizer or disinfectant.',
 };
 
+const shampooRecipe: StarterRecipe = {
+  name: 'Simple Castile Soap Shampoo',
+  ingredients: [
+    '¼ cup distilled water',
+    '¼ cup liquid castile soap — unscented or lavender',
+    '½ teaspoon jojoba oil or olive oil — omit for naturally very oily hair',
+    '8–10 drops rosemary or peppermint essential oil',
+  ],
+  equipment: ['Clean, dry shampoo bottle with a cap', 'Small funnel'],
+  instructions: [
+    'Use a thoroughly cleaned, rinsed, and dried shampoo bottle without leftover product. Pour in the distilled water and liquid castile soap.',
+    'Add the jojoba or olive oil if using, followed by the essential oil. Close the bottle and shake gently to blend.',
+    'Gently mix before each use as ingredients may separate. The mixture will be thinner than commercial gel shampoo.',
+    'Wet hair thoroughly. Apply a small amount to the scalp and roots, massage gently, and rinse thoroughly with water. Avoid eyes. Stop use if irritation, unusual dryness, tangling, or residue develops.',
+  ],
+  storage:
+    'Label with ingredients and preparation date and keep tightly closed. Distilled water does not preserve the mixture; adding water changes the soap’s preservation. Follow the soap manufacturer’s dilution and storage guidance. No tested shelf life has been established for this exact formula. Do not top up an old batch or let shower water enter the bottle.',
+  cautions:
+    'Owner-supplied, untested rinse-off formula. Castile soap is alkaline; adding oil does not lower its pH or establish that it protects hair from damage. It can leave residue, particularly in hard water, and may be unsuitable for dyed or chemically treated hair. Check your hair-treatment provider’s guidance. Essential oils may irritate the scalp and eyes; this formula is not a proven hair-growth treatment. Do not use on children or an irritated or broken scalp. Keep away from children and pets. Do not add vinegar or other acids to the soap bottle.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -197,6 +218,8 @@ export const productCatalog: Guide[] = topics.map(
         ? 'Mineral laundry booster formula'
         : title === 'Surface cleaner'
         ? 'Vinegar and dish soap for compatible surfaces'
+        : title === 'Shampoo'
+        ? 'A simple castile soap hair wash'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -222,6 +245,8 @@ export const productCatalog: Guide[] = topics.map(
         ? [laundryPowderRecipe]
         : title === 'Surface cleaner'
         ? [surfaceCleanerRecipe]
+        : title === 'Shampoo'
+        ? [shampooRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
