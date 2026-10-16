@@ -78,27 +78,37 @@ export function GuideDetailScreen({
               {guide.recipes.map(recipe => (
                 <View key={recipe.name} style={styles.optionCard}>
                   <Text style={styles.optionName}>{recipe.name}</Text>
-                  <Text style={styles.optionLabel}>INGREDIENTS</Text>
+                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                    INGREDIENTS
+                  </Text>
                   {recipe.ingredients.map(item => (
                     <Text key={item} style={styles.optionDetail}>
                       • {item}
                     </Text>
                   ))}
-                  <Text style={styles.optionLabel}>EQUIPMENT</Text>
+                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                    EQUIPMENT
+                  </Text>
                   {recipe.equipment.map(item => (
                     <Text key={item} style={styles.optionDetail}>
                       • {item}
                     </Text>
                   ))}
-                  <Text style={styles.optionLabel}>INSTRUCTIONS</Text>
+                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                    INSTRUCTIONS
+                  </Text>
                   {recipe.instructions.map((step, index) => (
                     <Text key={step} style={styles.optionDetail}>
                       {index + 1}. {step}
                     </Text>
                   ))}
-                  <Text style={styles.optionLabel}>STORAGE</Text>
+                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                    STORAGE
+                  </Text>
                   <Text style={styles.optionDetail}>{recipe.storage}</Text>
-                  <Text style={styles.optionLabel}>CAUTIONS</Text>
+                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                    CAUTIONS
+                  </Text>
                   <Text style={styles.optionDetail}>{recipe.cautions}</Text>
                 </View>
               ))}
