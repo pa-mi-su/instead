@@ -204,6 +204,29 @@ const shampooRecipe: StarterRecipe = {
     'Owner-supplied, untested rinse-off formula. Castile soap is alkaline; adding oil does not lower its pH or establish that it protects hair from damage. It can leave residue, particularly in hard water, and may be unsuitable for dyed or chemically treated hair. Check your hair-treatment provider’s guidance. Essential oils may irritate the scalp and eyes; this formula is not a proven hair-growth treatment. Do not use on children or an irritated or broken scalp. Keep away from children and pets. Do not add vinegar or other acids to the soap bottle.',
 };
 
+const twoStepHairRecipe: StarterRecipe = {
+  name: 'Two-Step Baking Soda Wash & ACV Rinse',
+  ingredients: [
+    'Wash: 1 tablespoon baking soda + 1 cup warm water',
+    'Separate rinse: 1–2 tablespoons plain apple cider vinegar (5% acidity) + 1 cup water',
+  ],
+  equipment: [
+    'Two clean, clearly labeled containers',
+    'Measuring cup and tablespoon',
+    'Spoon',
+  ],
+  instructions: [
+    'For the wash, stir the baking soda into 1 cup of warm water until dissolved. Do not add extra powder to make the liquid cloudy.',
+    'In a second container, mix the apple cider vinegar with 1 cup of water. Keep the wash and rinse separate; never combine them in a closed container.',
+    'Submitted method, not a validated hair-care recommendation: apply the baking soda solution to wet scalp and roots, massage for 1–2 minutes, and rinse thoroughly with warm water. It will not lather. These contact times have not been established as safe for this formula.',
+    'The submitted second step applies the diluted ACV to hair lengths and ends for 30 seconds, followed by a thorough cool-water rinse. Avoid the scalp and eyes. Rinse immediately if stinging occurs; the suggested contact time has not been validated.',
+  ],
+  storage:
+    'Prepare the two solutions fresh and separately for a single use; discard leftovers. Label each container and keep away from children and pets. Do not store or mix them in a sealed bottle together.',
+  cautions:
+    'Owner-supplied, untested method. Baking soda is alkaline and diluted vinegar is acidic; either can irritate, and alkaline washing may increase hair friction and damage. A vinegar rinse does not establish that prior damage is reversed or that the routine is pH-balanced. No safe frequency has been established: once or twice weekly is not a verified safe limit. This is not a replacement for a formulated shampoo and conditioner. Avoid on children, irritated or broken scalp, or dyed, chemically treated, or damaged hair. Stop with irritation, dryness, tangling, or breakage and seek professional advice. Vinegar odor may linger; disappearance is not guaranteed.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -219,7 +242,7 @@ export const productCatalog: Guide[] = topics.map(
         : title === 'Surface cleaner'
         ? 'Vinegar and dish soap for compatible surfaces'
         : title === 'Shampoo'
-        ? 'A simple castile soap hair wash'
+        ? 'Two owner-supplied hair-washing methods'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -246,7 +269,7 @@ export const productCatalog: Guide[] = topics.map(
         : title === 'Surface cleaner'
         ? [surfaceCleanerRecipe]
         : title === 'Shampoo'
-        ? [shampooRecipe]
+        ? [shampooRecipe, twoStepHairRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
