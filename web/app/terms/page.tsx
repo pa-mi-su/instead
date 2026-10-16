@@ -38,9 +38,7 @@ export default function TermsPage() {
       <PolicySection title="2. What INSTEAD provides">
         <p>
           INSTEAD publishes practical, educational guides about alternatives
-          for everyday tasks, products, and services. The current Services do
-          not provide user accounts, paid subscriptions, purchases, or
-          community submissions.
+          for everyday products and tasks. Verified-email accounts can submit comments, recipes with optional photos, and votes. Recipe concepts and community suggestions are unreviewed unless explicitly stated otherwise. We do not offer paid subscriptions or purchases.
         </p>
       </PolicySection>
 
@@ -81,6 +79,10 @@ export default function TermsPage() {
         </ul>
       </PolicySection>
 
+      <PolicySection title="Community participation">
+        <p>Keep your sign-in codes private. No public profile is required; do not impersonate others. Do not post spam, abuse, private information, or dangerous instructions. Do not create multiple accounts to manipulate votes. Email verification does not verify identity or expertise, and upvotes do not establish safety or effectiveness.</p>
+        <p>You retain ownership of your comments, recipes, and photos and permit INSTEAD to store, display, and moderate them as part of the Services. Only submit content and photos you have permission to share. Recipe submissions and photos require approval before publication. You can delete your comments or withdraw your recipes; moderators may hide or remove content. Use the Report control to flag concerns. Account deletion can be requested through support.</p>
+      </PolicySection>
       <PolicySection title="5. Content and intellectual property">
         <p>
           The Services, branding, design, and original guide content are owned

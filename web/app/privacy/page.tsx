@@ -21,9 +21,7 @@ export default function PrivacyPage() {
     >
       <PolicyCallout title="THE SHORT VERSION">
         <p>
-          INSTEAD currently has no accounts, advertising, behavioral analytics,
-          or cross-app tracking. Saved guides and cached guide content stay on
-          your device or in your browser.
+          Browsing does not require an account. Commenting and voting use email-code sign-in. Your comments and approved recipes and photos are public; your email is private. No public profile is required. Saved guides stay on your device or in your browser. We do not use advertising or behavioral tracking.
         </p>
       </PolicyCallout>
 
@@ -38,9 +36,7 @@ export default function PrivacyPage() {
 
       <PolicySection title="2. Information you provide">
         <p>
-          The current Services do not offer account registration, user
-          profiles, comments, or guide submissions. We therefore do not ask you
-          to provide a name, account password, profile, or payment information.
+          If you sign in, Supabase processes your email address to send a one-time code and maintain your account. We store comments, recipe submissions, optional photos, votes, and reports you submit. Pending recipes and photos are visible only to their submitter and administrators. We do not ask for a password, legal name, or payment information. Do not put private information in comments, recipes, or photos.
         </p>
         <p>
           If you contact support, we receive the information you choose to send,
@@ -54,16 +50,14 @@ export default function PrivacyPage() {
         <h3>Saved guides and cached content</h3>
         <p>
           The mobile apps store saved-guide identifiers on your device. The
-          website stores saved-guide identifiers and a cached copy of published
-          guides in your browser’s local storage. This lets saved guides remain
+          website stores saved-guide identifiers in your browser’s local storage. Signed-in sessions are stored locally on your device or browser so you can stay signed in. Signing out removes the local session. This lets saved guides remain
           available and helps the Services remain useful when the network is
           unavailable. INSTEAD does not receive this local storage merely
           because you use the save feature.
         </p>
         <h3>Network and service information</h3>
         <p>
-          The Services request published guide content from infrastructure
-          provided by Supabase. As with ordinary internet traffic, the service
+          Supabase provides authentication and the shared community database. Public responses include community content, dates, and vote totals; they do not include email addresses or account identifiers. Reports and account information are not public. As with ordinary internet traffic, the service
           provider may process technical request information such as an IP
           address, user agent, timestamps, and diagnostic or security logs to
           deliver content, prevent abuse, and maintain the service.
@@ -71,16 +65,16 @@ export default function PrivacyPage() {
         <h3>Information we do not request</h3>
         <p>
           The current Services do not request access to precise location,
-          contacts, photos, camera, microphone, health records, or advertising
+          contacts, camera, microphone, health records, or advertising
           identifiers. We do not use advertising SDKs or behavioral tracking
-          tools.
+          tools. You can optionally select up to three recipe photos through the system photo picker or browser. Only selected images are uploaded. Photos are stored privately in Supabase until publication. Temporary photo links may remain usable for up to five minutes after content is hidden.
         </p>
       </PolicySection>
 
       <PolicySection title="4. How information is used">
         <p>Information is used only as reasonably necessary to:</p>
         <ul>
-          <li>deliver and update published guides;</li>
+          <li>deliver guides and operate email sign-in, comments, votes, and moderation;</li>
           <li>operate, secure, troubleshoot, and improve the Services;</li>
           <li>respond to support, privacy, accessibility, or safety reports;</li>
           <li>comply with law and protect users, INSTEAD, and others.</li>
@@ -89,7 +83,7 @@ export default function PrivacyPage() {
 
       <PolicySection title="5. Service providers and disclosure">
         <p>
-          Supabase provides the database and content-delivery infrastructure
+          Supabase provides authentication, email delivery integration, and database infrastructure
           used by the Services. Service providers may process technical
           information only to provide and protect their services under their
           applicable terms and privacy practices.
@@ -113,9 +107,7 @@ export default function PrivacyPage() {
           service operation, security, and provider requirements.
         </p>
         <p>
-          Because there are no user accounts, INSTEAD currently has no account
-          record to delete. See the <Link href="/support">Support page</Link> for
-          steps to remove local information or make a privacy request.
+          You can delete your own comments and remove your votes in the product discussion. Account, comment, recipe, vote, and report records otherwise remain until deleted or removed through moderation. You can withdraw your recipes; they disappear from the directory, and the app attempts to remove their photo files. Withdrawn text and failed photo cleanups remain available to administrators until purged. Contact support for permanent removal. To request account deletion, contact support from your account email; we will verify the request. Deleting an account removes its community comments, recipes, votes, and reports. Administrators must also remove stored recipe photos during account deletion. See the <Link href="/support">Support page</Link> for help. Clearing local storage does not delete server records.
         </p>
       </PolicySection>
 
@@ -136,12 +128,9 @@ export default function PrivacyPage() {
         </p>
       </PolicySection>
 
-      <PolicySection title="9. Future accounts or contributions">
+      <PolicySection title="9. Community contributions">
         <p>
-          INSTEAD does not currently support accounts or community
-          contributions. Before introducing those features, we will update this
-          policy and the Services’ disclosures to explain the additional
-          information, controls, moderation, and deletion options involved.
+          Community contributions are public and unreviewed. Other people may copy public content before you delete it. Reports are available to moderators, and content may be hidden or removed for safety, abuse, or other service concerns. Email verification establishes access to an inbox; it does not verify a person’s identity or expertise.
         </p>
       </PolicySection>
 

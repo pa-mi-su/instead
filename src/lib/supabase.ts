@@ -1,4 +1,6 @@
 import 'react-native-url-polyfill/auto';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/generatedEnv';
 import type { Guide } from '../types';
@@ -9,7 +11,12 @@ const { supabaseUrl: url, supabasePublishableKey: publishableKey } = env;
 export const supabase =
   url && publishableKey
     ? createClient(url, publishableKey, {
-        auth: { persistSession: false, autoRefreshToken: false },
+        auth: {
+          storage: AsyncStorage,
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+        },
       })
     : null;
 
@@ -28,4 +35,13 @@ export async function fetchPublishedGuides(): Promise<Guide[] | null> {
   }
 
   return mapGuideRows(data ?? []);
+}
+
+if (supabase) {
+  if (AppState.currentState === 'active') supabase.auth.startAutoRefresh();
+  else supabase.auth.stopAutoRefresh();
+  AppState.addEventListener('change', state => {
+    if (state === 'active') supabase.auth.startAutoRefresh();
+    else supabase.auth.stopAutoRefresh();
+  });
 }

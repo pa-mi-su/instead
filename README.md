@@ -199,3 +199,9 @@ npm test
 
 The content is educational and does not replace individualized medical or
 dental advice.
+
+## Community comments and email codes
+
+Mobile and web now support Supabase email-code sign-in, shared product comments, upvotes, reports, and owner deletion, without public profiles. Product discussions also support community recipe submissions, optional photos, up/down votes, and administrator review before publication. See [recipe moderation](docs/recipe-moderation.md). Guests can read; a confirmed email is required to contribute. The database enforces one vote per account/comment and account-level rate limits.
+
+Activation requires the one-time `supabase/community.sql` migration, the OTP email template, and a working Supabase project with SMTP configured. See [community setup](docs/community-setup.md) for exact instructions and moderation queries. The legacy device-only preview comments are not automatically uploaded.

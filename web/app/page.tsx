@@ -1,17 +1,6 @@
 import HomeClient from "./home-client";
-import type { Guide } from "../../src/types";
-import { fetchPublishedGuides } from "../lib/supabase";
+import { placeholderCatalog } from "../../src/catalog";
 
-export const dynamic = "force-dynamic";
-
-export default async function Page() {
-  let guides: Guide[] = [];
-
-  try {
-    guides = await fetchPublishedGuides();
-  } catch {
-    // The browser can recover from its last locally cached catalog.
-  }
-
-  return <HomeClient initialGuides={guides} />;
+export default function Page() {
+  return <HomeClient initialGuides={placeholderCatalog} />;
 }

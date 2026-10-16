@@ -2,13 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { categories } from "../../src/categories";
-import { parseCachedGuides } from "../../src/lib/guideRows";
 import type { Guide } from "../../src/types";
+import { ProductComments } from "../components/product-comments";
 import { SiteFooter } from "../components/site-chrome";
-import { fetchPublishedGuides } from "../lib/supabase";
 
 const SAVED_KEY = "instead:web:saved-guides";
-const GUIDE_CACHE_KEY = "instead:web:guide-cache";
 
 type View = "home" | "saved" | "detail";
 
@@ -17,7 +15,7 @@ export default function HomeClient({
 }: {
   initialGuides: Guide[];
 }) {
-  const [catalog, setCatalog] = useState<Guide[]>(initialGuides);
+  const catalog = initialGuides;
   const [view, setView] = useState<View>("home");
   const [query, setQuery] = useState("");
   const [category, setCategory] =
@@ -27,7 +25,6 @@ export default function HomeClient({
 
   useEffect(() => {
     let saved: string[] | null = null;
-    let cached: Guide[] | null = null;
 
     try {
       const stored = window.localStorage.getItem(SAVED_KEY);
@@ -40,39 +37,16 @@ export default function HomeClient({
         }
       }
 
-      const cachedCatalog = window.localStorage.getItem(GUIDE_CACHE_KEY);
-      cached = parseCachedGuides(cachedCatalog);
     } catch {
       // The site remains usable if browser storage is unavailable.
     }
 
     const timeout = window.setTimeout(() => {
       if (saved) setSavedIds(saved);
-      if (!initialGuides.length && cached?.length) setCatalog(cached);
     }, 0);
 
     return () => window.clearTimeout(timeout);
   }, [initialGuides]);
-
-  useEffect(() => {
-    let active = true;
-
-    fetchPublishedGuides()
-      .then((live) => {
-        if (!active) return;
-        setCatalog(live);
-        try {
-          window.localStorage.setItem(GUIDE_CACHE_KEY, JSON.stringify(live));
-        } catch {
-          // Live content remains usable when browser storage is unavailable.
-        }
-      })
-      .catch(() => undefined);
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const filteredGuides = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -82,7 +56,7 @@ export default function HomeClient({
         category === "All" || guide.category === category;
       const matchesQuery =
         !normalized ||
-        `${guide.title} ${guide.prompt} ${guide.category} ${guide.summary}`
+        `${guide.title} ${guide.prompt} ${guide.category} $Two alternative concepts to explore. Full recipes will appear after review.`
           .toLowerCase()
           .includes(normalized);
 
@@ -217,12 +191,11 @@ function GuideDirectory({
       <section className="hero">
         <p className="eyebrow">
           <span aria-hidden="true" />
-          EVERYDAY ANSWERS. NO RABBIT HOLES.
+          SIMPLE INGREDIENTS. EVERYDAY ALTERNATIVES.
         </p>
-        <h1>What are you trying to do?</h1>
+        <h1>What would you like to replace?</h1>
         <p className="hero-copy">
-          Before you buy it, book it, or use it—see what you can safely do
-          instead.
+          Search everyday products and explore natural alternative recipe concepts.
         </p>
       </section>
 
@@ -231,7 +204,7 @@ function GuideDirectory({
         <span className="sr-only">Search guides</span>
         <input
           onChange={(event) => onQuery(event.target.value)}
-          placeholder="Try “deodorant” or “pest control”"
+          placeholder="Try “toothpaste” or “weed killer”"
           type="search"
           value={query}
         />
@@ -264,14 +237,14 @@ function GuideDirectory({
         <div className="directory-heading">
           <h2>
             {query
-              ? "MATCHING GUIDES"
+              ? "MATCHING ALTERNATIVES"
               : category === "All"
-                ? "START HERE"
+                ? "EXPLORE THE DIRECTORY"
                 : category.toUpperCase()}
           </h2>
           <p>
             {filteredGuides.length}{" "}
-            {filteredGuides.length === 1 ? "GUIDE" : "GUIDES"}
+            {filteredGuides.length === 1 ? "TOPIC" : "TOPICS"}
           </p>
         </div>
 
@@ -297,10 +270,9 @@ function GuideDirectory({
 
       <section className="promise">
         <p>THE PROMISE</p>
-        <h2>Useful, not alarmist.</h2>
+        <h2>Natural deserves a closer look.</h2>
         <span>
-          Clear recommendations, honest uncertainty, safety boundaries, and no
-          paid placements.
+          Use at your own risk. Recipe placeholders are not tested instructions. Natural does not automatically mean safe or effective.
         </span>
       </section>
     </div>
@@ -389,12 +361,6 @@ function GuideDetail({
   onBack: () => void;
   onSave: () => void;
 }) {
-  const toneLabel =
-    guide.answerTone === "yes"
-      ? "YES, YOU CAN USE LESS"
-      : guide.answerTone === "no"
-        ? "DON’T SKIP THIS"
-        : "IT DEPENDS";
 
   return (
     <>
@@ -427,96 +393,34 @@ function GuideDetail({
 
         <section className="answer-card">
           <div>
-            <small>{toneLabel}</small>
+            <small>RECIPE DIRECTORY · PREVIEW</small>
             <b aria-hidden="true">{guide.icon}</b>
           </div>
           <h2>{guide.answer}</h2>
-          <p>{guide.summary}</p>
+          <p>Two alternative concepts to explore. Full recipes will appear after review.</p>
         </section>
 
-        <DetailSection number="01" title="BEFORE YOU START">
-          <div className="facts">
-            <Fact label="TIME" value={guide.time} />
-            <Fact label="COST" value={guide.estimatedCost} />
-            <Fact label="POSSIBLE SAVINGS" value={guide.estimatedSavings} />
-            <Fact label="DIFFICULTY" value={guide.difficulty} />
-          </div>
-          <h3 className="subheading">WHAT YOU MAY NEED</h3>
-          <p className="supplies">{guide.supplies.join(" · ")}</p>
-        </DetailSection>
-
-        <DetailSection number="02" title="WHAT ACTUALLY MATTERS">
-          <ol className="steps">
-            {guide.essentials.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        </DetailSection>
-
-        <DetailSection number="03" title="CAN I SKIP IT?">
-          <div className="skip-card">
-            <span aria-hidden="true">−</span>
-            <p>{guide.skipNote}</p>
-          </div>
-        </DetailSection>
-
-        <DetailSection number="04" title="WHAT TO RECONSIDER">
-          <div className="avoid-list">
-            {guide.avoid.map((item) => (
-              <div key={item.name}>
-                <b aria-hidden="true">×</b>
-                <span>
-                  <strong>{item.name}</strong>
-                  <p>{item.reason}</p>
-                </span>
-              </div>
-            ))}
-          </div>
-        </DetailSection>
-
-        <DetailSection number="05" title="DO THIS INSTEAD">
+        <DetailSection number="01" title="RECIPE CHOICES · COMING SOON">
           <div className="option-list">
-            {guide.options.map((option) => (
+            {guide.options.map(option => (
               <div key={option.name}>
-                <small>{option.label}</small>
+                <small>PLACEHOLDER · NOT REVIEWED</small>
                 <h3>{option.name}</h3>
                 <p>{option.detail}</p>
               </div>
             ))}
           </div>
         </DetailSection>
-
-        <DetailSection number="06" title="SAFETY BOUNDARY">
+        <DetailSection number="02" title="BEFORE YOU TRY ANYTHING">
           <div className="safety-card">
-            <small>USE CAUTION</small>
+            <small>USE AT YOUR OWN RISK</small>
             <p>{guide.safetyNote}</p>
-            <h3>GET PROFESSIONAL HELP WHEN</h3>
-            <ul>
-              {guide.professionalHelp.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
+            <p>{guide.evidenceNote}</p>
           </div>
         </DetailSection>
-
-        <section className="evidence">
-          <div>
-            <span>
-              <small>EVIDENCE CHECK</small>
-              <strong>{guide.evidence}</strong>
-            </span>
-            <b aria-label={`${guide.evidence} evidence`}>
-              {guide.evidence === "Strong"
-                ? "▮▮▮"
-                : guide.evidence === "Moderate"
-                  ? "▮▮▯"
-                  : "▮▯▯"}
-            </b>
-          </div>
-          <p>{guide.evidenceNote}</p>
-          <small>REVIEWED {guide.updatedAt.toUpperCase()}</small>
-        </section>
-
+        <DetailSection number="03" title="COMMUNITY SUGGESTIONS">
+          <ProductComments key={guide.id} productId={guide.id} />
+        </DetailSection>
         <p className="disclaimer">
           Educational information only. Use qualified professional help when a
           task is hazardous, regulated, destructive, or beyond your experience.
@@ -545,14 +449,5 @@ function DetailSection({
       </div>
       {children}
     </section>
-  );
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <small>{label}</small>
-      <strong>{value}</strong>
-    </div>
   );
 }
