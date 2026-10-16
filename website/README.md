@@ -66,3 +66,7 @@ CloudFront-hostname validation: all six routes returned HTTP 200 over HTTPS, inc
 Namecheap apex ALIAS uses its available 5-minute TTL; this is acceptable. The www CNAME uses Automatic TTL. CloudFront global configuration deployment was still InProgress at verification, while both custom domains already passed HTTPS checks.
 
 Support delivery verified October 16, 2026: the owner configured Namecheap forwarding for info@insteadtry.com and confirmed receipt of a test in the destination inbox. The supportInboxVerified release attestation is complete.
+
+## Administration
+
+The public policy pages remain script-free. The separate /admin shell loads local JavaScript and uses Supabase email-code sign-in. Database membership, not access to the URL, controls review and restriction permissions. See docs/admin-panel.md. Only the public Supabase key is embedded in the built admin configuration.

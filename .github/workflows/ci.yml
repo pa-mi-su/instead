@@ -55,6 +55,12 @@ jobs:
       - name: Verify account-deletion authorization
         run: npm run safety:test
 
+      - name: Verify static administration site
+        run: |
+          npm run website:build
+          node --check website/admin/admin.mjs
+          npx eslint website/admin/admin.mjs --env browser,es2022 --parser-options '{"ecmaVersion":2022,"sourceType":"module"}'
+
       - name: Verify website
         run: |
           npm --prefix web run lint
