@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SafetyGate } from "../components/safety-gate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "INSTEAD — Practical alternatives for everyday life",
   description:
-    "Before you buy it, book it, or use it, see what you can safely do instead.",
+    "Explore recipes and practical alternatives for everyday life.",
   openGraph: {
     title: "INSTEAD",
     description: "A better way to do everyday things.",
@@ -45,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        <SafetyGate>{children}</SafetyGate>
       </body>
     </html>
   );

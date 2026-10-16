@@ -25,7 +25,7 @@ export function SiteFooter() {
         <p>Practical alternatives for everyday life.</p>
       </div>
       <nav aria-label="Legal and support">
-        <Link href="/safety">Safety</Link>
+        <Link href="/safety">Info & Safety</Link>
         <Link href="/privacy">Privacy</Link>
         <Link href="/terms">Terms</Link>
         <Link href="/support">Support</Link>

@@ -1152,3 +1152,16 @@ a:focus-visible {
 
 .product-comments input[type="email"], .product-comments input[autocomplete="one-time-code"] { border: 2px solid var(--ink); border-radius: 8px; min-height: 54px; background: white; }
 .product-comments input:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+.ack-shell { max-width: 720px; margin: 0 auto; padding: 36px 22px 60px; color: var(--ink); }
+.ack-shell h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.1; }
+.ack-shell section { margin-top: 28px; }
+.ack-shell h2 { font-size: 21px; margin-bottom: 8px; }
+.ack-shell p { line-height: 1.6; }
+.ack-shell nav { display: flex; flex-wrap: wrap; gap: 18px; margin: 26px 0; }
+.ack-shell button { min-height: 48px; border: 1.5px solid var(--ink); border-radius: 8px; padding: 12px 20px; margin: 12px 12px 0 0; font-weight: 800; }
+.ack-shell .ack-primary { background: var(--lime); }
+.ack-shell button:disabled { opacity: .45; cursor: not-allowed; }
+.ack-check { display: flex; align-items: flex-start; gap: 12px; line-height: 1.6; margin-top: 24px; }
+.ack-check input { width: 24px; height: 24px; flex-shrink: 0; margin-top: 2px; }
+.ack-shell [role="alert"] { color: #9c2513; }

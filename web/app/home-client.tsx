@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { useEffect, useMemo, useState } from "react";
 import { categories } from "../../src/categories";
@@ -158,6 +159,7 @@ function Header({
         <span>INSTEAD</span>
         <small aria-hidden="true">try</small>
       </button>
+      <Link className="saved-button" href="/safety">INFO & SAFETY</Link>
       <button
         aria-pressed={savedActive}
         className={`saved-button ${savedActive ? "active" : ""}`}

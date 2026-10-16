@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { disclaimerSections } from "../../../src/disclaimer";
 import { universalSafetyNotices } from "../../../src/safetyNotices";
 import Link from "next/link";
 import {
@@ -18,7 +19,7 @@ export default function SafetyPage() {
     <LegalPage
       eyebrow="KNOW THE BOUNDARY"
       introduction="INSTEAD can make everyday decisions simpler. It cannot see your situation, inspect a hazard, or replace a qualified professional."
-      title="Use guides safely."
+      title="Info & Safety"
     >
       <PolicyCallout tone="orange" title="NOT FOR EMERGENCIES">
         <p>
@@ -30,6 +31,9 @@ export default function SafetyPage() {
         </p>
       </PolicyCallout>
 
+      {disclaimerSections.slice(0, 2).map(notice => (
+        <PolicySection key={notice.title} title={notice.title}><p>{notice.body}</p></PolicySection>
+      ))}
       {universalSafetyNotices.map(notice => (
         <PolicyCallout key={notice.title} tone="orange" title={notice.title}>
           <p>{notice.body}</p>
