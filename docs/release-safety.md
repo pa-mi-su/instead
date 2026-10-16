@@ -1,6 +1,6 @@
 # Release safety and operations
 
-This branch deliberately holds automated TestFlight and Play internal-track distribution until `release/readiness.json` is completed. It does not change the live store listings or merge/release the branch. The fields are owner attestations, not legal approval supplied by software. Do not mark them complete merely to bypass the workflow.
+Merging to main after successful CI uploads beta builds to TestFlight and Google Play internal testing. The Android workflow fixes the track to internal; the iOS workflow uploads without submitting a public App Store release. `npm run release:check` remains the separate public-launch checklist and is intentionally not a prerequisite for beta testing. The fields are owner attestations, not legal approval supplied by software; do not mark incomplete reviews complete merely to bypass them.
 
 ## Actual remaining owner decisions
 

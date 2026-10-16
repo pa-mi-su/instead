@@ -18,22 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  readiness:
-    name: Release safety readiness
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
-        with:
-          node-version: 22
-      - name: Require completed safety and legal review attestations
-        run: node scripts/check-release-readiness.mjs
-
   android:
-    needs: readiness
     name: Android internal testing
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
@@ -110,7 +95,7 @@ jobs:
         env:
           ANDROID_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.ANDROID_PLAY_SERVICE_ACCOUNT_JSON }}
           GOOGLE_PLAY_PACKAGE_NAME: ${{ vars.ANDROID_PLAY_PACKAGE_NAME }}
-          GOOGLE_PLAY_TRACK: ${{ vars.ANDROID_PLAY_TRACK }}
+          GOOGLE_PLAY_TRACK: internal
           GOOGLE_PLAY_RELEASE_STATUS: ${{ vars.ANDROID_PLAY_RELEASE_STATUS }}
           GOOGLE_PLAY_RELEASE_NAME: INSTEAD ${{ vars.APP_VERSION }} (${{ github.run_number }}.${{ github.run_attempt }})
         run: |
@@ -127,7 +112,6 @@ jobs:
             node scripts/upload-google-play.mjs
 
   ios:
-    needs: readiness
     name: iOS TestFlight
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: macos-15
