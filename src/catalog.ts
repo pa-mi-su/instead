@@ -131,6 +131,33 @@ const vinegarGlassRecipe: StarterRecipe = {
     'Never mix vinegar with bleach or other cleaners. Avoid eyes and breathing spray. Keep off marble, limestone, and other acid-sensitive surfaces. Do not use on screens, lenses, tinted or coated glass, or specialty glazing unless the manufacturer allows it. Protect painted or sealed frames and mirror backing. Results vary; this cleaner is not a sanitizer or disinfectant.',
 };
 
+const laundryPowderRecipe: StarterRecipe = {
+  name: 'Mineral Laundry Powder — Booster Formula',
+  ingredients: [
+    '1½ cups washing soda (sodium carbonate)',
+    '1½ cups baking soda (sodium bicarbonate)',
+    '½ cup plain Epsom salt (magnesium sulfate)',
+    'Optional: 30–40 drops lavender or eucalyptus essential oil',
+  ],
+  equipment: [
+    'Large, dry mixing bowl',
+    'Spoon or whisk',
+    'Airtight, labeled container',
+    'Dry measuring spoon',
+  ],
+  instructions: [
+    'Gently stir the washing soda, baking soda, and Epsom salt together in a dry bowl until evenly blended and free of clumps. Avoid raising or breathing dust.',
+    'If including the optional essential oil, drizzle it over the powder and stir thoroughly. Fragrance is not necessary for cleaning and can irritate sensitive skin.',
+    'Transfer to an airtight container and label with the ingredients and mixing date.',
+    'The submitted recipe suggests 2 tablespoons for a normal load or 4 tablespoons for a large, heavily soiled load, placed in the drum before clothing. These doses and this placement have not been validated for this blend or for HE machines. Follow washer, garment, detergent, and ingredient-label directions; do not use this formula where they conflict.',
+    'This blend contains no soap or detergent surfactant. Do not use it as a replacement for laundry detergent. Use a labeled laundry product if compatibility or dosing is uncertain.',
+  ],
+  storage:
+    'Keep tightly closed and dry, with a dry scoop, away from children and pets. Do not store in a food container. No tested shelf life has been established for the blend, especially with essential oils added.',
+  cautions:
+    'Owner-supplied, untested booster formula; not a complete detergent or disinfectant. Epsom salt adds magnesium, a contributor to water hardness, and is not established here as a fabric softener. Washing soda is alkaline and can irritate skin and eyes; handle according to its label. Avoid use on wool, silk, or other alkali-sensitive fabrics unless their care instructions allow it. Essential oils can cause irritation or leave residue. Machine compatibility, cleaning performance, and the suggested doses have not been verified. Do not combine with other cleaners beyond what their labels expressly permit.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -141,6 +168,8 @@ export const productCatalog: Guide[] = topics.map(
         ? 'Two options for hand-washing dishes'
         : title === 'Glass cleaner'
         ? 'Two options for compatible window glass'
+        : title === 'Laundry care'
+        ? 'Mineral laundry booster formula'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -162,6 +191,8 @@ export const productCatalog: Guide[] = topics.map(
         ? [toothpasteRecipe]
         : title === 'Glass cleaner'
         ? [glassCleanerRecipe, vinegarGlassRecipe]
+        : title === 'Laundry care'
+        ? [laundryPowderRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
