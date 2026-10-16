@@ -51,13 +51,17 @@ test("server-renders the guide directory and policy pages", async () => {
       html,
       /<title>INSTEAD — Practical alternatives for everyday life<\/title>/i,
     );
-    assert.match(html, /What are you trying to do\?/);
+    assert.match(html, /What would you like to replace\?/);
+    for (const topic of ['Dish cleaner', 'Toothpaste', 'Shampoo', 'Body soap', 'Weed killer', 'Deodorant', 'Glass cleaner', 'Laundry care', 'Surface cleaner', 'Skin care', 'Sunburn care', 'Bug bite care', 'Cough comfort', 'Clogged drains', 'Mouse deterrents', 'Spider deterrents']) {
+      assert.ok(html.includes(topic), `Missing topic: ${topic}`);
+    }
+    assert.match(html, /Use at your own risk/);
     assert.match(html, /href="\/privacy"/);
     assert.match(html, /href="\/support"/);
     assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 
     const policyPages = [
-      ["/privacy", /<title>Privacy Policy — INSTEAD<\/title>/i, /no accounts/i],
+      ["/privacy", /<title>Privacy Policy — INSTEAD<\/title>/i, /email-code sign-in/i],
       ["/terms", /<title>Terms of Use — INSTEAD<\/title>/i, /reference tool/i],
       [
         "/safety",

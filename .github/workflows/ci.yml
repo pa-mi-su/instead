@@ -46,11 +46,14 @@ jobs:
 
       - name: Reject production vulnerabilities
         run: |
-          npm audit --omit=dev
+          node scripts/audit-native.mjs
           npm --prefix web audit --omit=dev
 
       - name: Verify native code
         run: npm run verify
+
+      - name: Verify account-deletion authorization
+        run: npm run safety:test
 
       - name: Verify website
         run: |

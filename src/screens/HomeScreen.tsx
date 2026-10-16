@@ -43,11 +43,15 @@ export function HomeScreen({
       <View style={styles.hero}>
         <View style={styles.kickerRow}>
           <View style={styles.liveDot} />
-          <Text style={styles.kicker}>EVERYDAY ANSWERS. NO RABBIT HOLES.</Text>
+          <Text style={styles.kicker}>
+            SIMPLE INGREDIENTS. EVERYDAY ALTERNATIVES.
+          </Text>
         </View>
-        <Text style={styles.heroTitle}>What are you{'\n'}trying to do?</Text>
+        <Text style={styles.heroTitle}>
+          What would you{'\n'}like to replace?
+        </Text>
         <Text style={styles.heroBody}>
-          Before you buy it, book it, or use it—see what you can do instead.
+          Search everyday products and explore natural alternatives.
         </Text>
       </View>
 
@@ -56,7 +60,7 @@ export function HomeScreen({
         <TextInput
           value={query}
           onChangeText={onQuery}
-          placeholder="Try “deodorant” or “pest control”"
+          placeholder="Try “toothpaste” or “weed killer”"
           placeholderTextColor="#8B887F"
           style={styles.searchInput}
           selectionColor={COLORS.orange}
@@ -98,9 +102,9 @@ export function HomeScreen({
       <View style={styles.listHeader}>
         <Text style={styles.listTitle}>
           {query
-            ? 'MATCHING GUIDES'
+            ? 'MATCHING ALTERNATIVES'
             : category === 'All'
-            ? 'START HERE'
+            ? 'EXPLORE THE DIRECTORY'
             : category.toUpperCase()}
         </Text>
         <View style={styles.listMeta}>
@@ -108,7 +112,7 @@ export function HomeScreen({
             <ActivityIndicator size="small" color={COLORS.muted} />
           ) : null}
           <Text style={styles.resultCount}>
-            {guides.length} {guides.length === 1 ? 'GUIDE' : 'GUIDES'}
+            {guides.length} {guides.length === 1 ? 'TOPIC' : 'TOPICS'}
           </Text>
         </View>
       </View>
@@ -137,9 +141,10 @@ export function HomeScreen({
 
       <View style={styles.promise}>
         <Text style={styles.promiseLabel}>THE PROMISE</Text>
-        <Text style={styles.promiseTitle}>Useful, not alarmist.</Text>
+        <Text style={styles.promiseTitle}>Natural deserves a closer look.</Text>
         <Text style={styles.promiseBody}>
-          Clear recommendations, honest uncertainty, and no paid placements.
+          Use at your own risk. Natural does not automatically mean safe or
+          effective.
         </Text>
       </View>
     </ScrollView>

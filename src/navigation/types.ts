@@ -1,1 +1,1 @@
-export type ViewName = 'home' | 'saved' | 'detail';
+export type ViewName = 'home' | 'saved' | 'detail' | 'info';

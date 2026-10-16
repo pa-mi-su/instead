@@ -697,6 +697,22 @@ a:focus-visible {
   letter-spacing: -0.035em;
 }
 
+.option-list h4 {
+  margin: 24px 0 6px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.option-list h4 + ul,
+.option-list h4 + ol {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.option-list h4 + p {
+  margin-top: 0;
+}
+
 .option-list p {
   margin: 8px 0 0;
   color: var(--muted);
@@ -1113,3 +1129,39 @@ a:focus-visible {
     transition: none;
   }
 }
+
+.product-comments form { display: grid; gap: 12px; margin: 24px 0; }
+.product-comments textarea { width: 100%; min-height: 120px; padding: 16px; font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--ink); resize: vertical; }
+.product-comments button { padding: 12px 18px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.product-comments button[aria-pressed="true"] { background: var(--lime); }
+.product-comments button:disabled { opacity: .5; cursor: default; }
+
+.product-comments input { padding: 12px; font: inherit; border: 1px solid var(--ink); width: 100%; }
+.product-comments .comment-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.product-comments button { margin: 4px; }
+
+.product-recipes { margin-bottom: 40px; }
+.recipe-card { background: var(--paper); border: 1px solid var(--ink); padding: 24px; margin: 20px 0; }
+.recipe-card h4 { font-size: 24px; margin: 12px 0; }
+.recipe-card dt { font-weight: bold; margin-top: 18px; }
+.recipe-card dd { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; }
+.recipe-photos { display: flex; flex-wrap: wrap; gap: 12px; }
+.recipe-photos img { max-width: 100%; width: 220px; height: 180px; object-fit: contain; }
+.product-recipes label { display: grid; gap: 8px; }
+.product-recipes textarea { min-height: 90px; }
+
+.product-comments input[type="email"], .product-comments input[autocomplete="one-time-code"] { border: 2px solid var(--ink); border-radius: 8px; min-height: 54px; background: white; }
+.product-comments input:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+.ack-shell { max-width: 720px; margin: 0 auto; padding: 36px 22px 60px; color: var(--ink); }
+.ack-shell h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.1; }
+.ack-shell section { margin-top: 28px; }
+.ack-shell h2 { font-size: 21px; margin-bottom: 8px; }
+.ack-shell p { line-height: 1.6; }
+.ack-shell nav { display: flex; flex-wrap: wrap; gap: 18px; margin: 26px 0; }
+.ack-shell button { min-height: 48px; border: 1.5px solid var(--ink); border-radius: 8px; padding: 12px 20px; margin: 12px 12px 0 0; font-weight: 800; }
+.ack-shell .ack-primary { background: var(--lime); }
+.ack-shell button:disabled { opacity: .45; cursor: not-allowed; }
+.ack-check { display: flex; align-items: flex-start; gap: 12px; line-height: 1.6; margin-top: 24px; }
+.ack-check input { width: 24px; height: 24px; flex-shrink: 0; margin-top: 2px; }
+.ack-shell [role="alert"] { color: #9c2513; }

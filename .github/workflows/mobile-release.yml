@@ -95,7 +95,7 @@ jobs:
         env:
           ANDROID_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.ANDROID_PLAY_SERVICE_ACCOUNT_JSON }}
           GOOGLE_PLAY_PACKAGE_NAME: ${{ vars.ANDROID_PLAY_PACKAGE_NAME }}
-          GOOGLE_PLAY_TRACK: ${{ vars.ANDROID_PLAY_TRACK }}
+          GOOGLE_PLAY_TRACK: internal
           GOOGLE_PLAY_RELEASE_STATUS: ${{ vars.ANDROID_PLAY_RELEASE_STATUS }}
           GOOGLE_PLAY_RELEASE_NAME: INSTEAD ${{ vars.APP_VERSION }} (${{ github.run_number }}.${{ github.run_attempt }})
         run: |

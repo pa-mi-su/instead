@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { StatusBar, View } from 'react-native';
+import { ActivityIndicator, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { categories } from '../categories';
 import { TopBar } from '../components/TopBar';
@@ -9,10 +9,13 @@ import { GuideDetailScreen } from '../screens/GuideDetailScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { SavedScreen } from '../screens/SavedScreen';
 import { COLORS, styles } from '../styles';
+import { InfoScreen } from '../screens/InfoScreen';
+import { useSafetyAcknowledgement } from '../hooks/useSafetyAcknowledgement';
 import type { ViewName } from './types';
 
 export function AppNavigator() {
   const insets = useSafeAreaInsets();
+  const acknowledgement = useSafetyAcknowledgement();
   const { guides: catalog, isLoading } = useGuideCatalog();
   const { favorites, toggleFavorite } = useFavorites();
   const [view, setView] = useState<ViewName>('home');
@@ -51,7 +54,17 @@ export function AppNavigator() {
   return (
     <View style={[styles.app, { paddingTop: Math.max(insets.top, 12) }]}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.paper} />
-      {view === 'detail' && selected ? (
+      {acknowledgement.status === 'loading' ? (
+        <ActivityIndicator accessibilityLabel="Loading safety acknowledgement" />
+      ) : acknowledgement.status === 'required' ? (
+        <InfoScreen
+          firstUse
+          onAccept={acknowledgement.accept}
+          busy={acknowledgement.busy}
+          error={acknowledgement.error}
+          bottomInset={insets.bottom}
+        />
+      ) : view === 'detail' && selected ? (
         <GuideDetailScreen
           guide={selected}
           isSaved={favorites.includes(selected.id)}
@@ -64,10 +77,13 @@ export function AppNavigator() {
           <TopBar
             activeView={view}
             savedCount={favorites.length}
+            onInfo={() => setView('info')}
             onHome={goHome}
             onSaved={() => setView('saved')}
           />
-          {view === 'saved' ? (
+          {view === 'info' ? (
+            <InfoScreen bottomInset={insets.bottom} />
+          ) : view === 'saved' ? (
             <SavedScreen
               guides={saved}
               onOpen={openGuide}

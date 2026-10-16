@@ -67,8 +67,7 @@ export default function SupportPage() {
 
       <PolicySection title="Saved guides and local data">
         <p>
-          INSTEAD currently has no user accounts. Saved guides are stored on
-          your device or in your browser, not in an INSTEAD user profile.
+          Saved guides are stored on your device or in your browser. Community comments, votes, and account records are stored separately in Supabase. Clearing local data does not remove shared comments or delete your account.
         </p>
         <ul>
           <li>
@@ -84,11 +83,7 @@ export default function SupportPage() {
 
       <PolicySection title="Accounts and contributions">
         <p>
-          Accounts and community guide contributions are not currently
-          available. Support cannot create an account or accept a public
-          contribution yet. If those features are introduced, INSTEAD will add
-          clear submission, moderation, attribution, and deletion controls
-          first.
+          Sign in with an email code to comment, submit recipes with optional photos, or vote. No public profile is required. Never share a sign-in code with support. Use Report on a comment for unsafe advice, spam, or abuse. You can delete your own comments, withdraw your recipes, or remove your votes. Recipes and photos await administrator approval before publication. For permanent removal of withdrawn submissions or photo files, contact support. For account deletion, email support from the address used to sign in; we will verify the request before deleting the account and its community records.
         </p>
       </PolicySection>
 

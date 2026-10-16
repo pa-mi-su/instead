@@ -619,6 +619,10 @@ export const styles = StyleSheet.create({
     paddingVertical: 5,
     marginBottom: 13,
   },
+  recipeHeading: {
+    marginTop: 24,
+    marginBottom: 2,
+  },
   optionName: {
     color: COLORS.ink,
     fontSize: 20,
@@ -631,6 +635,9 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     marginTop: 6,
+  },
+  safetyNotice: {
+    marginTop: 12,
   },
   safetyCard: {
     backgroundColor: '#FFF1E9',

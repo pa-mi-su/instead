@@ -3,5 +3,8 @@ export const categories = [
   'Personal Care',
   'Cleaning',
   'Home Maintenance',
-  'Household Services',
+  'Skin Care',
+  'First Aid',
+  'Cough & Cold Care',
+  'Pest Prevention',
 ] as const;

@@ -9,7 +9,7 @@
     "icons:generate": "node scripts/generate-icons.mjs",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "postinstall": "npm run env:generate",
+    "postinstall": "patch-package && npm run env:generate",
     "preandroid": "npm run env:generate",
     "preios": "npm run env:generate",
     "prestart": "npm run env:generate",
@@ -24,14 +24,19 @@
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "web": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
-    "web:test": "npm --prefix web test"
+    "web:test": "npm --prefix web test",
+    "safety:test": "node --test scripts/test-delete-account.mjs scripts/test-native-audit.mjs scripts/test-metro-assets.mjs",
+    "release:check": "node scripts/check-release-readiness.mjs",
+    "website:build": "node scripts/build-policy-site.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@supabase/supabase-js": "^2.111.0",
+    "base64-arraybuffer": "^1.0.2",
     "lucide-react-native": "^1.27.0",
     "react": "19.2.3",
     "react-native": "0.86.2",
+    "react-native-image-picker": "^8.3.0",
     "react-native-safe-area-context": "^5.8.0",
     "react-native-svg": "^15.15.5",
     "react-native-url-polyfill": "^4.0.0"
@@ -54,6 +59,7 @@
     "@types/react-test-renderer": "^19.1.0",
     "eslint": "^8.19.0",
     "jest": "^29.6.3",
+    "patch-package": "^8.0.1",
     "prettier": "2.8.8",
     "react-test-renderer": "19.2.3",
     "sharp": "^0.35.3",
@@ -63,6 +69,13 @@
     "node": ">= 22.11.0"
   },
   "overrides": {
-    "test-exclude": "8.0.0"
+    "test-exclude": "8.0.0",
+    "metro": {
+      "image-size": "2.0.4"
+    },
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "4.3.2"
+    },
+    "brace-expansion@^5.0.0": "5.0.12"
   }
 }

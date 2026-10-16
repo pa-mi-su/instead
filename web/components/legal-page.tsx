@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { SiteFooter, StaticHeader } from "./site-chrome";
 
-export const policyDate = "July 28, 2026";
+import { POLICY_DATE } from "../../src/policies";
+export const policyDate = POLICY_DATE;
 
 export function LegalPage({
   eyebrow,

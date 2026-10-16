@@ -8,11 +8,13 @@ export function TopBar({
   savedCount,
   onHome,
   onSaved,
+  onInfo,
 }: {
   activeView: ViewName;
   savedCount: number;
   onHome: () => void;
   onSaved: () => void;
+  onInfo: () => void;
 }) {
   return (
     <View style={styles.topBar}>
@@ -23,6 +25,18 @@ export function TopBar({
         accessibilityLabel="Go to home"
       >
         <Text style={styles.wordmark}>INSTEAD</Text>
+      </Pressable>
+      <Pressable
+        onPress={onInfo}
+        accessibilityRole="button"
+        accessibilityLabel="Info and Safety"
+        accessibilityState={{ selected: activeView === 'info' }}
+        style={[
+          styles.savedButton,
+          activeView === 'info' && styles.savedButtonActive,
+        ]}
+      >
+        <Text style={styles.savedButtonText}>INFO</Text>
       </Pressable>
       <Pressable
         onPress={onSaved}

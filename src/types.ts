@@ -2,7 +2,11 @@ export type GuideCategory =
   | 'Personal Care'
   | 'Cleaning'
   | 'Home Maintenance'
-  | 'Household Services';
+  | 'Household Services'
+  | 'Skin Care'
+  | 'First Aid'
+  | 'Cough & Cold Care'
+  | 'Pest Prevention';
 
 export type AnswerTone = 'yes' | 'depends' | 'no';
 export type Difficulty = 'Easy' | 'Moderate' | 'Advanced';
@@ -16,6 +20,15 @@ export type BetterOption = {
   name: string;
   detail: string;
   label: 'USE LESS' | 'SIMPLE SWAP' | 'DIY FIRST' | 'PRODUCT';
+};
+
+export type StarterRecipe = {
+  name: string;
+  ingredients: string[];
+  equipment: string[];
+  instructions: string[];
+  storage: string;
+  cautions: string;
 };
 
 export type Guide = {
@@ -42,4 +55,6 @@ export type Guide = {
   evidenceNote: string;
   updatedAt: string;
   featured?: boolean;
+  recipes?: StarterRecipe[];
+  reviewNotice?: string;
 };
