@@ -308,6 +308,29 @@ const weedControlRecipe: StarterRecipe = {
     'Owner-supplied, untested formula. Non-selective: it can damage desirable plants, but complete weed kill is not guaranteed. Salt can accumulate or move with water and harm soil, roots, and waterways; duration depends on dose and site, so no permanent weed-free result is promised. Vinegar can damage paving, stone, metal, and finishes. Avoid skin, eyes, and breathing spray; use ventilation while mixing. Keep people and pets away from application and prevent contact with treated vegetation. Never mix with bleach or other cleaners. Concentrated horticultural vinegar can cause serious skin and eye injury and is excluded from this recipe. Natural does not mean safe for people, pets, or the environment.',
 };
 
+const saltFreeWeedRecipe: StarterRecipe = {
+  name: 'Salt-Free Vinegar Weed Spray',
+  ingredients: [
+    '2 cups plain household white vinegar (5% acidity only)',
+    '1 teaspoon plain liquid dishwashing detergent — without bleach, not castile soap',
+  ],
+  equipment: [
+    'Dedicated, clearly labeled spray bottle larger than 16 ounces',
+    'Measuring cup and teaspoon',
+    'Gloves and eye protection',
+  ],
+  instructions: [
+    'Check that the dishwashing detergent manufacturer permits mixing with vinegar. Use only 5% household vinegar, never concentrated horticultural vinegar.',
+    'Pour the vinegar into a clean, dedicated spray bottle with room for the dishwashing liquid and mixing. Add the detergent, close, and gently roll or swirl to combine without excessive foam.',
+    'Consider hand-pulling first. Where site suitability has been established, target only unwanted foliage and avoid wind, overspray, runoff, desirable plants, drains, and waterways. Do not soak soil.',
+    'Check results before considering any further treatment. Leaf damage does not guarantee root kill, and deep-rooted perennial weeds may regrow. No fixed one-week repeat schedule has been validated for this formula.',
+  ],
+  storage:
+    'Label with ingredients and mixing date. Keep closed and away from children, pets, food, and feed. Never use a beverage container or reuse the bottle for edible plants. No tested shelf life has been established. Follow local household-chemical disposal guidance rather than pouring leftovers into drains or onto soil.',
+  cautions:
+    'Owner-supplied, untested contact-treatment formula. Salt-free does not mean harmless to soil, plants, people, pets, or the environment. Vinegar and dishwashing detergent can damage desirable foliage and affect nearby soil or organisms; avoid broad application and runoff. Non-selective: keep off lawns, garden plants, edible crops, and tree-root zones. It may damage stone, paving, metal, or finishes. Avoid eyes, skin contact, and breathing spray. Keep people and pets away during application and prevent contact with treated vegetation. Never mix with bleach or other cleaners.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -327,7 +350,7 @@ export const productCatalog: Guide[] = topics.map(
         : title === 'Deodorant'
         ? 'Two cream deodorant formulas'
         : title === 'Weed killer'
-        ? 'Vinegar-and-salt formula with site restrictions'
+        ? 'Two vinegar-based formulas with site restrictions'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -358,7 +381,7 @@ export const productCatalog: Guide[] = topics.map(
         : title === 'Deodorant'
         ? [deodorantRecipe, tallowDeodorantRecipe]
         : title === 'Weed killer'
-        ? [weedControlRecipe]
+        ? [weedControlRecipe, saltFreeWeedRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
