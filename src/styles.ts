@@ -636,6 +636,9 @@ export const styles = StyleSheet.create({
     lineHeight: 21,
     marginTop: 6,
   },
+  safetyNotice: {
+    marginTop: 12,
+  },
   safetyCard: {
     backgroundColor: '#FFF1E9',
     borderWidth: 1.5,

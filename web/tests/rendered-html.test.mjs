@@ -52,7 +52,7 @@ test("server-renders the guide directory and policy pages", async () => {
       /<title>INSTEAD — Practical alternatives for everyday life<\/title>/i,
     );
     assert.match(html, /What would you like to replace\?/);
-    for (const topic of ['Dish cleaner', 'Toothpaste', 'Shampoo', 'Body soap', 'Weed killer', 'Deodorant', 'Glass cleaner', 'Laundry care', 'Surface cleaner']) {
+    for (const topic of ['Dish cleaner', 'Toothpaste', 'Shampoo', 'Body soap', 'Weed killer', 'Deodorant', 'Glass cleaner', 'Laundry care', 'Surface cleaner', 'Skin care', 'Sunburn care', 'Bug bite care', 'Cough comfort', 'Clogged drains', 'Mouse deterrents', 'Spider deterrents']) {
       assert.ok(html.includes(topic), `Missing topic: ${topic}`);
     }
     assert.match(html, /Use at your own risk/);

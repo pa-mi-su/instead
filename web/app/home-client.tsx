@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { categories } from "../../src/categories";
 import type { Guide } from "../../src/types";
+import { universalSafetyNotices } from "../../src/safetyNotices";
 import { ProductComments } from "../components/product-comments";
 import { SiteFooter } from "../components/site-chrome";
 
@@ -399,6 +400,14 @@ function GuideDetail({
           <h2>{guide.answer}</h2>
         </section>
 
+        <aside className="safety-card" aria-label="Universal safety">
+          <small>UNIVERSAL SAFETY</small>
+          {universalSafetyNotices.map(notice => (
+            <div key={notice.title}>
+              <h3>{notice.title}</h3><p>{notice.body}</p>
+            </div>
+          ))}
+        </aside>
         {guide.recipes?.length ? (
           <DetailSection number="01" title="RECIPES">
             <div className="option-list">

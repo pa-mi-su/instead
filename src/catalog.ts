@@ -10,6 +10,13 @@ const topics: [string, Guide['category'], string][] = [
   ['Glass cleaner', 'Cleaning', 'window cleaner windows mirrors'],
   ['Laundry care', 'Cleaning', 'clothes detergent washing'],
   ['Surface cleaner', 'Cleaning', 'all purpose countertop kitchen'],
+  ['Skin care', 'Skin Care', 'skin skincare moisturizer dry skin'],
+  ['Sunburn care', 'First Aid', 'sun burn sunburn cooling skin'],
+  ['Bug bite care', 'First Aid', 'insect bites mosquito itch sting'],
+  ['Cough comfort', 'Cough & Cold Care', 'cough cold honey throat syrup'],
+  ['Clogged drains', 'Home Maintenance', 'blocked sink drain clog plumbing'],
+  ['Mouse deterrents', 'Pest Prevention', 'mice mouse repel rodent'],
+  ['Spider deterrents', 'Pest Prevention', 'spiders spider repel pest'],
 ];
 
 const dishCleanerRecipe: StarterRecipe = {

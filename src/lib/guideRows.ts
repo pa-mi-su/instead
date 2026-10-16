@@ -63,6 +63,10 @@ const guideCategories: readonly Guide['category'][] = [
   'Cleaning',
   'Home Maintenance',
   'Household Services',
+  'Skin Care',
+  'First Aid',
+  'Cough & Cold Care',
+  'Pest Prevention',
 ];
 const answerTones: readonly Guide['answerTone'][] = ['yes', 'depends', 'no'];
 const difficulties: readonly Guide['difficulty'][] = [

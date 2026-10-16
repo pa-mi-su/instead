@@ -4,6 +4,7 @@ import { ProductComments } from '../components/ProductComments';
 import { DetailSection } from '../components/DetailSection';
 import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';
+import { universalSafetyNotices } from '../safetyNotices';
 
 export function GuideDetailScreen({
   guide,
@@ -70,6 +71,16 @@ export function GuideDetailScreen({
             <Text style={styles.answerIcon}>{guide.icon}</Text>
           </View>
           <Text style={styles.answerText}>{guide.answer}</Text>
+        </View>
+
+        <View style={styles.safetyCard}>
+          <Text style={styles.safetyLabel}>UNIVERSAL SAFETY</Text>
+          {universalSafetyNotices.map(notice => (
+            <View key={notice.title} style={styles.safetyNotice}>
+              <Text style={styles.optionName}>{notice.title}</Text>
+              <Text style={styles.safetyText}>{notice.body}</Text>
+            </View>
+          ))}
         </View>
 
         {guide.recipes?.length ? (

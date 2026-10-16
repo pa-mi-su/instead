@@ -5,7 +5,14 @@ create table public.community_products (id text primary key);
 insert into public.community_products values
  ('natural-dish-cleaner'), ('natural-toothpaste'), ('natural-shampoo'),
  ('natural-body-soap'), ('natural-weed-killer'), ('natural-deodorant'),
- ('natural-glass-cleaner'), ('natural-laundry-care'), ('natural-surface-cleaner');
+ ('natural-glass-cleaner'), ('natural-laundry-care'), ('natural-surface-cleaner'),
+ ('natural-skin-care'),
+ ('natural-sunburn-care'),
+ ('natural-bug-bite-care'),
+ ('natural-cough-comfort'),
+ ('natural-clogged-drains'),
+ ('natural-mouse-deterrents'),
+ ('natural-spider-deterrents');
 create table public.community_profiles (
  user_id uuid primary key references auth.users on delete cascade,
  nickname text not null check (char_length(btrim(nickname)) between 2 and 32)

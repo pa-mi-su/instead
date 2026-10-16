@@ -2,7 +2,11 @@ export type GuideCategory =
   | 'Personal Care'
   | 'Cleaning'
   | 'Home Maintenance'
-  | 'Household Services';
+  | 'Household Services'
+  | 'Skin Care'
+  | 'First Aid'
+  | 'Cough & Cold Care'
+  | 'Pest Prevention';
 
 export type AnswerTone = 'yes' | 'depends' | 'no';
 export type Difficulty = 'Easy' | 'Moderate' | 'Advanced';

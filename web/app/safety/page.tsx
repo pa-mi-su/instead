@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { universalSafetyNotices } from "../../../src/safetyNotices";
 import Link from "next/link";
 import {
   LegalPage,
@@ -28,6 +29,12 @@ export default function SafetyPage() {
           emergency service or qualified professional.
         </p>
       </PolicyCallout>
+
+      {universalSafetyNotices.map(notice => (
+        <PolicyCallout key={notice.title} tone="orange" title={notice.title}>
+          <p>{notice.body}</p>
+        </PolicyCallout>
+      ))}
 
       <PolicySection title="A reference, not professional advice">
         <p>
