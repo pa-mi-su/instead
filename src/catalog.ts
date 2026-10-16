@@ -227,6 +227,31 @@ const twoStepHairRecipe: StarterRecipe = {
     'Owner-supplied, untested method. Baking soda is alkaline and diluted vinegar is acidic; either can irritate, and alkaline washing may increase hair friction and damage. A vinegar rinse does not establish that prior damage is reversed or that the routine is pH-balanced. No safe frequency has been established: once or twice weekly is not a verified safe limit. This is not a replacement for a formulated shampoo and conditioner. Avoid on children, irritated or broken scalp, or dyed, chemically treated, or damaged hair. Stop with irritation, dryness, tangling, or breakage and seek professional advice. Vinegar odor may linger; disappearance is not guaranteed.',
 };
 
+const deodorantRecipe: StarterRecipe = {
+  name: 'Three-Ingredient Coconut Deodorant',
+  ingredients: [
+    '3 tablespoons coconut oil — softened, not fully melted',
+    '2 tablespoons baking soda',
+    '2 tablespoons arrowroot powder or cornstarch',
+  ],
+  equipment: [
+    'Small, clean, dry bowl',
+    'Fork',
+    'Clean, dry jar with a lid',
+    'Clean, dry scoop',
+  ],
+  instructions: [
+    'Mash the softened coconut oil, baking soda, and arrowroot powder or cornstarch together with a fork until evenly blended into a smooth paste.',
+    'Transfer to a clean, dry jar and label with the ingredients and preparation date.',
+    'The submitted method uses a pea-sized amount spread gently onto clean, dry underarm skin. This amount has not been independently evaluated for this formula. Use a clean, dry scoop or clean, dry finger; avoid dipping wet or soiled fingers into the jar.',
+    'Do not apply to broken, irritated, or freshly shaved skin. Stop immediately if burning, redness, itching, or rash occurs; wash off gently. Seek medical advice if symptoms persist or are severe.',
+  ],
+  storage:
+    'Keep covered, cool, and dry, away from children and pets. Coconut oil softens in warmth; texture may change and the mixture may separate. Keep water out of the jar. No tested shelf life has been established for this exact formula.',
+  cautions:
+    'Owner-supplied, untested deodorant formula. Baking soda is alkaline and can cause underarm irritation, especially on sensitive skin; a small-area trial does not rule out a later reaction. This is not an antiperspirant and does not stop sweating. Odor and moisture-control results vary and are not guaranteed. Coconut oil may leave marks on clothing. If irritation occurs, discontinue rather than switching immediately to another homemade formula; magnesium-based alternatives are not automatically non-irritating.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -243,6 +268,8 @@ export const productCatalog: Guide[] = topics.map(
         ? 'Vinegar and dish soap for compatible surfaces'
         : title === 'Shampoo'
         ? 'Two owner-supplied hair-washing methods'
+        : title === 'Deodorant'
+        ? 'Three-ingredient coconut deodorant'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -270,6 +297,8 @@ export const productCatalog: Guide[] = topics.map(
         ? [surfaceCleanerRecipe]
         : title === 'Shampoo'
         ? [shampooRecipe, twoStepHairRecipe]
+        : title === 'Deodorant'
+        ? [deodorantRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
