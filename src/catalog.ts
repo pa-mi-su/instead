@@ -402,24 +402,19 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   updatedAt: '',
 }));
 
-// These supplied formulas are preserved above, but are not published as instructions.
-// Releasing them requires documented qualified review, not simply removing a caution.
+// Keep supplied recipes visible with prominent, topic-specific safety context.
 export const productCatalog: Guide[] = draftCatalog.map(guide => {
   if (guide.category === 'Personal Care')
     return {
       ...guide,
-      recipes: [],
-      prompt: 'Personal-care content requires qualified review',
       reviewNotice:
-        'Homemade oral, scalp, and skin formulas are withheld until qualified review of ingredient grades, concentrations, compatibility, and preservation. Use a formulated product appropriate for you and seek professional advice for health concerns.',
+        'Owner-supplied, untested formulas. Qualified review of ingredient grades, concentrations, compatibility, and preservation has not been completed. These recipes are not medical or dental advice. Read each recipe’s cautions and seek appropriate professional advice before use.',
     };
   if (guide.id === 'natural-weed-killer')
     return {
       ...guide,
-      recipes: guide.recipes?.filter(recipe => recipe !== weedControlRecipe),
-      prompt: 'Salt-free weed-control information',
       reviewNotice:
-        'The salt-based formula is withheld because of soil and runoff concerns. Hand-pulling or site-appropriate professional advice avoids introducing this mixture into the environment.',
+        'Vinegar mixtures can damage nearby plants. Salt can persist in soil and harm plants through runoff. Read the site restrictions and cautions before considering either formula; hand-pulling avoids introducing these mixtures into the environment.',
     };
   return guide;
 });

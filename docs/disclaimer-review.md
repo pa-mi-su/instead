@@ -14,7 +14,7 @@ Implemented October 16, 2026; policy version `2026-10-16.2`.
 
 The owner should have qualified legal counsel review the operating entity/contact details, applicable jurisdictions, terms assent and liability language, age/children provisions, privacy obligations, and the account-linked acceptance record and retention. This implementation does not guarantee enforceability, compliance, or protection from liability.
 
-Qualified health/formulation review is needed for health recipes and claims, doses, ingredient grades, stability, preservation, contraindications, and the moderation process. A disclaimer does not make unsafe instructions safe or substantiate health claims. Unreviewed personal-care recipes are held from the published catalog, and the salt-based weed recipe is held. No professional review has been represented.
+Qualified health/formulation review is needed for health recipes and claims, doses, ingredient grades, stability, preservation, contraindications, and the moderation process. A disclaimer does not make unsafe instructions safe or substantiate health claims. At the owner’s request, supplied personal-care recipes and the salt-based weed recipe are visible with prominent safety context and their existing detailed cautions. Qualified review remains incomplete. No professional review has been represented.
 
 Verify public policy/support URLs and support inbox delivery before store release. Native offline policies work independently of public hosting. Store declarations must match the app's health content, data use, and moderation behavior.
 
