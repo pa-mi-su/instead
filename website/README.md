@@ -1,6 +1,6 @@
 # INSTEAD public policy website
 
-Prepared for deployment after the remaining app work, as requested by the owner. This is the minimal public support/policy site, separate from the full recipe-directory web app under `web/`.
+AWS hosting created October 16, 2026 at the owner’s request; custom-domain activation is pending DNS certificate validation. This is the minimal public support/policy site, separate from the full recipe-directory web app under `web/`.
 
 Build with `npm run website:build`. Upload only `website/dist/`; never upload the repository, environment files, or Supabase credentials. The output is six plain HTML pages and one stylesheet, with no JavaScript, sign-in, cookies, analytics, or server runtime. Terms and Privacy come directly from `src/policies.ts`.
 
@@ -37,6 +37,26 @@ These are target URLs, not verified live pages yet. Do not submit them to the st
 6. Point Namecheap's apex ALIAS and www CNAME at the distribution domain, replacing only the parking/website redirect records. Preserve SES DKIM, email, and certificate-validation records.
 7. Verify HTTPS and HTTP-to-HTTPS redirects for both domains, policy text, deletion email link, mobile layout, and no-login accessibility. Verify inbox receipt with the owner. Then enter the URLs in App Store Connect and Google Play and update only the release attestations actually verified.
 
-AWS inventory checked October 16, 2026: the accessible account has Sanctuary and GoodBuy distributions, but no Instead distribution or certificate. No hosting resources or DNS records were changed during preparation.
+AWS inventory checked October 16, 2026: the accessible account has Sanctuary and GoodBuy distributions, but no Instead distribution or certificate. Hosting resources were subsequently created as documented below; Namecheap DNS has not been changed.
 
 References: [AWS private S3 origins](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html), [Google account-deletion requirements](https://support.google.com/googleplay/android-developer/answer/13327111).
+
+## Deployed AWS resources (October 16, 2026)
+
+- Bucket: `insteadtry-website-160885294528` (private, encrypted, versioned)
+- CloudFront distribution: `EMXS0LG36D5KE`
+- Distribution hostname: `d29y6t7h1opcjp.cloudfront.net`
+- Origin access control: `E10I4JGWB9FU9S`
+- Published routing function: `insteadtry-policy-routes`
+- ACM certificate: `arn:aws:acm:us-east-1:160885294528:certificate/b3dce139-8dcf-4cbe-be1d-d03470704b55`
+
+The distribution uses its AWS hostname certificate while domain validation is pending. Once ACM is ISSUED, attach the certificate and both custom aliases before replacing Namecheap website records. Do not point the domain to the distribution before attaching the aliases and certificate.
+
+Namecheap certificate-validation CNAME records (Automatic TTL):
+
+| Host | Value |
+| --- | --- |
+| `_274fe85a251f333b3453bc3ff9eb7c72` | `_707950a19bfb103f8bf9118b715fc4fb.wzccmgtwzk.acm-validations.aws` |
+| `_b9e9121c0c305e59f0463f0916edd7fb.www` | `_7cf91a69ee650f8677dbfbdf72416e22.wzccmgtwzk.acm-validations.aws` |
+
+Leave these validation records in place for automatic certificate renewal. Public policy and support readiness attestations remain incomplete until custom-domain reachability and inbox receipt are verified.
