@@ -1,6 +1,6 @@
 # INSTEAD public policy website
 
-AWS hosting created October 16, 2026 at the owner’s request; custom-domain activation is pending DNS certificate validation. This is the minimal public support/policy site, separate from the full recipe-directory web app under `web/`.
+AWS hosting created October 16, 2026 at the owner’s request; the certificate is issued and both custom aliases are attached; final Namecheap website DNS cutover is pending. This is the minimal public support/policy site, separate from the full recipe-directory web app under `web/`.
 
 Build with `npm run website:build`. Upload only `website/dist/`; never upload the repository, environment files, or Supabase credentials. The output is six plain HTML pages and one stylesheet, with no JavaScript, sign-in, cookies, analytics, or server runtime. Terms and Privacy come directly from `src/policies.ts`.
 
@@ -50,7 +50,7 @@ References: [AWS private S3 origins](https://docs.aws.amazon.com/AmazonCloudFron
 - Published routing function: `insteadtry-policy-routes`
 - ACM certificate: `arn:aws:acm:us-east-1:160885294528:certificate/b3dce139-8dcf-4cbe-be1d-d03470704b55`
 
-The distribution uses its AWS hostname certificate while domain validation is pending. Once ACM is ISSUED, attach the certificate and both custom aliases before replacing Namecheap website records. Do not point the domain to the distribution before attaching the aliases and certificate.
+ACM is ISSUED. CloudFront is configured with the certificate, TLS 1.2 minimum, and aliases insteadtry.com and www.insteadtry.com. The custom-domain configuration must finish deploying before DNS cutover. Replace only the parking/website redirect records: apex ALIAS host @ and www CNAME both point to d29y6t7h1opcjp.cloudfront.net. Preserve all validation and mail records.
 
 Namecheap certificate-validation CNAME records (Automatic TTL):
 
@@ -60,3 +60,5 @@ Namecheap certificate-validation CNAME records (Automatic TTL):
 | `_b9e9121c0c305e59f0463f0916edd7fb.www` | `_7cf91a69ee650f8677dbfbdf72416e22.wzccmgtwzk.acm-validations.aws` |
 
 Leave these validation records in place for automatic certificate renewal. Public policy and support readiness attestations remain incomplete until custom-domain reachability and inbox receipt are verified.
+
+CloudFront-hostname validation: all six routes returned HTTP 200 over HTTPS, including trailing-slash policy/deletion URLs. Security headers include HSTS. Missing paths return an error rather than the home page. Final custom-domain and inbox checks remain pending.
