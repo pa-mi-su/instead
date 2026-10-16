@@ -53,6 +53,36 @@ const dishScrubRecipe: StarterRecipe = {
     'A cleaning aid, not a sanitizer or disinfectant, and not a substitute for detergent when it is needed to remove grease. For hand-washing only. Abrasives and acids can damage finishes; check manufacturer guidance before using on nonstick coatings, aluminum, cast iron, decorated dishes, or other sensitive surfaces. Keep vinegar off natural-stone counters. Never combine vinegar with bleach or other cleaners. Avoid eyes; keep supplies away from children and pets.',
 };
 
+const toothpasteRecipe: StarterRecipe = {
+  name: 'Zero-Sweetener Coconut Toothpaste',
+  ingredients: [
+    '4 tablespoons coconut oil',
+    '2½ tablespoons calcium carbonate',
+    '½ tablespoon baking soda',
+    '10 drops sweet orange essential oil',
+    '5 drops peppermint essential oil',
+    '5 drops vanilla extract (check the label for added sweeteners)',
+  ],
+  equipment: [
+    'Small glass mixing bowl',
+    'Silicone spatula or sturdy spoon',
+    'Clean, airtight glass jar',
+    'Clean, dry scoop',
+  ],
+  instructions: [
+    'Soften the coconut oil to a soft-butter consistency without fully melting it. Warm the closed coconut-oil container in warm water, then measure into the bowl. Keep water out of the mixture.',
+    'In the dry mixing bowl, stir the calcium carbonate and baking soda together, breaking up lumps and avoiding breathing in the powders.',
+    'Add the softened coconut oil. Mash and stir until the mixture forms a uniform paste.',
+    'The submitted formula includes sweet orange essential oil, peppermint essential oil, and vanilla extract. Before adding them, have a dentist or qualified formulator review the specific products and concentrations for oral use; aromatherapy oils are not automatically suitable for the mouth.',
+    'Stir for about 60 seconds to distribute the ingredients. Mixing alone does not verify safety or guarantee that flavorings stay evenly dispersed.',
+    'Transfer to the clean jar, close the lid, and label with ingredients and preparation date.',
+  ],
+  storage:
+    'Keep the jar closed and use a clean, dry scoop rather than dipping a wet toothbrush. Coconut oil softens or melts around 76°F (24°C), depending on the product; texture can change with room temperature. Cooling or stirring does not preserve or sanitize the paste. Vanilla extract can introduce water or alcohol. No safe shelf life has been established for this exact formula.',
+  cautions:
+    'Owner-supplied, untested formula for reference, not a dentist-approved daily brushing recommendation. It contains no fluoride and is not an equivalent replacement for fluoride toothpaste for cavity prevention. Abrasiveness depends on the powder grade, particle size, and finished formula and has not been measured here. Essential oils can irritate the mouth and be harmful if swallowed; do not swallow or give this mixture to children. Have a dentist review it before oral use, especially with sensitivity, exposed roots, or dental work. Stop if irritation occurs. No brushing dose is recommended for this untested formula.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -76,9 +106,15 @@ export const productCatalog: Guide[] = topics.map(
     avoid: [],
     options: [],
     recipes:
-      title === 'Dish cleaner' ? [dishCleanerRecipe, dishScrubRecipe] : [],
+      title === 'Dish cleaner'
+        ? [dishCleanerRecipe, dishScrubRecipe]
+        : title === 'Toothpaste'
+        ? [toothpasteRecipe]
+        : [],
     safetyNote:
-      'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
+      title === 'Toothpaste'
+        ? 'Fluoride-free and untested. Review this formula with a dentist before oral use. Natural ingredients do not establish dental safety or cavity protection.'
+        : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
     professionalHelp: [],
     evidence: 'Limited',
     evidenceNote:
