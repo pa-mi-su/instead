@@ -282,6 +282,32 @@ const tallowDeodorantRecipe: StarterRecipe = {
     'Owner-supplied, untested deodorant formula containing animal-derived tallow. Baking soda and essential oil may cause irritation or allergy. Stop immediately and gently wash off if burning, itching, redness, or rash occurs; seek medical advice if symptoms persist or are severe. This is not an antiperspirant and does not prevent sweating. Odor-control, wetness absorption, and antibacterial effects have not been verified for the finished blend. Oils and fats may mark clothing. Do not ingest.',
 };
 
+const weedControlRecipe: StarterRecipe = {
+  name: 'Vinegar, Salt & Dish Soap Weed Spray',
+  ingredients: [
+    '1 US gallon plain household white vinegar (5% acidity only)',
+    '1 cup table salt',
+    '1 tablespoon plain liquid dishwashing detergent — without bleach, not castile soap',
+  ],
+  equipment: [
+    'Dedicated, clearly labeled chemical-compatible container or garden sprayer larger than 1 gallon',
+    'Measuring cup and tablespoon',
+    'Gloves and eye protection',
+  ],
+  instructions: [
+    'This is a submitted formula for reference, not a recommended general garden treatment. Consider hand-pulling weeds or using a labeled product suitable for the site instead; salt can harm soil and nearby plants through runoff.',
+    'If preparing the submitted formula, use only 5% household vinegar and a dishwashing detergent whose manufacturer permits mixing with vinegar. Do not substitute 10% or 20% horticultural vinegar or add other cleaners.',
+    'Put the salt into the dedicated container, add the vinegar, close, and gently mix until the salt dissolves. Leave room in the container; a full gallon bottle is too small for a gallon of vinegar plus the other ingredients.',
+    'Add the dishwashing liquid last and stir or roll gently to limit foam. Label the container with all ingredients and preparation date.',
+    'Do not apply to lawns, garden beds, edible crops, tree-root zones, soil intended for planting, or anywhere runoff can reach plants, drains, or waterways. Cracks and gravel are not isolated from surrounding soil, so they are not automatically suitable.',
+    'Where site suitability has been established, avoid wind, rain, overspray, and runoff and target only unwanted foliage. Do not soak soil or automatically reapply after rain. Household vinegar may scorch leaves without killing roots; regrowth is possible.',
+  ],
+  storage:
+    'Keep in a closed, compatible, clearly labeled container away from children, pets, food, and feed. Never use a beverage container or reuse the sprayer for edible plants. No tested shelf life has been established for this mixture. Do not pour leftovers into drains or onto soil; follow local household-chemical disposal guidance.',
+  cautions:
+    'Owner-supplied, untested formula. Non-selective: it can damage desirable plants, but complete weed kill is not guaranteed. Salt can accumulate or move with water and harm soil, roots, and waterways; duration depends on dose and site, so no permanent weed-free result is promised. Vinegar can damage paving, stone, metal, and finishes. Avoid skin, eyes, and breathing spray; use ventilation while mixing. Keep people and pets away from application and prevent contact with treated vegetation. Never mix with bleach or other cleaners. Concentrated horticultural vinegar can cause serious skin and eye injury and is excluded from this recipe. Natural does not mean safe for people, pets, or the environment.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -300,6 +326,8 @@ export const productCatalog: Guide[] = topics.map(
         ? 'Two owner-supplied hair-washing methods'
         : title === 'Deodorant'
         ? 'Two cream deodorant formulas'
+        : title === 'Weed killer'
+        ? 'Vinegar-and-salt formula with site restrictions'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -329,6 +357,8 @@ export const productCatalog: Guide[] = topics.map(
         ? [shampooRecipe, twoStepHairRecipe]
         : title === 'Deodorant'
         ? [deodorantRecipe, tallowDeodorantRecipe]
+        : title === 'Weed killer'
+        ? [weedControlRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
