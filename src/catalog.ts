@@ -158,6 +158,31 @@ const laundryPowderRecipe: StarterRecipe = {
     'Owner-supplied, untested booster formula; not a complete detergent or disinfectant. Epsom salt adds magnesium, a contributor to water hardness, and is not established here as a fabric softener. Washing soda is alkaline and can irritate skin and eyes; handle according to its label. Avoid use on wool, silk, or other alkali-sensitive fabrics unless their care instructions allow it. Essential oils can cause irritation or leave residue. Machine compatibility, cleaning performance, and the suggested doses have not been verified. Do not combine with other cleaners beyond what their labels expressly permit.',
 };
 
+const surfaceCleanerRecipe: StarterRecipe = {
+  name: 'Vinegar & Dish Soap Surface Cleaner',
+  ingredients: [
+    '1 cup plain white vinegar (5% acidity)',
+    '1 cup distilled water',
+    '1 teaspoon plain dishwashing liquid, without bleach — not castile soap',
+  ],
+  equipment: [
+    'Clean glass spray bottle, at least 20 ounces, with room to mix',
+    'Soft cleaning cloth',
+    'Clean water for rinsing',
+  ],
+  instructions: [
+    'Check the dishwashing liquid label: use only a product whose manufacturer permits mixing with vinegar. Do not use bleach-containing, disinfecting, or otherwise incompatible products.',
+    'Pour the distilled water and vinegar into a clean bottle that has not held other cleaners. Add the dishwashing liquid, close, and roll or shake gently to combine without excessive foam.',
+    'Check the surface manufacturer’s care instructions and spot-test an inconspicuous area. Use only where acidic cleaners are permitted.',
+    'Lightly dampen a soft cloth with the cleaner and wipe the compatible surface, keeping liquid away from joints, grout, electrical parts, and surrounding sensitive materials.',
+    'Remove soap residue with a clean, water-dampened cloth and dry. Rinse food-contact surfaces thoroughly with clean water. For glass, use sparingly and wipe dry; soap can leave streaks.',
+  ],
+  storage:
+    'Label with ingredients and mixing date. Keep closed, upright, and out of reach of children and pets. Do not use a beverage container. No tested shelf life has been established for this mixture.',
+  cautions:
+    'Never mix with bleach, ammonia, disinfectants, or other cleaners. Do not heat. Avoid eyes and breathing spray; use ventilation. Exclude natural-stone and engineered-stone counters, including marble, granite, soapstone, and quartz, as well as wood floors or furniture, grout, screens, and electronics. Acid can damage stone, sealers, finishes, grout, and coatings; the mechanism and susceptibility vary by material. Fiberglass, glazed ceramic, porcelain, laminate, stainless steel, fixtures, stovetops, and microwave interiors are candidates only when their manufacturers allow acidic cleaners; no blanket compatibility is promised. Protect appliance openings and controls and never spray inside a powered appliance. This cleaner is not a sanitizer or disinfectant.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -170,6 +195,8 @@ export const productCatalog: Guide[] = topics.map(
         ? 'Two options for compatible window glass'
         : title === 'Laundry care'
         ? 'Mineral laundry booster formula'
+        : title === 'Surface cleaner'
+        ? 'Vinegar and dish soap for compatible surfaces'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -193,6 +220,8 @@ export const productCatalog: Guide[] = topics.map(
         ? [glassCleanerRecipe, vinegarGlassRecipe]
         : title === 'Laundry care'
         ? [laundryPowderRecipe]
+        : title === 'Surface cleaner'
+        ? [surfaceCleanerRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
