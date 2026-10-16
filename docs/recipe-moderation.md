@@ -18,12 +18,8 @@ select id, product_id, title, ingredients, instructions, storage_notes,
 from public.community_recipes where status = 'pending'
 order by created_at;
 -- Use the Storage dashboard to inspect the listed private recipe-photos files.
--- After reviewing the text AND every photo, publish an individual submission:
--- update public.community_recipes set status='approved', moderation_note=''
--- where id='<recipe UUID>' and status='pending';
--- Or reject with a private explanation visible only to its owner:
--- update public.community_recipes set status='rejected', moderation_note='Reason'
--- where id='<recipe UUID>' and status='pending';
+-- Approve or reject through community_moderate with documented reviewer metadata.
+-- See docs/moderation-runbook.md; direct approval without a review record is rejected.
 ```
 
 For reports, join `recipe_reports` to `community_recipes` in the owner dashboard. To hide an approved recipe, change its status to rejected; public reads and new photo links then stop. Authors can withdraw their recipes and the client attempts to remove photo files. Withdrawn text remains for moderation until an administrator purges it. On an account-deletion request, delete its photo files through the Storage API first, then delete the Auth account (recipe rows/votes/reports cascade). A missed photo cleanup may leave private orphan files; the public policy does not expose those files. Schedule/manual orphan cleanup is an operations responsibility for now.
@@ -33,3 +29,7 @@ For reports, join `recipe_reports` to `community_recipes` in the owner dashboard
 Both native and web provide title, ingredients with quantities, instructions, storage/shelf life, cautions, optional credit, and optional photos with previews/removal. Text limits and photo counts are checked in clients and SQL/bucket policy. Browser photos are re-encoded and resized before upload; native photos use the system library picker with bounded dimensions and no extra EXIF metadata requested. Users should still avoid faces, addresses and private information in image pixels. Native picker requires rebuilding the app; iOS Pods are installed and the photo-library usage description is configured.
 
 `supabase/recipes.test.sql` runs only in a disposable local database. It tests moderation visibility, private-photo RLS, foreign ownership, product separation, vote changes and idempotency, withdrawal and submission rate limits. Client tests cover field/photo limits, submission state, and cleanup after failure. Real-device photo selection and a real signed-in user upload still require an end-to-end device/browser check.
+
+## Current safeguards
+
+`community-safeguards.sql` supersedes the original approval procedure. All comments and recipes require moderation. Health and personal-care approvals require qualifications and sources in the review record; this records review, not a guarantee of genuine credentials. New photo folders are opaque and privately mapped to their owner. Legacy account-ID photo paths must be migrated before publication. Contributors can block authors and cannot vote on their own content. Account deletion removes legacy and opaque photo folders before Auth deletion through the deployed `delete-account` function; failed requests remain pending for retry or operator action.

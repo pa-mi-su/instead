@@ -83,6 +83,12 @@ export function GuideDetailScreen({
           ))}
         </View>
 
+        {!!guide.reviewNotice && (
+          <View style={styles.safetyCard}>
+            <Text style={styles.safetyLabel}>CONTENT REVIEW</Text>
+            <Text style={styles.safetyText}>{guide.reviewNotice}</Text>
+          </View>
+        )}
         {guide.recipes?.length ? (
           <DetailSection number="01" title="RECIPES">
             <View style={styles.optionList}>

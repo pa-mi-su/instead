@@ -338,68 +338,88 @@ const saltFreeWeedRecipe: StarterRecipe = {
     'Owner-supplied, untested contact-treatment formula. Salt-free does not mean harmless to soil, plants, people, pets, or the environment. Vinegar and dishwashing detergent can damage desirable foliage and affect nearby soil or organisms; avoid broad application and runoff. Non-selective: keep off lawns, garden plants, edible crops, and tree-root zones. It may damage stone, paving, metal, or finishes. Avoid eyes, skin contact, and breathing spray. Keep people and pets away during application and prevent contact with treated vegetation. Never mix with bleach or other cleaners.',
 };
 
-export const productCatalog: Guide[] = topics.map(
-  ([title, category, keywords]) => ({
-    id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
-    title,
-    category,
-    prompt:
-      title === 'Dish cleaner'
-        ? 'Two options for hand-washing dishes'
-        : title === 'Glass cleaner'
-        ? 'Two options for compatible window glass'
-        : title === 'Laundry care'
-        ? 'Mineral laundry booster formula'
-        : title === 'Surface cleaner'
-        ? 'Vinegar and dish soap for compatible surfaces'
-        : title === 'Shampoo'
-        ? 'Two owner-supplied hair-washing methods'
-        : title === 'Deodorant'
-        ? 'Two cream deodorant formulas'
-        : title === 'Weed killer'
-        ? 'Two vinegar-based formulas with site restrictions'
-        : 'Explore natural alternatives',
-    icon: '✳',
-    answer: 'A simpler alternative starts here.',
-    answerTone: 'depends',
-    summary: `${title}. ${keywords}`,
-    time: '',
-    estimatedCost: '',
-    estimatedSavings: '',
-    difficulty: 'Easy',
-    supplies: [],
-    essentials: [],
-    skipNote: '',
-    avoid: [],
-    options: [],
-    recipes:
-      title === 'Dish cleaner'
-        ? [dishCleanerRecipe, dishScrubRecipe]
-        : title === 'Toothpaste'
-        ? [toothpasteRecipe]
-        : title === 'Glass cleaner'
-        ? [glassCleanerRecipe, vinegarGlassRecipe]
-        : title === 'Laundry care'
-        ? [laundryPowderRecipe]
-        : title === 'Surface cleaner'
-        ? [surfaceCleanerRecipe]
-        : title === 'Shampoo'
-        ? [shampooRecipe, twoStepHairRecipe]
-        : title === 'Deodorant'
-        ? [deodorantRecipe, tallowDeodorantRecipe]
-        : title === 'Weed killer'
-        ? [weedControlRecipe, saltFreeWeedRecipe]
-        : [],
-    safetyNote:
-      title === 'Toothpaste'
-        ? 'Fluoride-free and untested. Review this formula with a dentist before oral use. Natural ingredients do not establish dental safety or cavity protection.'
-        : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
-    professionalHelp: [],
-    evidence: 'Limited',
-    evidenceNote:
-      title === 'Dish cleaner'
-        ? 'Owner-supplied recipes. These exact methods have not been independently tested for effectiveness or compatibility; shelf life has not been established for the mixed cleaner.'
-        : 'Community votes do not establish safety or effectiveness.',
-    updatedAt: '',
-  }),
-);
+const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
+  id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
+  title,
+  category,
+  prompt:
+    title === 'Dish cleaner'
+      ? 'Two options for hand-washing dishes'
+      : title === 'Glass cleaner'
+      ? 'Two options for compatible window glass'
+      : title === 'Laundry care'
+      ? 'Mineral laundry booster formula'
+      : title === 'Surface cleaner'
+      ? 'Vinegar and dish soap for compatible surfaces'
+      : title === 'Shampoo'
+      ? 'Two owner-supplied hair-washing methods'
+      : title === 'Deodorant'
+      ? 'Two cream deodorant formulas'
+      : title === 'Weed killer'
+      ? 'Two vinegar-based formulas with site restrictions'
+      : 'Explore natural alternatives',
+  icon: '✳',
+  answer: 'A simpler alternative starts here.',
+  answerTone: 'depends',
+  summary: `${title}. ${keywords}`,
+  time: '',
+  estimatedCost: '',
+  estimatedSavings: '',
+  difficulty: 'Easy',
+  supplies: [],
+  essentials: [],
+  skipNote: '',
+  avoid: [],
+  options: [],
+  recipes:
+    title === 'Dish cleaner'
+      ? [dishCleanerRecipe, dishScrubRecipe]
+      : title === 'Toothpaste'
+      ? [toothpasteRecipe]
+      : title === 'Glass cleaner'
+      ? [glassCleanerRecipe, vinegarGlassRecipe]
+      : title === 'Laundry care'
+      ? [laundryPowderRecipe]
+      : title === 'Surface cleaner'
+      ? [surfaceCleanerRecipe]
+      : title === 'Shampoo'
+      ? [shampooRecipe, twoStepHairRecipe]
+      : title === 'Deodorant'
+      ? [deodorantRecipe, tallowDeodorantRecipe]
+      : title === 'Weed killer'
+      ? [weedControlRecipe, saltFreeWeedRecipe]
+      : [],
+  safetyNote:
+    title === 'Toothpaste'
+      ? 'Fluoride-free and untested. Review this formula with a dentist before oral use. Natural ingredients do not establish dental safety or cavity protection.'
+      : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
+  professionalHelp: [],
+  evidence: 'Limited',
+  evidenceNote:
+    title === 'Dish cleaner'
+      ? 'Owner-supplied recipes. These exact methods have not been independently tested for effectiveness or compatibility; shelf life has not been established for the mixed cleaner.'
+      : 'Community votes do not establish safety or effectiveness.',
+  updatedAt: '',
+}));
+
+// These supplied formulas are preserved above, but are not published as instructions.
+// Releasing them requires documented qualified review, not simply removing a caution.
+export const productCatalog: Guide[] = draftCatalog.map(guide => {
+  if (guide.category === 'Personal Care')
+    return {
+      ...guide,
+      recipes: [],
+      prompt: 'Personal-care content requires qualified review',
+      reviewNotice:
+        'Homemade oral, scalp, and skin formulas are withheld until qualified review of ingredient grades, concentrations, compatibility, and preservation. Use a formulated product appropriate for you and seek professional advice for health concerns.',
+    };
+  if (guide.id === 'natural-weed-killer')
+    return {
+      ...guide,
+      recipes: guide.recipes?.filter(recipe => recipe !== weedControlRecipe),
+      prompt: 'Salt-free weed-control information',
+      reviewNotice:
+        'The salt-based formula is withheld because of soil and runoff concerns. Hand-pulling or site-appropriate professional advice avoids introducing this mixture into the environment.',
+    };
+  return guide;
+});

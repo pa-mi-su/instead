@@ -7,7 +7,7 @@ import type { Recipe, RecipePhoto } from '../../src/lib/recipes';
 import { reportReasons } from '../../src/lib/community';
 import { communityClient } from '../lib/community-client';
 
-export function ProductRecipes({ productId, userId, canContribute }: { productId: string; userId?: string; canContribute: boolean }) {
+export function ProductRecipes({ productId, userId, canContribute, canManage, onBlock }: { productId: string; userId?: string; canContribute: boolean; canManage: boolean; onBlock: (id: string) => unknown }) {
   const r = useRecipes(communityClient, productId, userId);
   const [open, setOpen] = useState(false);
   const [selecting, setSelecting] = useState(false);
@@ -49,11 +49,12 @@ export function ProductRecipes({ productId, userId, canContribute }: { productId
       <dl>{[['Ingredients and quantities', recipe.ingredients], ['Instructions', recipe.instructions], ['Storage and shelf life', recipe.storage_notes], ['Cautions', recipe.cautions], ...(recipe.source ? [['Source / credit', recipe.source]] : [])].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
       {!!recipe.moderation_note && <p>Review note: {recipe.moderation_note}</p>}
       {recipe.status === 'approved' && <><p>Score: {recipe.score} · {recipe.upvotes} upvotes · {recipe.downvotes} downvotes</p>
-        <button type="button" aria-pressed={recipe.my_vote === 1} disabled={r.busy || !canContribute} onClick={() => r.vote(recipe, 1)}>▲ Upvote</button>
-        <button type="button" aria-pressed={recipe.my_vote === -1} disabled={r.busy || !canContribute} onClick={() => r.vote(recipe, -1)}>▼ Downvote</button>
-        {canContribute && <button type="button" disabled={r.busy || recipe.reported} onClick={() => setReportId(reportId === recipe.id ? null : recipe.id)}>{recipe.reported ? 'Reported' : 'Report recipe'}</button>}
+        <button type="button" aria-pressed={recipe.my_vote === 1} disabled={r.busy || !canContribute || recipe.mine} onClick={() => r.vote(recipe, 1)}>▲ Upvote</button>
+        <button type="button" aria-pressed={recipe.my_vote === -1} disabled={r.busy || !canContribute || recipe.mine} onClick={() => r.vote(recipe, -1)}>▼ Downvote</button>
+        {canManage && <button type="button" disabled={r.busy || recipe.reported} onClick={() => setReportId(reportId === recipe.id ? null : recipe.id)}>{recipe.reported ? 'Reported' : 'Report recipe'}</button>}
         {reportId === recipe.id && !recipe.reported && <div>{reportReasons.map(reason => <button type="button" key={reason} disabled={r.busy} onClick={() => r.report(recipe, reason)}>{reason}</button>)}<button type="button" onClick={() => setReportId(null)}>Cancel report</button></div>}
       </>}
+      {!recipe.mine && recipe.status === "approved" && canManage && <button type="button" disabled={r.busy} onClick={() => onBlock(recipe.id)}>Block contributor</button>}
       {recipe.mine && <button type="button" disabled={r.busy} onClick={() => setRemoveId(recipe.id)}>Remove my recipe</button>}
       {removeId === recipe.id && <div><p>Remove this recipe and its photos from the directory?</p><button type="button" disabled={r.busy} onClick={() => r.withdraw(recipe)}>Confirm removal</button><button type="button" onClick={() => setRemoveId(null)}>Cancel</button></div>}
     </article>;

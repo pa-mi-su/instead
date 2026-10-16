@@ -24,7 +24,9 @@
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "web": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
-    "web:test": "npm --prefix web test"
+    "web:test": "npm --prefix web test",
+    "safety:test": "node --test scripts/test-delete-account.mjs",
+    "release:check": "node scripts/check-release-readiness.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",

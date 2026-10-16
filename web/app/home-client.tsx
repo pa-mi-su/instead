@@ -410,6 +410,7 @@ function GuideDetail({
             </div>
           ))}
         </aside>
+        {guide.reviewNotice && <aside className="safety-card"><small>CONTENT REVIEW</small><p>{guide.reviewNotice}</p></aside>}
         {guide.recipes?.length ? (
           <DetailSection number="01" title="RECIPES">
             <div className="option-list">

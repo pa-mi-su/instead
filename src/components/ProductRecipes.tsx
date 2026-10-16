@@ -20,10 +20,14 @@ export function ProductRecipes({
   productId,
   userId,
   canContribute,
+  canManage,
+  onBlock,
 }: {
   productId: string;
   userId?: string;
   canContribute: boolean;
+  canManage: boolean;
+  onBlock: (id: string) => unknown;
 }) {
   const r = useRecipes(supabase, productId, userId);
   const [open, setOpen] = useState(false);
@@ -136,16 +140,16 @@ export function ProductRecipes({
             {button(
               '▲ Upvote',
               () => r.vote(recipe, 1),
-              r.busy || !canContribute,
+              r.busy || !canContribute || recipe.mine,
               recipe.my_vote === 1,
             )}
             {button(
               '▼ Downvote',
               () => r.vote(recipe, -1),
-              r.busy || !canContribute,
+              r.busy || !canContribute || recipe.mine,
               recipe.my_vote === -1,
             )}
-            {canContribute &&
+            {canManage &&
               button(
                 recipe.reported ? 'Reported' : 'Report recipe',
                 () => setReportId(reportId === recipe.id ? null : recipe.id),
@@ -163,6 +167,10 @@ export function ProductRecipes({
             )}
           </>
         )}
+        {!recipe.mine &&
+          recipe.status === 'approved' &&
+          canManage &&
+          button('Block contributor', () => onBlock(recipe.id))}
         {recipe.mine &&
           button('Remove my recipe', () => setRemoveId(recipe.id))}
         {removeId === recipe.id && (

@@ -56,4 +56,5 @@ export type Guide = {
   updatedAt: string;
   featured?: boolean;
   recipes?: StarterRecipe[];
+  reviewNotice?: string;
 };

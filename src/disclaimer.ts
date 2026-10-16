@@ -5,7 +5,7 @@ export const acknowledgementText =
 export const disclaimerSections = [
   {
     title: 'Information, not medical advice',
-    body: 'INSTEAD is an educational recipe directory, not a healthcare provider. Content is not medical or dental advice, diagnosis, or treatment, and using the app does not create a clinician–patient relationship. Ask a qualified professional before making health decisions. Do not delay care or change prescribed treatment because of a recipe.',
+    body: 'INSTEAD is an educational recipe directory, not a healthcare provider or medical device. It does not diagnose, treat, cure, or prevent medical conditions. Content is not medical or dental advice, diagnosis, or treatment, and using the app does not create a clinician–patient relationship. Ask a qualified healthcare professional before making health decisions, especially during pregnancy, breastfeeding, for children, with existing conditions, or when taking medicines. Do not delay care or change prescribed treatment because of a recipe.',
   },
   {
     title: 'Natural does not mean safe',
@@ -38,3 +38,6 @@ export function hasCurrentAcknowledgement(value: string | null) {
     return false;
   }
 }
+
+export const communityRules =
+  'Share general experiences only. No individualized medical advice, cure claims, advice to stop prescribed treatment, unsafe substitutions, harassment, spam, or private information. Submit only text and photos you have rights to share. All submissions require moderation; votes are preferences, not safety evidence.';

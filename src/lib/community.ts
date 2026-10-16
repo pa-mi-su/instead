@@ -2,6 +2,9 @@ export type CommunitySession = {
   user: { id: string; email_confirmed_at?: string; is_anonymous?: boolean };
 };
 export type CommunityClient = {
+  functions?: {
+    invoke: (name: string) => Promise<{ data: unknown; error: unknown }>;
+  };
   auth: {
     getSession: () => Promise<{
       data: { session: CommunitySession | null };
@@ -36,6 +39,7 @@ export type CommunityComment = {
   upvoted: boolean;
   mine: boolean;
   reported: boolean;
+  moderation_status?: 'pending' | 'approved' | 'rejected';
 };
 export type ReportReason = 'Unsafe advice' | 'Spam or abuse' | 'Other';
 export const reportReasons: ReportReason[] = [
@@ -63,3 +67,14 @@ export async function communityRpc<T>(
   if (error) throw error;
   return data as T;
 }
+
+export type CommunityAccountState = {
+  policy_accepted: boolean;
+  suspended: boolean;
+  deletion_requested_at: string | null;
+};
+export type BlockedContributor = {
+  id: string;
+  label: string;
+  created_at: string;
+};

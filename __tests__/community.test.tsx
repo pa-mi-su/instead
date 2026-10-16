@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useCommunity } from '../src/hooks/useCommunity';
 import type { CommunityClient, CommunitySession } from '../src/lib/community';
 import { communityError } from '../src/lib/community';
@@ -22,12 +22,19 @@ function mockClient(session: CommunitySession | null = null) {
     }),
   };
   const rpc = jest.fn(async (name: string, _args: Record<string, unknown>) => ({
-    data:
-      name === 'community_list'
-        ? []
-        : name === 'community_profile'
-        ? 'Member'
-        : null,
+    data: (name === 'community_list'
+      ? []
+      : name === 'community_account_state'
+      ? [
+          {
+            policy_accepted: true,
+            suspended: false,
+            deletion_requested_at: null,
+          },
+        ]
+      : name === 'community_blocks_list'
+      ? []
+      : null) as unknown,
     error: null as unknown,
   }));
   const client = { auth, rpc } as unknown as CommunityClient;
@@ -94,7 +101,7 @@ test('preserves a draft on a failed write, clears it on success, and revokes con
   const hook = await renderHook(() =>
     useCommunity(m.client, 'natural-shampoo'),
   );
-  expect(hook.result.current.canContribute).toBe(true);
+  await waitFor(() => expect(hook.result.current.canContribute).toBe(true));
   await act(() => hook.result.current.setDraft('  My ingredient swap  '));
   m.rpc.mockImplementationOnce(async () => ({
     data: null,
@@ -145,4 +152,76 @@ test('does not send a vote request for an owned comment', async () => {
   );
   expect(m.rpc).not.toHaveBeenCalledWith('community_vote', expect.anything());
   expect(hook.result.current.notice).toMatch(/own comment/);
+});
+
+test('unaccepted account cannot post and acceptance uses the current server version', async () => {
+  const m = mockClient(member);
+  let accepted = false;
+  m.rpc.mockImplementation(async name => {
+    if (name === 'community_accept_policy') accepted = true;
+    return {
+      data:
+        name === 'community_account_state'
+          ? [
+              {
+                policy_accepted: accepted,
+                suspended: false,
+                deletion_requested_at: null,
+              },
+            ]
+          : [],
+      error: null,
+    };
+  });
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-glass-cleaner'),
+  );
+  await waitFor(() => expect(hook.result.current.accountReady).toBe(true));
+  expect(hook.result.current.canContribute).toBe(false);
+  await act(() => hook.result.current.setDraft('My general experience'));
+  await act(() => hook.result.current.post());
+  expect(m.rpc).not.toHaveBeenCalledWith('community_post', expect.anything());
+  await act(() => hook.result.current.acceptPolicy());
+  expect(m.rpc).toHaveBeenCalledWith('community_accept_policy', {
+    p_version: '2026-10-16.2',
+  });
+  expect(hook.result.current.canContribute).toBe(true);
+});
+test('suspended and deletion-requested accounts cannot contribute', async () => {
+  for (const state of [
+    { policy_accepted: true, suspended: true, deletion_requested_at: null },
+    {
+      policy_accepted: true,
+      suspended: false,
+      deletion_requested_at: '2026-10-16',
+    },
+  ]) {
+    const m = mockClient(member);
+    m.rpc.mockImplementation(async name => ({
+      data: name === 'community_account_state' ? [state] : [],
+      error: null,
+    }));
+    const hook = await renderHook(() =>
+      useCommunity(m.client, 'natural-glass-cleaner'),
+    );
+    await waitFor(() => expect(hook.result.current.accountReady).toBe(true));
+    expect(hook.result.current.canContribute).toBe(false);
+    expect(hook.result.current.canManage).toBe(false);
+    await hook.unmount();
+  }
+});
+test('blocking addresses content without exposing another account id and refreshes private blocks', async () => {
+  const m = mockClient(member);
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-glass-cleaner'),
+  );
+  await waitFor(() => expect(hook.result.current.accountReady).toBe(true));
+  await act(() => hook.result.current.block('recipe', 'content-id'));
+  expect(m.rpc).toHaveBeenCalledWith('community_block', {
+    p_kind: 'recipe',
+    p_content: 'content-id',
+  });
+  expect(hook.result.current.notice).toMatch(/blocked/);
+  await act(() => hook.result.current.requestDeletion());
+  expect(m.rpc).toHaveBeenCalledWith('community_request_deletion', {});
 });

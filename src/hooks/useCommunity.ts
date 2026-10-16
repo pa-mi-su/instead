@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { POLICY_VERSION } from '../policies';
 import { communityError, communityRpc } from '../lib/community';
 import type {
   CommunityClient,
   CommunitySession,
   CommunityComment,
   ReportReason,
+  CommunityAccountState,
+  BlockedContributor,
 } from '../lib/community';
 
 export function useCommunity(
@@ -14,9 +17,9 @@ export function useCommunity(
   const [session, setSession] = useState<CommunitySession | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [comments, setComments] = useState<CommunityComment[]>([]);
-  const [nickname, setNickname] = useState('');
-  const [profileReady, setProfileReady] = useState(false);
-  const [hasProfile, setHasProfile] = useState(false);
+  const [account, setAccount] = useState<CommunityAccountState | null>(null);
+  const [accountUserId, setAccountUserId] = useState<string>();
+  const [blocks, setBlocks] = useState<BlockedContributor[]>([]);
   const [email, setEmail] = useState('');
   const [sentEmail, setSentEmail] = useState('');
   const [code, setCode] = useState('');
@@ -32,6 +35,20 @@ export function useCommunity(
   const lock = useRef(false);
   const generation = useRef(0);
   const userId = session?.user.id;
+  const accountGeneration = useRef(0);
+  const loadAccount = useCallback(async () => {
+    const version = ++accountGeneration.current;
+    if (!userId) return;
+    const [rows, blocked] = await Promise.all([
+      communityRpc<CommunityAccountState[]>(client, 'community_account_state'),
+      communityRpc<BlockedContributor[]>(client, 'community_blocks_list'),
+    ]);
+    if (version === accountGeneration.current) {
+      setAccount(rows[0] ?? null);
+      setBlocks(blocked);
+      setAccountUserId(userId);
+    }
+  }, [client, userId]);
   const refresh = useCallback(async () => {
     const version = ++generation.current;
     setLoading(true);
@@ -89,31 +106,25 @@ export function useCommunity(
     if (!authReady || !client) return;
     let active = true;
     const pending = generation;
+    const pendingAccount = accountGeneration;
     setComments([]);
     setLoaded(false);
     refresh().catch(issue => {
       if (active) setError(communityError(issue));
     });
-    setProfileReady(false);
-    setHasProfile(false);
-    setNickname('');
+    setAccount(null);
+    setAccountUserId(undefined);
+    setBlocks([]);
     if (userId)
-      communityRpc<string | null>(client, 'community_profile')
-        .then(name => {
-          if (active) {
-            setNickname(name ?? '');
-            setHasProfile(Boolean(name));
-            setProfileReady(true);
-          }
-        })
-        .catch(issue => {
-          if (active) setError(communityError(issue));
-        });
+      loadAccount().catch(issue => {
+        if (active) setError(communityError(issue));
+      });
     return () => {
       active = false;
       pending.current++;
+      pendingAccount.current++;
     };
-  }, [authReady, client, refresh, userId]);
+  }, [authReady, client, refresh, userId, loadAccount]);
   useEffect(() => {
     if (!sentEmail) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -134,9 +145,65 @@ export function useCommunity(
       setBusy(false);
     }
   }
-  const canContribute = Boolean(
+  const verified = Boolean(
     userId && session?.user.email_confirmed_at && !session.user.is_anonymous,
   );
+  const canManage = Boolean(
+    verified &&
+      accountUserId === userId &&
+      account &&
+      !account.suspended &&
+      !account.deletion_requested_at,
+  );
+  const canContribute = Boolean(canManage && account?.policy_accepted);
+  function acceptPolicy() {
+    return run(async () => {
+      if (!canManage) return;
+      await communityRpc(client, 'community_accept_policy', {
+        p_version: POLICY_VERSION,
+      });
+      await loadAccount();
+      setNotice('Community terms accepted for this account.');
+    });
+  }
+  function block(kind: 'comment' | 'recipe', id: string) {
+    return run(async () => {
+      await communityRpc(client, 'community_block', {
+        p_kind: kind,
+        p_content: id,
+      });
+      await Promise.all([loadAccount(), refresh()]);
+      setNotice(
+        'Contributor blocked. Their comments and recipes are hidden for your account.',
+      );
+    });
+  }
+  function unblock(id: string) {
+    return run(async () => {
+      await communityRpc(client, 'community_unblock', { p_block: id });
+      await Promise.all([loadAccount(), refresh()]);
+      setNotice('Contributor unblocked.');
+    });
+  }
+  function requestDeletion() {
+    return run(async () => {
+      await communityRpc(client, 'community_request_deletion');
+      await Promise.all([loadAccount(), refresh()]);
+      if (client?.functions) {
+        const result = await client.functions.invoke('delete-account');
+        if (!result.error) {
+          await client.auth.signOut({ scope: 'local' });
+          setSession(null);
+          setDraft('');
+          setNotice('Your account and community data have been deleted.');
+          return;
+        }
+      }
+      setNotice(
+        'Deletion requested. Public contributions are hidden. Automatic deletion could not finish; use Retry account deletion or contact info@insteadtry.com.',
+      );
+    });
+  }
   function sendCode() {
     return run(async () => {
       const address = (sentEmail || email).trim().toLowerCase();
@@ -179,18 +246,6 @@ export function useCommunity(
       setNotice('You are signed in.');
     });
   }
-  function saveProfile() {
-    return run(async () => {
-      await communityRpc(client, 'community_set_profile', {
-        p_nickname: nickname.trim(),
-      });
-      setNickname(nickname.trim());
-      setHasProfile(true);
-      setProfileReady(true);
-      setNotice('Public nickname saved.');
-      await refresh();
-    });
-  }
   function post() {
     return run(async () => {
       if (!canContribute || !draft.trim()) return;
@@ -199,7 +254,9 @@ export function useCommunity(
         p_body: draft.trim(),
       });
       setDraft('');
-      setNotice('Comment posted.');
+      setNotice(
+        'Comment submitted for review. Only you can see it until approval.',
+      );
       await refresh();
     });
   }
@@ -265,10 +322,14 @@ export function useCommunity(
     session,
     authReady,
     comments,
-    nickname,
-    setNickname,
-    hasProfile,
-    profileReady,
+    account: accountUserId === userId ? account : null,
+    accountReady: accountUserId === userId && !!account,
+    canManage,
+    blocks: accountUserId === userId ? blocks : [],
+    acceptPolicy,
+    block,
+    unblock,
+    requestDeletion,
     email,
     setEmail,
     sentEmail,
@@ -286,7 +347,6 @@ export function useCommunity(
     hasMore,
     sendCode,
     verifyCode,
-    saveProfile,
     post,
     vote,
     report,
@@ -301,15 +361,7 @@ export function useCommunity(
     retry: () =>
       run(async () => {
         await refresh();
-        if (userId) {
-          const name = await communityRpc<string | null>(
-            client,
-            'community_profile',
-          );
-          setNickname(name ?? '');
-          setHasProfile(Boolean(name));
-          setProfileReady(true);
-        }
+        if (userId) await loadAccount();
       }),
   };
 }

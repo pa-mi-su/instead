@@ -1,4 +1,6 @@
 "use client";
+import { CommunityAccountControls } from "./community-account-controls";
+import { communityRules } from "../../src/disclaimer";
 import { ProductRecipes } from "./product-recipes";
 import { useState } from 'react';
 import { useCommunity } from '../../src/hooks/useCommunity';
@@ -10,8 +12,8 @@ export function ProductComments({ productId }: { productId: string }) {
   const [reportId, setReportId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   return <div className="product-comments">
-    <ProductRecipes key={`${productId}:${c.session?.user.id ?? "guest"}`} productId={productId} userId={c.session?.user.id} canContribute={c.canContribute} />
-    <p>Share an experience or ingredient swap. Community suggestions are unreviewed. Upvotes reflect preference, not verified safety or effectiveness.</p>
+    <ProductRecipes key={`${productId}:${c.session?.user.id ?? "guest"}:${c.blocks.map(b => b.id).join(",")}`} productId={productId} userId={c.session?.user.id} canContribute={c.canContribute} canManage={c.canManage} onBlock={id => c.block("recipe", id)} />
+    <p>{communityRules}</p>
     {!c.configured && <p>Community comments are not configured yet.</p>}
     {c.error && <p role="alert">{c.error} <button type="button" disabled={c.busy} onClick={c.retry}>Retry loading</button></p>}
     {c.notice && <p role="status">{c.notice}</p>}
@@ -30,8 +32,8 @@ export function ProductComments({ productId }: { productId: string }) {
       </form>}
     </section>}
     {c.session && <section aria-label="Your community account">
-      <p>Signed in · Your email is private.</p><button type="button" disabled={c.busy} onClick={c.signOut}>Sign out</button>
-      {!c.canContribute && <p>A verified email account is required to contribute.</p>}
+      <p>Signed in · Your email is private.</p><button type="button" disabled={c.busy} onClick={c.signOut}>Sign out</button><CommunityAccountControls community={c} />
+      {!c.canContribute && <p>A verified, active account and current community agreement are required to contribute.</p>}
       {c.canContribute && <>
         <form onSubmit={e => { e.preventDefault(); c.post(); }}>
           <label htmlFor="product-comment">Your comment or ingredient swap</label>
@@ -46,11 +48,12 @@ export function ProductComments({ productId }: { productId: string }) {
     {c.loading && <p role="status">Loading comments…</p>}
     {c.loaded && !c.comments.length && <p>No comments yet. Share the first suggestion.</p>}
     <div className="option-list">{c.comments.map(comment => <div key={comment.id}>
-      <small>Community member · UNREVIEWED{comment.mine ? ' · YOU' : ''}</small>
+      <small>Community member · {comment.moderation_status === 'pending' ? 'AWAITING REVIEW · ONLY YOU' : comment.moderation_status === 'rejected' ? 'NOT PUBLISHED · ONLY YOU' : 'MODERATED · NOT VERIFIED SAFE'}{comment.mine ? ' · YOU' : ''}</small>
       <p className="comment-body">{comment.body}</p>
       {comment.mine ? <p>{comment.votes} {comment.votes === 1 ? 'vote' : 'votes'} · Your comment</p> : <button type="button" disabled={c.busy || !c.canContribute} aria-pressed={comment.upvoted} onClick={() => c.vote(comment)}>{comment.upvoted ? '▲ Upvoted' : '△ Upvote'} · {comment.votes}</button>}
-      {c.canContribute && <button type="button" disabled={c.busy || comment.reported} onClick={() => setReportId(reportId === comment.id ? null : comment.id)}>{comment.reported ? 'Reported' : 'Report'}</button>}
+      {c.canManage && comment.moderation_status === "approved" && <button type="button" disabled={c.busy || comment.reported} onClick={() => setReportId(reportId === comment.id ? null : comment.id)}>{comment.reported ? 'Reported' : 'Report'}</button>}
       {reportId === comment.id && !comment.reported && <div aria-label="Report reason">{reportReasons.map(reason => <button key={reason} type="button" disabled={c.busy} onClick={() => c.report(comment, reason)}>{reason}</button>)}<button type="button" onClick={() => setReportId(null)}>Cancel report</button></div>}
+      {!comment.mine && c.canManage && <button type="button" disabled={c.busy} onClick={() => c.block("comment", comment.id)}>Block contributor</button>}
       {comment.mine && <button type="button" disabled={c.busy} onClick={() => setDeleteId(comment.id)}>Delete my comment</button>}
       {deleteId === comment.id && <div><p>Delete this comment and its votes?</p><button type="button" disabled={c.busy} onClick={() => c.remove(comment)}>Confirm delete</button><button type="button" onClick={() => setDeleteId(null)}>Cancel</button></div>}
     </div>)}</div>

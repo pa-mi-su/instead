@@ -1,11 +1,12 @@
 // Shared policy text for offline mobile reading and the website.
-export const POLICY_VERSION = '2026-10-16.1';
+export const POLICY_VERSION = '2026-10-16.2';
 export const POLICY_DATE = 'October 16, 2026';
 export const policyDocuments = {
   terms: [
     {
       title: '1. Accepting these terms',
       paragraphs: [
+        'INSTEAD, USA. Contact: info@insteadtry.com.',
         'By accessing or using the INSTEAD website or mobile applications (the “Services”), you agree to these Terms of Use. If you do not agree, do not use the Services.',
         'The first-use acknowledgement asks you to agree to these Terms and acknowledge the Safety information and Privacy Policy before browsing recipes. Material revisions to that acknowledgement require a new confirmation. You may decline and stop using the directory. Nothing in the acknowledgement waives rights that cannot legally be waived.',
       ],
@@ -13,7 +14,7 @@ export const policyDocuments = {
     {
       title: '2. What INSTEAD provides',
       paragraphs: [
-        'INSTEAD is a reference tool. INSTEAD publishes practical, educational guides about alternatives for everyday products and tasks. Verified-email accounts can submit comments, recipes with optional photos, and votes. Recipes and community suggestions are unreviewed unless explicitly stated otherwise. We do not offer paid subscriptions or purchases.',
+        'INSTEAD is a reference tool. INSTEAD publishes practical, educational guides about alternatives for everyday products and tasks. Verified-email accounts can submit comments, recipes with optional photos, and votes. Community comments, recipes, and photos are held for moderation before publication. Moderation is not proof of safety, efficacy, or professional approval. We do not offer paid subscriptions or purchases.',
       ],
     },
     {
@@ -45,7 +46,7 @@ export const policyDocuments = {
       title: 'Community participation',
       paragraphs: [
         'Keep your sign-in codes private. No public profile is required; do not impersonate others. Do not post spam, abuse, private information, or dangerous instructions. Do not create multiple accounts to manipulate votes. Email verification does not verify identity or expertise, and upvotes do not establish safety or effectiveness.',
-        'You retain ownership of your comments, recipes, and photos and permit INSTEAD to store, display, and moderate them as part of the Services. Only submit content and photos you have permission to share. Recipe submissions and photos require approval before publication. You can delete your comments or withdraw your recipes; moderators may hide or remove content. Use the Report control to flag concerns. Account deletion can be requested through support.',
+        'You retain ownership of your comments, recipes, and photos and permit INSTEAD to store, display, and moderate them as part of the Services. Only submit content and photos you have permission to share. Comments, recipe submissions, and photos require approval before publication. Do not request or provide individualized diagnosis, dosing, treatment, advice to stop prescribed care, unsupported cure claims, or dangerous ingredient substitutions. You may block contributors without creating a public profile. You can delete your comments or withdraw your recipes; moderators may hide or remove content. Use the Report control to flag concerns. Signed-in users can request account deletion in any topic’s account controls; support is also available. Requests hide public contributions and disable contributions while permanent deletion is processed.',
       ],
     },
     {
@@ -101,6 +102,7 @@ export const policyDocuments = {
     {
       title: '1. Scope',
       paragraphs: [
+        'INSTEAD, USA. Contact: info@insteadtry.com.',
         'This policy applies to the INSTEAD website and INSTEAD mobile applications for iOS and Android (together, the “Services”). It does not apply to third-party websites, products, or services that may be mentioned in a guide.',
       ],
     },
@@ -120,7 +122,7 @@ export const policyDocuments = {
         'Supabase provides authentication and the shared community database. Public responses include community content, dates, and vote totals; they do not include email addresses or account identifiers. Reports and account information are not public. As with ordinary internet traffic, the service provider may process technical request information such as an IP address, user agent, timestamps, and diagnostic or security logs to deliver content, prevent abuse, and maintain the service.',
         'Information we do not request',
         'The current Services do not request access to precise location, contacts, camera, microphone, health records, or advertising identifiers. We do not use advertising SDKs or behavioral tracking tools. You can optionally select up to three recipe photos through the system photo picker or browser. Only selected images are uploaded. Photos are stored privately in Supabase until publication. Temporary photo links may remain usable for up to five minutes after content is hidden.',
-        'We store the safety acknowledgement version and acceptance date locally on your device or browser. This record is not uploaded to your account. Clearing storage, reinstalling, using another device, or a new acknowledgement version may show the notice again.',
+        'We store the safety acknowledgement version and acceptance date locally on your device or browser. The first-use device record is not uploaded. Signed-in contributors explicitly accept the current community terms separately; Supabase stores the account ID, policy version, and server-recorded acceptance time for each accepted version. Clearing storage, reinstalling, using another device, or a new acknowledgement version may show the notice again.',
       ],
     },
     {
@@ -144,7 +146,7 @@ export const policyDocuments = {
       title: '6. Retention and deletion',
       paragraphs: [
         'Saved guides and cached content remain locally until you remove them, clear the app or browser storage, or uninstall the app. Support messages may be kept while a request is handled and as reasonably necessary for security, recordkeeping, or legal obligations. Infrastructure logs are retained only as reasonably necessary for service operation, security, and provider requirements.',
-        'You can delete your own comments and remove your votes in the product discussion. Account, comment, recipe, vote, and report records otherwise remain until deleted or removed through moderation. You can withdraw your recipes; they disappear from the directory, and the app attempts to remove their photo files. Withdrawn text and failed photo cleanups remain available to administrators until purged. Contact support for permanent removal. To request account deletion, contact support from your account email; we will verify the request. Deleting an account removes its community comments, recipes, votes, and reports. Administrators must also remove stored recipe photos during account deletion. See the Support page for help. Clearing local storage does not delete server records.',
+        'You can delete your own comments and remove your votes in the product discussion. Account, comment, recipe, vote, and report records otherwise remain until deleted or removed through moderation. You can withdraw your recipes; they disappear from the directory, and the app attempts to remove their photo files. Withdrawn text and failed photo cleanups remain available to administrators until purged. Blocked-contributor records are private to the blocking account and include a short content excerpt for identifying the block; removing the block removes that record. To request account deletion, use the signed-in account controls in a topic or contact support from your account email. Requests hide your public content and disable contributions while permanent deletion is attempted. If automatic deletion fails, the request remains pending for retry or support assistance. Deleting an account removes its community comments, recipes, votes, and reports. Stored recipe photos are removed before the account is deleted. Failed cleanup keeps the deletion request pending. See the Support page for help. Clearing local storage does not delete server records.',
       ],
     },
     {
@@ -162,7 +164,7 @@ export const policyDocuments = {
     {
       title: '9. Community contributions',
       paragraphs: [
-        'Community contributions are public and unreviewed. Other people may copy public content before you delete it. Reports are available to moderators, and content may be hidden or removed for safety, abuse, or other service concerns. Email verification establishes access to an inbox; it does not verify a person’s identity or expertise.',
+        'Approved community contributions are public. Pending or rejected content is visible only to its author and administrators. Moderation does not establish professional approval or safety. Other people may copy public content before you delete it. Reports are available to moderators, and content may be hidden or removed for safety, abuse, or other service concerns. Email verification establishes access to an inbox; it does not verify a person’s identity or expertise.',
       ],
     },
     {

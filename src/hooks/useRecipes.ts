@@ -129,13 +129,18 @@ export function useRecipes(
       const paths: string[] = [];
       let submitted = false;
       try {
+        const folder = photos.length
+          ? await communityRpc<string>(client, 'community_photo_folder')
+          : '';
+        if (photos.length && !/^[a-f0-9-]{36}$/i.test(folder))
+          throw new Error('Photo storage is unavailable.');
         for (const photo of photos) {
           validatePhoto(photo);
           const ext =
             photo.contentType === 'image/jpeg'
               ? 'jpg'
               : photo.contentType.split('/')[1];
-          const path = `${userId}/${Date.now()}-${Math.random()
+          const path = `${folder}/${Date.now()}-${Math.random()
             .toString(36)
             .slice(2)}.${ext}`;
           const result = await store.upload(path, photo.bytes, {
@@ -216,6 +221,10 @@ export function useRecipes(
       }),
     vote: (recipe: Recipe, value: number) =>
       run(async () => {
+        if (recipe.mine) {
+          setNotice('You cannot vote on your own recipe.');
+          return;
+        }
         await communityRpc(client, 'recipe_vote', {
           p_recipe: recipe.id,
           p_value: recipe.my_vote === value ? 0 : value,

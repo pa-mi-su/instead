@@ -52,6 +52,9 @@ jobs:
       - name: Verify native code
         run: npm run verify
 
+      - name: Verify account-deletion authorization
+        run: npm run safety:test
+
       - name: Verify website
         run: |
           npm --prefix web run lint

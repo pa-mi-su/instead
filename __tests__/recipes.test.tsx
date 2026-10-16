@@ -95,7 +95,13 @@ test('failed submission preserves the draft and cleans uploaded photos', async (
           data: null,
           error: { code: 'P0001', message: 'Submission unavailable.' },
         }
-      : { data: [], error: null },
+      : {
+          data:
+            name === 'community_photo_folder'
+              ? '50000000-0000-0000-0000-000000000001'
+              : [],
+          error: null,
+        },
   );
   const hook = await renderHook(() =>
     useRecipes(m.client, 'natural-shampoo', 'owner'),

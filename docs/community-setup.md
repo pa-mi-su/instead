@@ -27,7 +27,7 @@ Official references: [Email OTP](https://supabase.com/docs/guides/auth/auth-emai
 
 ## Behavior and limits
 
-Anyone can read visible comments. Only accounts with a confirmed email can post, vote, or report. Email and account IDs are never returned by the public comments RPC. No public profiles or nicknames are required; comments are labeled Community member. Recipe submissions and photos are covered in recipe-moderation.md. Native sessions persist in AsyncStorage; browser sessions persist in local storage. Sign-out removes the local session. The older device-only comments are not uploaded automatically.
+Anyone can read approved comments. Posting and voting require a confirmed email, an active account, and acceptance of the current community terms. Reports and blocks remain available to active verified accounts. Comments wait for moderation before publication. Email and account IDs are never returned by the public comments RPC. No public profiles or nicknames are required; comments are labeled Community member. Recipe submissions and photos are covered in recipe-moderation.md. Native sessions persist in AsyncStorage; browser sessions persist in local storage. Sign-out removes the local session. The older device-only comments are not uploaded automatically.
 
 Votes use a `(comment_id, user_id)` primary key and explicit desired state, making retries idempotent. Each account gets 5 posts, 60 vote changes, 10 reports, and 10 nickname changes per rolling hour, enforced in SQL with a transaction lock. Reads return 50 rows per page, ordered by vote count then recency; pagination is best effort while votes change. Email verification cannot ensure one human per account. Enable Supabase CAPTCHA protection before a large public launch (requires adding the provider widget/token to the sign-in UI); auth-provider limits alone do not prevent all automated signups.
 
@@ -41,7 +41,7 @@ order by r.created_at desc;
 -- update public.community_comments set hidden = true where id = '<comment uuid>';
 ```
 
-RLS is enabled with no client table policies or grants. Only scoped RPCs have client execute permission. Private security-definer helpers have no client execute permission and an empty search path. Do not grant direct client writes to these tables. Owners can delete their comments; reports and votes cascade. Account deletion can be handled by a project owner in Supabase Auth (cascades community records; delete photo files separately first); the support page is the request path for now. No admin key is shipped.
+RLS is enabled with no client table policies or grants. Only scoped RPCs have client execute permission. Private security-definer helpers have no client execute permission and an empty search path. Do not grant direct client writes to these tables. Owners can delete their comments; reports and votes cascade. Signed-in account controls record deletion requests and invoke the delete-account Edge Function. It removes photos before deleting Auth and cascading community records; failures remain pending for retry or operator assistance. No admin key is shipped.
 
 ## Release checklist
 
@@ -49,5 +49,9 @@ RLS is enabled with no client table policies or grants. Only scoped RPCs have cl
 - Confirm two verified accounts see the same comments and independent votes; repeat the same desired vote and ensure the count does not increase.
 - Confirm an account cannot delete another user's comment, and one report per account/comment is enforced.
 - Confirm a hidden comment disappears for guests and members and cannot receive votes or reports.
-- Verify incorrect/expired code errors, resend cooldown, nickname validation, sign-out, app restart, offline retry, and rate limits.
+- Verify incorrect/expired code errors, resend cooldown, policy acceptance, sign-out, app restart, offline retry, and rate limits.
 - SQL integration assertions are in `supabase/community.test.sql`; run only in a disposable local database after the migration. They roll back their fixtures.
+
+## Current safeguards
+
+After the original community, recipes, and directory-topics migrations, apply the repeatable `supabase/community-safeguards.sql`. It adds account-linked policy acceptance, pre-publication moderation, contributor blocking, suspension and deletion controls, and opaque photo folders. Deploy the `delete-account` Edge Function. These safeguards and the function were applied October 16, 2026. See `docs/moderation-runbook.md` for current review procedures and `docs/release-safety.md` for release requirements. The original SQL tests target the original schema; run `supabase/safeguards.test.sql` after the safeguards in a disposable database.

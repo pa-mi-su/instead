@@ -1,3 +1,5 @@
+import { CommunityAccountControls } from './CommunityAccountControls';
+import { communityRules } from '../disclaimer';
 import { ProductRecipes } from './ProductRecipes';
 import { useRef, useState } from 'react';
 import {
@@ -41,16 +43,16 @@ export function ProductComments({ productId }: { productId: string }) {
   return (
     <View style={styles.optionList}>
       <ProductRecipes
-        key={`${productId}:${c.session?.user.id ?? 'guest'}`}
+        key={`${productId}:${c.session?.user.id ?? 'guest'}:${c.blocks
+          .map(b => b.id)
+          .join(',')}`}
         productId={productId}
         userId={c.session?.user.id}
         canContribute={c.canContribute}
+        canManage={c.canManage}
+        onBlock={id => c.block('recipe', id)}
       />
-      <Text style={styles.optionDetail}>
-        Share an experience or ingredient swap. Community suggestions are
-        unreviewed. Upvotes reflect preference, not verified safety or
-        effectiveness.
-      </Text>
+      <Text style={styles.optionDetail}>{communityRules}</Text>
       {!c.configured && <Text>Community comments are not configured yet.</Text>}
       {!!c.error && <Text accessibilityRole="alert">{c.error}</Text>}
       {!!c.notice && <Text accessibilityLiveRegion="polite">{c.notice}</Text>}
@@ -190,8 +192,12 @@ export function ProductComments({ productId }: { productId: string }) {
         <View style={styles.optionCard}>
           <Text>Signed in · Your email is private.</Text>
           {button('Sign out', c.signOut)}
+          <CommunityAccountControls community={c} />
           {!c.canContribute && (
-            <Text>A verified email account is required to contribute.</Text>
+            <Text>
+              A verified, active account and current community agreement are
+              required to contribute.
+            </Text>
           )}
           {c.canContribute && (
             <>
@@ -227,7 +233,13 @@ export function ProductComments({ productId }: { productId: string }) {
       {c.comments.map(comment => (
         <View key={comment.id} style={styles.optionCard}>
           <Text style={styles.optionLabel}>
-            Community member · UNREVIEWED{comment.mine ? ' · YOU' : ''}
+            Community member ·{' '}
+            {comment.moderation_status === 'pending'
+              ? 'AWAITING REVIEW · ONLY YOU'
+              : comment.moderation_status === 'rejected'
+              ? 'NOT PUBLISHED · ONLY YOU'
+              : 'MODERATED · NOT VERIFIED SAFE'}
+            {comment.mine ? ' · YOU' : ''}
           </Text>
           <Text style={styles.optionDetail}>{comment.body}</Text>
           {comment.mine ? (
@@ -245,7 +257,8 @@ export function ProductComments({ productId }: { productId: string }) {
               comment.upvoted,
             )
           )}
-          {c.canContribute &&
+          {c.canManage &&
+            comment.moderation_status === 'approved' &&
             button(
               comment.reported ? 'Reported' : 'Report',
               () => setReportId(reportId === comment.id ? null : comment.id),
@@ -261,6 +274,9 @@ export function ProductComments({ productId }: { productId: string }) {
               {button('Cancel report', () => setReportId(null))}
             </View>
           )}
+          {!comment.mine &&
+            c.canManage &&
+            button('Block contributor', () => c.block('comment', comment.id))}
           {comment.mine &&
             button('Delete my comment', () => setDeleteId(comment.id))}
           {deleteId === comment.id && (
