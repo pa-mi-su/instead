@@ -26,7 +26,8 @@
     "web:build": "npm --prefix web run build",
     "web:test": "npm --prefix web test",
     "safety:test": "node --test scripts/test-delete-account.mjs",
-    "release:check": "node scripts/check-release-readiness.mjs"
+    "release:check": "node scripts/check-release-readiness.mjs",
+    "website:build": "node scripts/build-policy-site.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",
