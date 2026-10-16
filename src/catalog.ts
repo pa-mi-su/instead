@@ -7,7 +7,7 @@ const topics: [string, Guide['category'], string][] = [
   ['Body soap', 'Personal Care', 'body wash shower hand soap'],
   ['Weed killer', 'Home Maintenance', 'garden weeds herbicide'],
   ['Deodorant', 'Personal Care', 'deoderant underarm odor'],
-  ['Glass cleaner', 'Cleaning', 'windows mirrors'],
+  ['Glass cleaner', 'Cleaning', 'window cleaner windows mirrors'],
   ['Laundry care', 'Cleaning', 'clothes detergent washing'],
   ['Surface cleaner', 'Cleaning', 'all purpose countertop kitchen'],
 ];
@@ -83,6 +83,32 @@ const toothpasteRecipe: StarterRecipe = {
     'Owner-supplied, untested formula for reference, not a dentist-approved daily brushing recommendation. It contains no fluoride and is not an equivalent replacement for fluoride toothpaste for cavity prevention. Abrasiveness depends on the powder grade, particle size, and finished formula and has not been measured here. Essential oils can irritate the mouth and be harmful if swallowed; do not swallow or give this mixture to children. Have a dentist review it before oral use, especially with sensitivity, exposed roots, or dental work. Stop if irritation occurs. No brushing dose is recommended for this untested formula.',
 };
 
+const glassCleanerRecipe: StarterRecipe = {
+  name: 'Vinegar & Alcohol Glass Cleaner',
+  ingredients: [
+    '1 cup distilled water',
+    '¼ cup plain white vinegar (5% acidity)',
+    '¼ cup plain rubbing alcohol (70% isopropyl alcohol)',
+    '5–10 drops lemon or peppermint essential oil',
+  ],
+  equipment: [
+    'Clean glass spray bottle, at least 16 ounces, with a solvent-compatible sprayer',
+    'Funnel',
+    'Clean, flat-weave microfiber cloth',
+  ],
+  instructions: [
+    'In a well-ventilated area away from heat, sparks, and flames, use a funnel to pour the distilled water, white vinegar, rubbing alcohol, and essential oil into the spray bottle.',
+    'Close the bottle and gently shake before each use. Essential oils may separate and can leave residue; results will vary.',
+    'Remove loose grit from the glass with a soft cloth first. Test a small area and check the surface manufacturer’s cleaning directions.',
+    'Lightly spray compatible, uncoated window glass and wipe with a clean, flat-weave microfiber cloth. For mirrors, dampen the cloth instead of spraying the mirror to keep liquid away from edges and backing.',
+    'Finish with a clean, dry section of the cloth. Clean cool glass out of direct sunlight and avoid overspray onto frames or nearby surfaces. A streak-free finish is not guaranteed.',
+  ],
+  storage:
+    'Label with the ingredients, alcohol strength, and preparation date. Keep tightly closed, upright, and away from heat, sunlight, flames, children, and pets. Do not use a beverage container. No tested shelf life has been established for this exact mixture.',
+  cautions:
+    'Rubbing alcohol is flammable; keep the ingredients and mixture away from ignition sources and do not heat. Use ventilation, avoid breathing spray, and avoid eyes and skin. Never mix with bleach, ammonia, or other cleaners. Do not use on screens, lenses, tinted or coated glass, acrylic, or specialty glazing unless the manufacturer allows it. Protect natural stone and painted, sealed, or composite frames from vinegar and alcohol. Essential oils can irritate and may leave oily streaks. This is a glass cleaner, not a sanitizer or disinfectant.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -91,6 +117,8 @@ export const productCatalog: Guide[] = topics.map(
     prompt:
       title === 'Dish cleaner'
         ? 'Two options for hand-washing dishes'
+        : title === 'Glass cleaner'
+        ? 'Vinegar and alcohol for compatible window glass'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -110,6 +138,8 @@ export const productCatalog: Guide[] = topics.map(
         ? [dishCleanerRecipe, dishScrubRecipe]
         : title === 'Toothpaste'
         ? [toothpasteRecipe]
+        : title === 'Glass cleaner'
+        ? [glassCleanerRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
