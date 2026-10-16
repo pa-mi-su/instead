@@ -1,6 +1,6 @@
 # INSTEAD public policy website
 
-AWS hosting created October 16, 2026 at the owner’s request; the certificate is issued and both custom aliases are attached; final Namecheap website DNS cutover is pending. This is the minimal public support/policy site, separate from the full recipe-directory web app under `web/`.
+AWS hosting created October 16, 2026 at the owner’s request; the certificate is issued and both custom aliases are attached; Namecheap website DNS cutover is complete and both public domain names are verified. This is the minimal public support/policy site, separate from the full recipe-directory web app under `web/`.
 
 Build with `npm run website:build`. Upload only `website/dist/`; never upload the repository, environment files, or Supabase credentials. The output is six plain HTML pages and one stylesheet, with no JavaScript, sign-in, cookies, analytics, or server runtime. Terms and Privacy come directly from `src/policies.ts`.
 
@@ -59,6 +59,8 @@ Namecheap certificate-validation CNAME records (Automatic TTL):
 | `_274fe85a251f333b3453bc3ff9eb7c72` | `_707950a19bfb103f8bf9118b715fc4fb.wzccmgtwzk.acm-validations.aws` |
 | `_b9e9121c0c305e59f0463f0916edd7fb.www` | `_7cf91a69ee650f8677dbfbdf72416e22.wzccmgtwzk.acm-validations.aws` |
 
-Leave these validation records in place for automatic certificate renewal. Public policy and support readiness attestations remain incomplete until custom-domain reachability and inbox receipt are verified.
+Leave these validation records in place for automatic certificate renewal. Public policy reachability is verified and its release attestation is complete. Support inbox receipt remains unverified and its attestation remains incomplete.
 
-CloudFront-hostname validation: all six routes returned HTTP 200 over HTTPS, including trailing-slash policy/deletion URLs. Security headers include HSTS. Missing paths return an error rather than the home page. Final custom-domain and inbox checks remain pending.
+CloudFront-hostname validation: all six routes returned HTTP 200 over HTTPS, including trailing-slash policy/deletion URLs. Security headers include HSTS. Missing paths return an error rather than the home page. All six pages on both custom domain names returned HTTPS 200 after DNS cutover, and HTTP redirected to HTTPS (301). Inbox receipt remains unverified.
+
+Namecheap apex ALIAS uses its available 5-minute TTL; this is acceptable. The www CNAME uses Automatic TTL. CloudFront global configuration deployment was still InProgress at verification, while both custom domains already passed HTTPS checks.
