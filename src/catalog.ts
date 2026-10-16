@@ -252,6 +252,36 @@ const deodorantRecipe: StarterRecipe = {
     'Owner-supplied, untested deodorant formula. Baking soda is alkaline and can cause underarm irritation, especially on sensitive skin; a small-area trial does not rule out a later reaction. This is not an antiperspirant and does not stop sweating. Odor and moisture-control results vary and are not guaranteed. Coconut oil may leave marks on clothing. If irritation occurs, discontinue rather than switching immediately to another homemade formula; magnesium-based alternatives are not automatically non-irritating.',
 };
 
+const tallowDeodorantRecipe: StarterRecipe = {
+  name: 'Tallow & Orange Deodorant',
+  ingredients: [
+    '3 tablespoons rendered beef tallow — gently softened',
+    '1 tablespoon coconut oil',
+    '2 tablespoons arrowroot powder or cornstarch',
+    '1 tablespoon baking soda',
+    '15–20 drops sweet orange essential oil',
+  ],
+  equipment: [
+    'Small glass mixing bowl',
+    'Separate dry container for powders',
+    'Fork or small spatula',
+    'Clean, dry glass jar with a lid',
+    'Clean, dry scoop',
+  ],
+  instructions: [
+    'Combine the tallow and coconut oil in the glass bowl. If firm, gently warm the bowl in warm water, keeping water out of the mixture, until the fats are soft like room-temperature butter. Do not overheat or fully melt.',
+    'In a separate dry container, stir the arrowroot powder or cornstarch and baking soda together, breaking up lumps.',
+    'Add the powders to the softened fats. Mash and stir with a fork or spatula until a smooth, creamy paste forms.',
+    'Add the sweet orange essential oil and stir thoroughly for about 30 seconds. Use only a product whose supplier supports skin use at the intended concentration; drop sizes vary, so the drop count does not verify a safe concentration.',
+    'Transfer to the clean, dry jar, close the lid, and label with ingredients and preparation date.',
+    'The submitted method uses a pea-sized amount warmed between clean, dry fingertips and spread over clean, dry underarms. This amount has not been independently evaluated. Use a clean, dry scoop or finger; avoid broken, irritated, or freshly shaved skin.',
+  ],
+  storage:
+    'Keep tightly closed, cool, dry, and away from direct sunlight, children, and pets. Keep water and wet fingers out. Ingredient age, handling, and storage affect stability; a 6–12 month shelf life has not been established for this exact blend. Discard if the odor, color, or texture changes or contamination is suspected; normal appearance does not prove safety.',
+  cautions:
+    'Owner-supplied, untested deodorant formula containing animal-derived tallow. Baking soda and essential oil may cause irritation or allergy. Stop immediately and gently wash off if burning, itching, redness, or rash occurs; seek medical advice if symptoms persist or are severe. This is not an antiperspirant and does not prevent sweating. Odor-control, wetness absorption, and antibacterial effects have not been verified for the finished blend. Oils and fats may mark clothing. Do not ingest.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -269,7 +299,7 @@ export const productCatalog: Guide[] = topics.map(
         : title === 'Shampoo'
         ? 'Two owner-supplied hair-washing methods'
         : title === 'Deodorant'
-        ? 'Three-ingredient coconut deodorant'
+        ? 'Two cream deodorant formulas'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -298,7 +328,7 @@ export const productCatalog: Guide[] = topics.map(
         : title === 'Shampoo'
         ? [shampooRecipe, twoStepHairRecipe]
         : title === 'Deodorant'
-        ? [deodorantRecipe]
+        ? [deodorantRecipe, tallowDeodorantRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
