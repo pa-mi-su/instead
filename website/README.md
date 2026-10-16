@@ -64,3 +64,5 @@ Leave these validation records in place for automatic certificate renewal. Publi
 CloudFront-hostname validation: all six routes returned HTTP 200 over HTTPS, including trailing-slash policy/deletion URLs. Security headers include HSTS. Missing paths return an error rather than the home page. All six pages on both custom domain names returned HTTPS 200 after DNS cutover, and HTTP redirected to HTTPS (301). Inbox receipt remains unverified.
 
 Namecheap apex ALIAS uses its available 5-minute TTL; this is acceptable. The www CNAME uses Automatic TTL. CloudFront global configuration deployment was still InProgress at verification, while both custom domains already passed HTTPS checks.
+
+Support delivery verified October 16, 2026: the owner configured Namecheap forwarding for info@insteadtry.com and confirmed receipt of a test in the destination inbox. The supportInboxVerified release attestation is complete.
