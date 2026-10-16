@@ -109,6 +109,28 @@ const glassCleanerRecipe: StarterRecipe = {
     'Rubbing alcohol is flammable; keep the ingredients and mixture away from ignition sources and do not heat. Use ventilation, avoid breathing spray, and avoid eyes and skin. Never mix with bleach, ammonia, or other cleaners. Do not use on screens, lenses, tinted or coated glass, acrylic, or specialty glazing unless the manufacturer allows it. Protect natural stone and painted, sealed, or composite frames from vinegar and alcohol. Essential oils can irritate and may leave oily streaks. This is a glass cleaner, not a sanitizer or disinfectant.',
 };
 
+const vinegarGlassRecipe: StarterRecipe = {
+  name: 'Two-Ingredient Vinegar Glass Cleaner',
+  ingredients: [
+    '1 cup plain white vinegar (5% acidity)',
+    '1 cup water — distilled if your tap water is hard',
+  ],
+  equipment: [
+    'Clean spray bottle, at least 20 ounces, with room to shake',
+    'Microfiber cloth or crumpled newspaper',
+  ],
+  instructions: [
+    'Pour the vinegar and water into a clean spray bottle that has not held other cleaning chemicals. Close the bottle and shake briefly to mix.',
+    'Remove loose grit and check the glass manufacturer’s cleaning directions. Test a small area first.',
+    'Lightly spray compatible, uncoated glass and wipe immediately with a microfiber cloth or crumpled newspaper. Newspaper ink may transfer to hands or frames; use microfiber if that happens.',
+    'For mirrors, dampen the cloth instead of spraying directly to protect edges and backing. Wipe dry, keeping liquid off frames and nearby surfaces. Clean cool glass out of direct sunlight.',
+  ],
+  storage:
+    'Label the bottle with the contents and mixing date. Keep closed and out of reach of children and pets. Do not use a beverage container or a bottle that previously held bleach or other cleaners. No tested shelf life has been established for this exact mixture.',
+  cautions:
+    'Never mix vinegar with bleach or other cleaners. Avoid eyes and breathing spray. Keep off marble, limestone, and other acid-sensitive surfaces. Do not use on screens, lenses, tinted or coated glass, or specialty glazing unless the manufacturer allows it. Protect painted or sealed frames and mirror backing. Results vary; this cleaner is not a sanitizer or disinfectant.',
+};
+
 export const productCatalog: Guide[] = topics.map(
   ([title, category, keywords]) => ({
     id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
@@ -118,7 +140,7 @@ export const productCatalog: Guide[] = topics.map(
       title === 'Dish cleaner'
         ? 'Two options for hand-washing dishes'
         : title === 'Glass cleaner'
-        ? 'Vinegar and alcohol for compatible window glass'
+        ? 'Two options for compatible window glass'
         : 'Explore natural alternatives',
     icon: '✳',
     answer: 'A simpler alternative starts here.',
@@ -139,7 +161,7 @@ export const productCatalog: Guide[] = topics.map(
         : title === 'Toothpaste'
         ? [toothpasteRecipe]
         : title === 'Glass cleaner'
-        ? [glassCleanerRecipe]
+        ? [glassCleanerRecipe, vinegarGlassRecipe]
         : [],
     safetyNote:
       title === 'Toothpaste'
