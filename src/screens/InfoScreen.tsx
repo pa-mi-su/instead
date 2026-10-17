@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { acknowledgementText, disclaimerSections } from '../disclaimer';
 import { POLICY_DATE, policyDocuments } from '../policies';
 import { universalSafetyNotices } from '../safetyNotices';
@@ -186,7 +187,7 @@ const s = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '700',
   },
-  pressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
+  pressed: { opacity: 0.86 },
   kicker: {
     color: COLORS.orange,
     fontSize: 11,
@@ -217,8 +218,13 @@ const s = StyleSheet.create({
     borderRadius: 18,
     marginTop: 8,
     backgroundColor: COLORS.card,
+    shadowColor: COLORS.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  active: { backgroundColor: COLORS.lime },
+  active: { backgroundColor: COLORS.lime, borderColor: COLORS.lime },
   buttonText: { color: COLORS.ink, fontWeight: '800', textAlign: 'center' },
   checkRow: { flexDirection: 'row', gap: 10, paddingVertical: 14 },
   check: { fontSize: 25, color: COLORS.ink },
@@ -226,14 +232,14 @@ const s = StyleSheet.create({
   primary: {
     backgroundColor: COLORS.orange,
     padding: 16,
-    borderRadius: 18,
+    borderRadius: 20,
     minHeight: 52,
     borderWidth: 1.5,
     borderColor: COLORS.ink,
     shadowColor: COLORS.ink,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
+    shadowOpacity: 0.22,
+    shadowRadius: 7,
     elevation: 3,
   },
   disabled: { opacity: 0.45 },

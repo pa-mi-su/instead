@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react-native';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { AnimatedPressable as Pressable } from './AnimatedPressable';
 import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';
 
