@@ -536,6 +536,28 @@ const saltFreeWeedRecipe: StarterRecipe = {
     'Owner-supplied, untested contact-treatment formula. Salt-free does not mean harmless to soil, plants, people, pets, or the environment. Vinegar and dishwashing detergent can damage desirable foliage and affect nearby soil or organisms; avoid broad application and runoff. Non-selective: keep off lawns, garden plants, edible crops, and tree-root zones. It may damage stone, paving, metal, or finishes. Avoid eyes, skin contact, and breathing spray. Keep people and pets away during application and prevent contact with treated vegetation. Never mix with bleach or other cleaners.',
 };
 
+const peppermintMouseSpray: StarterRecipe = {
+  id: 'builtin:peppermintMouseSpray',
+  name: 'Peppermint Vinegar Mouse Spray',
+  ingredients: [
+    '1 cup distilled water',
+    '1 cup distilled white vinegar',
+    '30–40 drops 100% pure peppermint essential oil (not cooking extract)',
+    '1 teaspoon dish soap',
+  ],
+  equipment: ['Glass spray bottle', 'Measuring cups', 'Funnel'],
+  instructions: [
+    'Pour the water, vinegar, dish soap, and peppermint oil into the glass spray bottle. Shake vigorously before every use.',
+    'Do not spray this mixture on mouse droppings, urine, nests, or contaminated surfaces. Use the rodent-waste cleanup instructions in the cautions instead.',
+    'For the owner-suggested perimeter application, use only on compatible, non-food-contact surfaces near entry points. Test a small area first and avoid overspray.',
+    'The owner-suggested schedule is to reapply every 3 to 5 days, or when the mint scent fades. This timing and the spray’s effectiveness have not been established.',
+  ],
+  storage:
+    'Label the bottle with its contents and mixing date. Keep it closed, away from children, pets, food, heat, and sunlight. No safe shelf life has been established; prepare a fresh batch if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula; peppermint oil spray is not proven to repel or control mice, and this mixture is not a disinfectant. Do not use it to clean droppings, urine, nests, or other rodent waste. CDC advises wearing rubber or plastic gloves, wetting rodent waste with a household disinfectant labeled as a disinfectant or a bleach solution, letting it soak as directed, and wiping it up; never sweep or vacuum it. Keep peppermint oil and spray away from cats and dogs, children, food, and food-contact surfaces; essential oils may harm pets, and the user-supplied claim that diluted spray is generally safe for pets has not been verified. Vinegar may damage stone and some finishes. Do not mix with bleach or other cleaners.',
+};
+
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
   title,
@@ -563,6 +585,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Two cream deodorant formulas'
       : title === 'Weed killer'
       ? 'Two vinegar-based formulas with site restrictions'
+      : title === 'Mouse deterrents'
+      ? 'Owner-supplied peppermint and vinegar perimeter spray'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -607,6 +631,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [deodorantRecipe, tallowDeodorantRecipe]
       : title === 'Weed killer'
       ? [weedControlRecipe, saltFreeWeedRecipe]
+      : title === 'Mouse deterrents'
+      ? [peppermintMouseSpray]
       : [],
   safetyNote:
     title === 'Toothpaste'
@@ -615,6 +641,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Sunburn is a burn injury. This entry covers mild self-care only; do not rely on it for a severe burn or other urgent symptoms.'
       : title === 'Bug bite care'
       ? 'Owner-supplied, untested bite paste. It is not medical advice and is not a substitute for care for a severe allergic reaction.'
+      : title === 'Mouse deterrents'
+      ? 'Owner-supplied peppermint spray is untested and is not a proven rodent control method. Never use it on rodent waste; follow the cleanup instructions in the recipe cautions.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
@@ -625,6 +653,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'General first-aid steps based on public dermatology and NIH MedlinePlus guidance. This is not individualized medical advice.'
       : title === 'Bug bite care'
       ? 'This owner-supplied formula and its benefit claims have not been independently evaluated. Publication or votes do not establish safety or effectiveness.'
+      : title === 'Mouse deterrents'
+      ? 'Peppermint oil products exempt from EPA registration have not been evaluated by EPA for effectiveness. Physical exclusion and safe sanitation are better established parts of rodent control.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
