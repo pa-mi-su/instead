@@ -22,7 +22,7 @@ export function BrandLogo() {
         />
         <Path
           d="M545 458c16-125 101-207 225-211-4 128-83 216-225 211Z"
-          fill="#A8BFAE"
+          fill="#E6F66A"
         />
         <Path
           d="M319 344c65 48 115 105 156 176M735 294c-76 48-130 103-184 170"
@@ -31,7 +31,7 @@ export function BrandLogo() {
           strokeWidth="17"
           strokeLinecap="round"
         />
-        <Circle cx="734" cy="696" r="25" fill="#A8BFAE" />
+        <Circle cx="734" cy="696" r="25" fill="#E6F66A" />
       </Svg>
       <Text style={styles.wordmark}>INSTEAD</Text>
       <Text style={styles.wordmarkTagline}>try</Text>
