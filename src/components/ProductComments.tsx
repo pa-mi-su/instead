@@ -94,7 +94,7 @@ export function ProductComments({
                 onChangeText={c.setEmail}
                 autoCorrect={false}
                 placeholderTextColor={COLORS.muted}
-                selectionColor={COLORS.orange}
+                selectionColor={COLORS.sage}
                 returnKeyType="send"
                 editable={!c.busy}
                 onFocus={() => setFocusedField('email')}
@@ -143,7 +143,7 @@ export function ProductComments({
                 value={c.code}
                 onChangeText={value => c.setCode(value.replace(/\D/g, ''))}
                 placeholderTextColor={COLORS.muted}
-                selectionColor={COLORS.orange}
+                selectionColor={COLORS.sage}
                 returnKeyType="done"
                 editable={!c.busy}
                 onFocus={() => setFocusedField('code')}
@@ -317,7 +317,7 @@ const commentStyles = StyleSheet.create({
     fontSize: 18,
     color: COLORS.ink,
   },
-  authInputFocused: { borderColor: COLORS.orange },
+  authInputFocused: { borderColor: COLORS.sage },
   fieldLabel: {
     color: COLORS.ink,
     fontSize: 14,
@@ -335,7 +335,7 @@ const commentStyles = StyleSheet.create({
   authAction: {
     minHeight: 48,
     borderRadius: 18,
-    backgroundColor: COLORS.orange,
+    backgroundColor: COLORS.sage,
     borderWidth: 1.5,
     borderColor: COLORS.ink,
     alignItems: 'center',

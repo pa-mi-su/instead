@@ -4,10 +4,7 @@ import {
   Animated,
   Pressable,
   type PressableProps,
-  type PressableStateCallbackType,
 } from 'react-native';
-
-const MotionPressable = Animated.createAnimatedComponent(Pressable);
 
 export function AnimatedPressable({
   style,
@@ -43,23 +40,20 @@ export function AnimatedPressable({
     }).start();
   }
 
-  const resolveStyle = (state: PressableStateCallbackType) => [
-    typeof style === 'function' ? style(state) : style,
-    { transform: [{ scale }] },
-  ];
-
   return (
-    <MotionPressable
-      {...props}
-      style={resolveStyle}
-      onPressIn={event => {
-        animate(0.965);
-        onPressIn?.(event);
-      }}
-      onPressOut={event => {
-        animate(1);
-        onPressOut?.(event);
-      }}
-    />
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        {...props}
+        style={style}
+        onPressIn={event => {
+          animate(0.965);
+          onPressIn?.(event);
+        }}
+        onPressOut={event => {
+          animate(1);
+          onPressOut?.(event);
+        }}
+      />
+    </Animated.View>
   );
 }

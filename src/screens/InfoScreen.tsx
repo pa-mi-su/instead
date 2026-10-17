@@ -173,7 +173,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.ink,
     borderRadius: 22,
-    backgroundColor: COLORS.orange,
+    backgroundColor: COLORS.sage,
   },
   backText: {
     color: COLORS.ink,
@@ -189,7 +189,7 @@ const s = StyleSheet.create({
   },
   pressed: { opacity: 0.86 },
   kicker: {
-    color: COLORS.orange,
+    color: COLORS.muted,
     fontSize: 11,
     fontWeight: '900',
     marginBottom: 12,
@@ -230,7 +230,7 @@ const s = StyleSheet.create({
   check: { fontSize: 25, color: COLORS.ink },
   checkText: { flex: 1, color: COLORS.ink, fontSize: 16, lineHeight: 24 },
   primary: {
-    backgroundColor: COLORS.orange,
+    backgroundColor: COLORS.sage,
     padding: 16,
     borderRadius: 20,
     minHeight: 52,
