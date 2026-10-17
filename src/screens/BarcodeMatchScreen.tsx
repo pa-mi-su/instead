@@ -2,12 +2,12 @@ import { ArrowLeft, ArrowRight, ScanLine, Search } from 'lucide-react-native';
 import {
   ActivityIndicator,
   Linking,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { useEffect, useState } from 'react';
 import { categories } from '../categories';
 import { COLORS, styles } from '../styles';
