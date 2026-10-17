@@ -190,6 +190,32 @@ const bugBitePaste: StarterRecipe = {
     'Owner-supplied, untested formula. The claims that this mixture neutralizes venom, stops itching instantly, calms swelling, or sanitizes a bite have not been independently established for this formula. Baking soda and essential oils can irritate skin or trigger an allergic reaction. Do not apply to broken skin or near eyes or mouth; stop if irritation occurs. This paste is not a substitute for medical care. Seek urgent help for trouble breathing, face or mouth swelling, faintness, or a severe widespread reaction. Essential oils can be toxic to pets; keep the paste away from them.',
 };
 
+const bugBiteTallowBalm: StarterRecipe = {
+  id: 'builtin:bugBiteTallowBalm',
+  name: 'Bug Bite Anti-Itch Balm',
+  ingredients: [
+    'Grass-fed beef tallow: 8 oz (approx. 1 cup) — deeply calms inflammation and stops the urge to scratch.',
+    'Olive oil or jojoba oil: 2 oz (approx. 4 tablespoons) — keeps the balm smooth and easy to apply.',
+    'Tea tree essential oil: 15 drops — a natural antiseptic that sanitizes the bite and reduces swelling.',
+    'Lavender essential oil: 15 drops — provides instant sting relief and stops histamine itching.',
+  ],
+  equipment: [
+    'Small pot or double boiler',
+    'Spoon or spatula',
+    'Clean glass jar or small metal tins',
+  ],
+  instructions: [
+    'Combine the tallow and olive or jojoba oil in a small pot over low heat. Remove from the burner as soon as everything is completely liquefied.',
+    'Let the mixture sit for about 5 minutes until it is warm but no longer piping hot. Stir in the tea tree and lavender essential oils.',
+    'Pour the liquid into a clean glass jar or small portable metal tins. Leave them undisturbed at room temperature until the balm cools and sets into a firm, creamy salve.',
+    'Dab a tiny bit directly onto mosquito, flea, or ant bites as soon as they start to itch.',
+  ],
+  storage:
+    'Keep covered in a clean, dry container. No safe shelf life has been established for this owner-supplied formula; discard if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula. Its claims to calm inflammation, act as an antiseptic, sanitize a bite, reduce swelling, provide instant relief, or stop histamine itching have not been independently established for this formula. Essential oils can irritate skin or cause allergic reactions. For external use only; avoid eyes, mouth, and broken skin. Stop if irritation occurs. Do not use for a severe allergic reaction or worsening symptoms. Seek urgent help for trouble breathing, face or mouth swelling, faintness, or a severe widespread reaction. Essential oils can be toxic to pets; keep the balm away from them.',
+};
+
 const aloeSunburnCare: StarterRecipe = {
   id: 'builtin:aloeSunburnCare',
   name: 'Plain Aloe Vera Moisturizer',
@@ -519,7 +545,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Sunburn care'
       ? [sunburnFirstAid, aloeSunburnCare]
       : title === 'Bug bite care'
-      ? [bugBitePaste]
+      ? [bugBitePaste, bugBiteTallowBalm]
       : title === 'Glass cleaner'
       ? [glassCleanerRecipe, vinegarGlassRecipe]
       : title === 'Laundry care'
