@@ -1,5 +1,6 @@
 import { Bookmark } from 'lucide-react-native';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { AnimatedPressable as Pressable } from './AnimatedPressable';
 import { BrandLogo } from './BrandLogo';
 import type { ViewName } from '../navigation/types';
 import { COLORS, styles } from '../styles';

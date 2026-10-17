@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { AnimatedPressable as Pressable } from './AnimatedPressable';
 import { styles } from '../styles';
 import type { Guide } from '../types';
 import { universalSafetyNotices } from '../safetyNotices';

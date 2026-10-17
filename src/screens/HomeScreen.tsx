@@ -1,12 +1,12 @@
 import { ArrowRight, ScanLine, Search, XCircle } from 'lucide-react-native';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { categories } from '../categories';
 import { GuideCard } from '../components/GuideCard';
 import { COLORS, styles } from '../styles';

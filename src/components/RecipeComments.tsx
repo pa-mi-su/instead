@@ -1,12 +1,6 @@
 import { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AnimatedPressable as Pressable } from './AnimatedPressable';
 import { useCommunity } from '../hooks/useCommunity';
 import { supabase } from '../lib/supabase';
 import { styles } from '../styles';
