@@ -170,6 +170,25 @@ const sunburnFirstAid: StarterRecipe = {
     'This is general first-aid information, not a homemade sunburn treatment or medical advice. The submitted tallow-and-oil balm is omitted: oil-based products are not recommended on active sunburn by NIH MedlinePlus, and essential oils can irritate injured skin. Do not apply tallow, olive or jojoba oil, peppermint oil, or lavender oil to sunburned skin. Seek medical care for severe symptoms or if you are unsure how serious the burn is.',
 };
 
+const bugBiteFirstAid: StarterRecipe = {
+  id: 'builtin:bugBiteFirstAid',
+  name: 'Clean Bite & Cool Compress',
+  ingredients: [
+    'Mild soap and clean water',
+    'A clean cloth soaked in cool water, or an ice pack wrapped in a cloth',
+  ],
+  equipment: ['Clean washcloth (optional)'],
+  instructions: [
+    'Gently wash the bite area with soap and clean water.',
+    'For swelling or discomfort, apply a cool, damp cloth or a wrapped ice pack for about 10 minutes. Never place ice directly on skin; repeat as needed.',
+    'Try not to scratch the bite. Ask a pharmacist or healthcare professional about appropriate itch relief, especially for a child, during pregnancy, or if you take other medicines.',
+    'Seek urgent medical help for trouble breathing, swelling of the face or mouth, faintness, or a widespread severe reaction. Get medical advice if redness, warmth, swelling, or pain keeps worsening.',
+  ],
+  storage: 'No mixture to prepare or store.',
+  cautions:
+    'General first-aid information for ordinary insect bites only; it does not identify the insect or treat infection or insect-borne illness. The submitted coconut-oil, baking-soda, lavender, and tea-tree paste is not included: its claims to neutralize venom, instantly stop itching, or sanitize bites are not established for this formula. Guidance on baking soda differs for mosquito bites versus bites generally, so this entry uses broad first-aid steps. Essential oils can irritate skin. Seek urgent care for signs of a severe allergic reaction.',
+};
+
 const aloeSunburnCare: StarterRecipe = {
   id: 'builtin:aloeSunburnCare',
   name: 'Plain Aloe Vera Moisturizer',
@@ -461,6 +480,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Tallow balm with olive or jojoba oil'
       : title === 'Sunburn care'
       ? 'Cooling first aid for mild sunburn'
+      : title === 'Bug bite care'
+      ? 'General first aid for ordinary insect bites'
       : title === 'Laundry care'
       ? 'Mineral laundry booster formula'
       : title === 'Surface cleaner'
@@ -496,6 +517,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [tallowSkinBalmRecipe]
       : title === 'Sunburn care'
       ? [sunburnFirstAid, aloeSunburnCare]
+      : title === 'Bug bite care'
+      ? [bugBiteFirstAid]
       : title === 'Glass cleaner'
       ? [glassCleanerRecipe, vinegarGlassRecipe]
       : title === 'Laundry care'
@@ -514,6 +537,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Fluoride-free and untested. Review this formula with a dentist before oral use. Natural ingredients do not establish dental safety or cavity protection.'
       : title === 'Sunburn care'
       ? 'Sunburn is a burn injury. This entry covers mild self-care only; do not rely on it for a severe burn or other urgent symptoms.'
+      : title === 'Bug bite care'
+      ? 'This entry covers basic care for ordinary bites. Trouble breathing, facial or mouth swelling, faintness, or a severe widespread reaction needs urgent medical help.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
@@ -522,6 +547,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Owner-supplied recipes. These exact methods have not been independently tested for effectiveness or compatibility; shelf life has not been established for the mixed cleaner.'
       : title === 'Sunburn care'
       ? 'General first-aid steps based on public dermatology and NIH MedlinePlus guidance. This is not individualized medical advice.'
+      : title === 'Bug bite care'
+      ? 'General first-aid steps. Advice on baking-soda remedies differs by bite type and health authority; this entry avoids applying a mosquito-specific suggestion to all bites.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
