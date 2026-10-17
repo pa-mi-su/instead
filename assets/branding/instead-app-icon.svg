@@ -4,7 +4,7 @@
   <circle cx="512" cy="512" r="302" fill="#183B32"/>
   <path d="M499 722c-4-173 26-307 108-418" fill="none" stroke="#FFFDF7" stroke-width="35" stroke-linecap="round"/>
   <path d="M491 570c-138-10-221-105-218-239 139 6 238 88 218 239Z" fill="#E6F66A"/>
-  <path d="M545 458c16-125 101-207 225-211-4 128-83 216-225 211Z" fill="#FF7043"/>
+  <path d="M545 458c16-125 101-207 225-211-4 128-83 216-225 211Z" fill="#A8BFAE"/>
   <path d="M319 344c65 48 115 105 156 176M735 294c-76 48-130 103-184 170" fill="none" stroke="#183B32" stroke-width="17" stroke-linecap="round"/>
-  <circle cx="734" cy="696" r="25" fill="#FF7043"/>
+  <circle cx="734" cy="696" r="25" fill="#A8BFAE"/>
 </svg>

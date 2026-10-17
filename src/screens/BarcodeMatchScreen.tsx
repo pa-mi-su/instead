@@ -89,7 +89,7 @@ export function BarcodeMatchScreen({
 
       {lookup.status === 'loading' ? (
         <View style={styles.barcodeLoading}>
-          <ActivityIndicator size="large" color={COLORS.orange} />
+          <ActivityIndicator size="large" color={COLORS.muted} />
           <Text style={styles.barcodeLoadingText}>Searching product data…</Text>
         </View>
       ) : null}
@@ -186,7 +186,7 @@ export function BarcodeMatchScreen({
               placeholder="Search by product or alternative"
               placeholderTextColor="#8B887F"
               style={styles.barcodeSearchInput}
-              selectionColor={COLORS.orange}
+              selectionColor={COLORS.sage}
               returnKeyType="search"
               onSubmitEditing={() => onSearch(search.trim())}
               accessibilityLabel="Search for a product or alternative"

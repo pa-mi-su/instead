@@ -92,7 +92,7 @@ export function HomeScreen({
           placeholder="Try “toothpaste” or “weed killer”"
           placeholderTextColor="#8B887F"
           style={styles.searchInput}
-          selectionColor={COLORS.orange}
+          selectionColor={COLORS.sage}
           returnKeyType="search"
         />
         {query ? (
