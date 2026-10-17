@@ -46,7 +46,11 @@ export function ProductRecipes({
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
       onPress={action}
-      style={[styles.chip, disabled && local.disabled]}
+      style={({ pressed }) => [
+        styles.chip,
+        disabled && local.disabled,
+        pressed && styles.pressed,
+      ]}
     >
       <Text style={styles.chipText}>{label}</Text>
     </Pressable>

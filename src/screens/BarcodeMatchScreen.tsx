@@ -62,11 +62,12 @@ export function BarcodeMatchScreen({
         { paddingBottom: Math.max(bottomInset + 30, 46) },
       ]}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       showsVerticalScrollIndicator={false}
     >
       <Pressable
         onPress={onBack}
-        style={styles.barcodeBack}
+        style={({ pressed }) => [styles.barcodeBack, pressed && styles.pressed]}
         accessibilityRole="button"
         accessibilityLabel="Back to directory"
       >
@@ -97,7 +98,13 @@ export function BarcodeMatchScreen({
         <View style={styles.barcodeNotice}>
           <Text style={styles.barcodeNoticeTitle}>Lookup unavailable</Text>
           <Text style={styles.barcodeNoticeBody}>{lookup.error}</Text>
-          <Pressable onPress={onScan} style={styles.barcodeTextButton}>
+          <Pressable
+            onPress={onScan}
+            style={({ pressed }) => [
+              styles.barcodeTextButton,
+              pressed && styles.pressed,
+            ]}
+          >
             <ScanLine size={17} color={COLORS.ink} />
             <Text style={styles.barcodeTextButtonLabel}>Scan again</Text>
           </Pressable>
@@ -112,7 +119,13 @@ export function BarcodeMatchScreen({
             checking common UPC/EAN equivalents. Search by the product name or
             choose a directory category below.
           </Text>
-          <Pressable onPress={onScan} style={styles.barcodeTextButton}>
+          <Pressable
+            onPress={onScan}
+            style={({ pressed }) => [
+              styles.barcodeTextButton,
+              pressed && styles.pressed,
+            ]}
+          >
             <ScanLine size={17} color={COLORS.ink} />
             <Text style={styles.barcodeTextButtonLabel}>Scan again</Text>
           </Pressable>
@@ -137,13 +150,16 @@ export function BarcodeMatchScreen({
               </Text>
               <Pressable
                 onPress={() => onOpen(matchedGuide.id)}
-                style={styles.barcodePrimaryButton}
+                style={({ pressed }) => [
+                  styles.barcodePrimaryButton,
+                  pressed && styles.pressed,
+                ]}
                 accessibilityRole="button"
               >
                 <Text style={styles.barcodePrimaryText}>
                   See {matchedGuide.title.toLowerCase()} alternatives
                 </Text>
-                <ArrowRight size={18} color={COLORS.card} />
+                <ArrowRight size={18} color={COLORS.ink} />
               </Pressable>
             </>
           ) : (
@@ -178,7 +194,10 @@ export function BarcodeMatchScreen({
             <Pressable
               onPress={() => onSearch(search.trim())}
               disabled={!search.trim()}
-              style={styles.barcodeSearchButton}
+              style={({ pressed }) => [
+                styles.barcodeSearchButton,
+                pressed && styles.pressed,
+              ]}
               accessibilityRole="button"
               accessibilityLabel="Search directory"
             >
@@ -191,7 +210,10 @@ export function BarcodeMatchScreen({
               <Pressable
                 key={category}
                 onPress={() => onCategory(category)}
-                style={styles.barcodeCategoryButton}
+                style={({ pressed }) => [
+                  styles.barcodeCategoryButton,
+                  pressed && styles.pressed,
+                ]}
                 accessibilityRole="button"
               >
                 <Text style={styles.barcodeCategoryText}>{category}</Text>

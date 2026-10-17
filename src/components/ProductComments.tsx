@@ -44,7 +44,11 @@ export function ProductComments({
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
       onPress={action}
-      style={[styles.chip, disabled && commentStyles.disabled]}
+      style={({ pressed }) => [
+        styles.chip,
+        disabled && commentStyles.disabled,
+        pressed && styles.pressed,
+      ]}
     >
       <Text style={styles.chipText}>{label}</Text>
     </Pressable>
@@ -118,10 +122,11 @@ export function ProductComments({
                 disabled={c.busy || !c.email.trim()}
                 accessibilityState={{ disabled: c.busy || !c.email.trim() }}
                 onPress={c.sendCode}
-                style={[
+                style={({ pressed }) => [
                   commentStyles.authAction,
                   (c.busy || !c.email.trim()) &&
                     commentStyles.authActionDisabled,
+                  pressed && styles.pressed,
                 ]}
               >
                 <Text style={commentStyles.authActionText}>
@@ -166,10 +171,11 @@ export function ProductComments({
                 disabled={c.busy || !c.code.trim()}
                 accessibilityState={{ disabled: c.busy || !c.code.trim() }}
                 onPress={c.verifyCode}
-                style={[
+                style={({ pressed }) => [
                   commentStyles.authAction,
                   (c.busy || !c.code.trim()) &&
                     commentStyles.authActionDisabled,
+                  pressed && styles.pressed,
                 ]}
               >
                 <Text style={commentStyles.authActionText}>
@@ -334,14 +340,21 @@ const commentStyles = StyleSheet.create({
   },
   authAction: {
     minHeight: 48,
-    borderRadius: 8,
-    backgroundColor: COLORS.ink,
+    borderRadius: 18,
+    backgroundColor: COLORS.orange,
+    borderWidth: 1.5,
+    borderColor: COLORS.ink,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
+    shadowColor: COLORS.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  authActionDisabled: { backgroundColor: '#807D75' },
-  authActionText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  authActionDisabled: { backgroundColor: '#C5C1B7' },
+  authActionText: { color: COLORS.ink, fontWeight: '800', fontSize: 15 },
   input: { minHeight: 100 },
   disabled: { opacity: 0.5 },
 });

@@ -10,6 +10,7 @@ import {
 import { useCommunity } from '../hooks/useCommunity';
 import { supabase } from '../lib/supabase';
 import { styles } from '../styles';
+import { KeyboardDismissControl } from './KeyboardDismissControl';
 import { ProductComments } from './ProductComments';
 
 export function RecipeComments({
@@ -48,7 +49,7 @@ export function RecipeComments({
       <Pressable
         accessibilityRole="button"
         onPress={() => setOpen(true)}
-        style={styles.chip}
+        style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
       >
         <Text style={styles.chipText}>
           {c.publicCount
@@ -67,27 +68,35 @@ export function RecipeComments({
           c.retry();
         }}
       >
-        <ScrollView contentContainerStyle={local.content}>
-          <Pressable
-            accessibilityRole="button"
-            style={styles.chip}
-            onPress={() => {
-              setOpen(false);
-              c.retry();
-            }}
+        <View style={local.modalRoot}>
+          <ScrollView
+            contentContainerStyle={local.content}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.chipText}>Back to recipe</Text>
-          </Pressable>
-          <Text style={styles.optionName}>{title}</Text>
-          {open && (
-            <ProductComments productId={productId} recipeId={recipeId} />
-          )}
-        </ScrollView>
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+              onPress={() => {
+                setOpen(false);
+                c.retry();
+              }}
+            >
+              <Text style={styles.chipText}>Back to recipe</Text>
+            </Pressable>
+            <Text style={styles.optionName}>{title}</Text>
+            {open && (
+              <ProductComments productId={productId} recipeId={recipeId} />
+            )}
+          </ScrollView>
+          <KeyboardDismissControl />
+        </View>
       </Modal>
     </View>
   );
 }
 
 const local = StyleSheet.create({
+  modalRoot: { flex: 1 },
   content: { padding: 24, paddingTop: 56, paddingBottom: 60 },
 });

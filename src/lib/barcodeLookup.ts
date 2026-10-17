@@ -56,7 +56,7 @@ const categoryMatches: [RegExp, string][] = [
     'natural-weed-killer',
   ],
   [
-    /\b(body wash|body soaps?|shower gel|bath soaps?|hand soaps?)\b/,
+    /\b(body wash|body soaps?|shower gel|bath soaps?|hand soaps?|bar soaps?|soap bars?|toilet soaps?|solid soaps?|handmade soaps?|soaps?)\b/,
     'natural-body-soap',
   ],
   [

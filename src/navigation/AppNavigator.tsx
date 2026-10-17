@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  PanResponder,
   Platform,
   StatusBar,
   View,
@@ -10,6 +11,7 @@ import { DataScanner } from 'react-native-data-scanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { categories } from '../categories';
 import { TopBar } from '../components/TopBar';
+import { KeyboardDismissControl } from '../components/KeyboardDismissControl';
 import { useFavorites } from '../hooks/useFavorites';
 import { useGuideCatalog } from '../hooks/useGuideCatalog';
 import { GuideDetailScreen } from '../screens/GuideDetailScreen';
@@ -32,6 +34,7 @@ export function AppNavigator() {
   const { favorites, toggleFavorite } = useFavorites();
   const [view, setView] = useState<ViewName>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const history = useRef<{ view: ViewName; selectedId: string | null }[]>([]);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<(typeof categories)[number]>('All');
   const [barcodeLookup, setBarcodeLookup] = useState<BarcodeLookupState | null>(
@@ -56,15 +59,46 @@ export function AppNavigator() {
     });
   }, [catalog, category, query]);
 
+  function navigate(nextView: ViewName, nextSelectedId = selectedId) {
+    history.current.push({ view, selectedId });
+    setSelectedId(nextSelectedId);
+    setView(nextView);
+  }
+
   function openGuide(id: string) {
+    history.current.push({ view, selectedId });
     setSelectedId(id);
     setView('detail');
   }
 
   function goHome() {
+    history.current = [];
     setSelectedId(null);
     setView('home');
   }
+
+  function goBack() {
+    const previous = history.current.pop();
+    setSelectedId(previous?.selectedId ?? null);
+    setView(previous?.view ?? 'home');
+  }
+
+  const goBackRef = useRef(goBack);
+  goBackRef.current = goBack;
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponderCapture: (_event, gesture) =>
+          history.current.length > 0 &&
+          gesture.x0 < 32 &&
+          gesture.dx > 45 &&
+          Math.abs(gesture.dy) < 48,
+        onPanResponderRelease: (_event, gesture) => {
+          if (gesture.dx > 60 && Math.abs(gesture.dy) < 56) goBackRef.current();
+        },
+      }),
+    [],
+  );
 
   async function scanProduct() {
     if (Platform.OS === 'ios' && Number(Platform.Version) < 16) {
@@ -98,7 +132,7 @@ export function AppNavigator() {
         return;
       }
 
-      setView('barcode');
+      navigate('barcode', null);
       setBarcodeLookup({
         status: 'loading',
         barcode,
@@ -135,7 +169,10 @@ export function AppNavigator() {
   }
 
   return (
-    <View style={[styles.app, { paddingTop: Math.max(insets.top, 12) }]}>
+    <View
+      style={[styles.app, { paddingTop: Math.max(insets.top, 12) }]}
+      {...panResponder.panHandlers}
+    >
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.paper} />
       {acknowledgement.status === 'loading' ? (
         <ActivityIndicator accessibilityLabel="Loading safety acknowledgement" />
@@ -151,7 +188,7 @@ export function AppNavigator() {
         <GuideDetailScreen
           guide={selected}
           isSaved={favorites.includes(selected.id)}
-          onBack={goHome}
+          onBack={goBack}
           onSave={() => toggleFavorite(selected.id)}
           bottomInset={insets.bottom}
         />
@@ -160,29 +197,29 @@ export function AppNavigator() {
           <TopBar
             activeView={view}
             savedCount={favorites.length}
-            onInfo={() => setView('info')}
+            onInfo={() => navigate('info')}
             onHome={goHome}
-            onSaved={() => setView('saved')}
+            onSaved={() => navigate('saved')}
           />
           {view === 'info' ? (
-            <InfoScreen bottomInset={insets.bottom} />
+            <InfoScreen onBack={goHome} bottomInset={insets.bottom} />
           ) : view === 'barcode' && barcodeLookup ? (
             <BarcodeMatchScreen
               lookup={barcodeLookup}
               guides={catalog}
               bottomInset={insets.bottom}
-              onBack={goHome}
+              onBack={goBack}
               onScan={scanProduct}
               onOpen={openGuide}
               onSearch={value => {
                 setQuery(value);
                 setCategory('All');
-                setView('home');
+                navigate('home', null);
               }}
               onCategory={value => {
                 setQuery('');
                 setCategory(value);
-                setView('home');
+                navigate('home', null);
               }}
             />
           ) : view === 'saved' ? (
@@ -208,6 +245,7 @@ export function AppNavigator() {
           )}
         </>
       )}
+      <KeyboardDismissControl />
     </View>
   );
 }

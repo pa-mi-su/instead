@@ -23,6 +23,9 @@ describe('barcodeLookup', () => {
     [{ categories_tags: ['en:hair-shampoos'] }, 'natural-shampoo'],
     [{ generic_name: 'Antiperspirant deodorant' }, 'natural-deodorant'],
     [{ product_name: 'Dishwashing liquid' }, 'natural-dish-cleaner'],
+    [{ product_name: 'Bar of Soap' }, 'natural-body-soap'],
+    [{ categories_tags: ['en:soaps'] }, 'natural-body-soap'],
+    [{ product_name: 'Solid shampoo bar' }, 'natural-shampoo'],
     [{ categories: 'Laundry detergent' }, 'natural-laundry-care'],
     [{ product_name: 'Window cleaner spray' }, 'natural-glass-cleaner'],
     [

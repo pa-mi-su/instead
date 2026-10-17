@@ -6,12 +6,14 @@ import { universalSafetyNotices } from '../safetyNotices';
 import { COLORS } from '../styles';
 export function InfoScreen({
   firstUse = false,
+  onBack,
   onAccept,
   busy = false,
   error = '',
   bottomInset = 0,
 }: {
   firstUse?: boolean;
+  onBack?: () => void;
   onAccept?: () => void;
   busy?: boolean;
   error?: string;
@@ -23,7 +25,19 @@ export function InfoScreen({
   return (
     <ScrollView
       contentContainerStyle={[s.content, { paddingBottom: bottomInset + 30 }]}
+      keyboardDismissMode="on-drag"
     >
+      {!firstUse && onBack ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to the home screen"
+          onPress={onBack}
+          style={({ pressed }) => [s.backButton, pressed && s.pressed]}
+        >
+          <Text style={s.backArrow}>‹</Text>
+          <Text style={s.backText}>BACK TO HOME</Text>
+        </Pressable>
+      ) : null}
       <Text style={s.kicker}>INSTEAD · INFO & SAFETY</Text>
       <Text accessibilityRole="header" style={s.title}>
         {firstUse ? 'Before you begin' : 'Know before you try'}
@@ -40,7 +54,11 @@ export function InfoScreen({
             accessibilityRole="button"
             accessibilityState={{ selected: page === item }}
             onPress={() => setPage(item)}
-            style={[s.tab, page === item && s.active]}
+            style={({ pressed }) => [
+              s.tab,
+              page === item && s.active,
+              pressed && s.pressed,
+            ]}
           >
             <Text style={s.buttonText}>
               {item === 'safety'
@@ -84,7 +102,7 @@ export function InfoScreen({
                 the app, read the policies, or return to the acknowledgement.
               </Text>
               <Pressable
-                style={s.tab}
+                style={({ pressed }) => [s.tab, pressed && s.pressed]}
                 onPress={() => setDeclined(false)}
                 accessibilityRole="button"
               >
@@ -113,7 +131,11 @@ export function InfoScreen({
                 disabled={!checked || busy}
                 accessibilityState={{ disabled: !checked || busy }}
                 onPress={onAccept}
-                style={[s.primary, (!checked || busy) && s.disabled]}
+                style={({ pressed }) => [
+                  s.primary,
+                  (!checked || busy) && s.disabled,
+                  pressed && s.pressed,
+                ]}
               >
                 <Text style={s.buttonText}>
                   {busy ? 'Saving…' : 'Agree & continue'}
@@ -126,7 +148,7 @@ export function InfoScreen({
                   setChecked(false);
                 }}
                 disabled={busy}
-                style={s.tab}
+                style={({ pressed }) => [s.tab, pressed && s.pressed]}
               >
                 <Text style={s.buttonText}>I do not agree</Text>
               </Pressable>
@@ -139,6 +161,32 @@ export function InfoScreen({
 }
 const s = StyleSheet.create({
   content: { padding: 22, width: '100%', maxWidth: 760, alignSelf: 'center' },
+  backButton: {
+    minHeight: 44,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.ink,
+    borderRadius: 22,
+    backgroundColor: COLORS.orange,
+  },
+  backText: {
+    color: COLORS.ink,
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 0.7,
+  },
+  backArrow: {
+    color: COLORS.ink,
+    fontSize: 24,
+    lineHeight: 24,
+    fontWeight: '700',
+  },
+  pressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
   kicker: {
     color: COLORS.orange,
     fontSize: 11,
@@ -166,8 +214,9 @@ const s = StyleSheet.create({
     minHeight: 44,
     borderWidth: 1,
     borderColor: COLORS.ink,
-    borderRadius: 8,
+    borderRadius: 18,
     marginTop: 8,
+    backgroundColor: COLORS.card,
   },
   active: { backgroundColor: COLORS.lime },
   buttonText: { color: COLORS.ink, fontWeight: '800', textAlign: 'center' },
@@ -175,12 +224,17 @@ const s = StyleSheet.create({
   check: { fontSize: 25, color: COLORS.ink },
   checkText: { flex: 1, color: COLORS.ink, fontSize: 16, lineHeight: 24 },
   primary: {
-    backgroundColor: COLORS.lime,
+    backgroundColor: COLORS.orange,
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 18,
     minHeight: 52,
     borderWidth: 1.5,
     borderColor: COLORS.ink,
+    shadowColor: COLORS.ink,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 3,
   },
   disabled: { opacity: 0.45 },
   error: { color: '#9C2513', marginBottom: 12 },

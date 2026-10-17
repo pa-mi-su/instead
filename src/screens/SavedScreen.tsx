@@ -22,6 +22,7 @@ export function SavedScreen({
         { paddingBottom: Math.max(bottomInset + 30, 46) },
       ]}
       showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
     >
       <View style={styles.savedHero}>
         <Text style={styles.pageEyebrow}>YOUR SHORTLIST</Text>
@@ -53,7 +54,10 @@ export function SavedScreen({
           </Text>
           <Pressable
             onPress={onExplore}
-            style={styles.primaryButton}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.pressed,
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Explore guides"
           >

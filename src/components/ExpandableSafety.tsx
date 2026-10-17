@@ -16,7 +16,7 @@ export function ExpandableSafety({ guide }: { guide: Guide }) {
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         onPress={() => setExpanded(!expanded)}
-        style={styles.chip}
+        style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
       >
         <Text style={styles.chipText}>
           {expanded ? 'Hide safety warnings' : 'Read all safety warnings'}
