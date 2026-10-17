@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Keyboard, Platform, Text } from 'react-native';
-import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import { Keyboard, Platform, Pressable, Text } from 'react-native';
 import { styles } from '../styles';
 
 export function KeyboardDismissControl() {

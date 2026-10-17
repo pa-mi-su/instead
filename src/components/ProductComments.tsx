@@ -2,8 +2,14 @@ import { CommunityAccountControls } from './CommunityAccountControls';
 import { communityRules } from '../disclaimer';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Linking, StyleSheet, Text, TextInput, View } from 'react-native';
-import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import {
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useCommunity } from '../hooks/useCommunity';
 import { COMMENT_LIMIT, reportReasons } from '../lib/community';
 import { supabase } from '../lib/supabase';

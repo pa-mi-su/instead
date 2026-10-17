@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { RecipeComments } from './RecipeComments';
-import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
-import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { decode } from 'base64-arraybuffer';
 import { useRecipes } from '../hooks/useRecipes';

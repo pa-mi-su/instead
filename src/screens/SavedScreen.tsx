@@ -1,6 +1,5 @@
 import { ArrowRight, Bookmark } from 'lucide-react-native';
-import { ScrollView, Text, View } from 'react-native';
-import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { GuideCard } from '../components/GuideCard';
 import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';

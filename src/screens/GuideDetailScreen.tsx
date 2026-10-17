@@ -1,6 +1,5 @@
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
-import { ScrollView, Text, View } from 'react-native';
-import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { ProductCommunity as ProductComments } from '../components/ProductCommunity';
 import { DetailSection } from '../components/DetailSection';
 import { COLORS, styles } from '../styles';

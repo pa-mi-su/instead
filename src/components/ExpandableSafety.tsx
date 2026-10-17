@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
-import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import { Pressable, Text, View } from 'react-native';
 import { styles } from '../styles';
 import type { Guide } from '../types';
 import { universalSafetyNotices } from '../safetyNotices';
@@ -16,17 +15,12 @@ export function ExpandableSafety({ guide }: { guide: Guide }) {
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
-        accessibilityLabel={`${expanded ? 'Hide' : 'Read'} all safety warnings`}
         onPress={() => setExpanded(!expanded)}
-        style={({ pressed }) => [
-          styles.safetyAction,
-          pressed && styles.pressed,
-        ]}
+        style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
       >
-        <Text style={styles.safetyActionText}>
+        <Text style={styles.chipText}>
           {expanded ? 'Hide safety warnings' : 'Read all safety warnings'}
         </Text>
-        <Text style={styles.safetyActionIcon}>{expanded ? '−' : '＋'}</Text>
       </Pressable>
       {expanded && (
         <>

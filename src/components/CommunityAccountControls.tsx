@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Modal, Text, View } from 'react-native';
-import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import { Modal, Pressable, Text, View } from 'react-native';
 import type { useCommunity } from '../hooks/useCommunity';
 import { communityRules } from '../disclaimer';
 import { InfoScreen } from '../screens/InfoScreen';
