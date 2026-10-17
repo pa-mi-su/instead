@@ -18,7 +18,7 @@ export function CommunityAccountControls({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={action}
-      style={styles.chip}
+      style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
     >
       <Text style={styles.chipText}>{label}</Text>
     </Pressable>

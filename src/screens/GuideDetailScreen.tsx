@@ -25,17 +25,26 @@ export function GuideDetailScreen({
       <View style={styles.detailTopBar}>
         <Pressable
           onPress={onBack}
-          style={styles.iconButton}
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed && styles.pressed,
+          ]}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Back to guides"
         >
           <ArrowLeft size={22} color={COLORS.ink} />
         </Pressable>
-        <Text style={styles.detailWordmark}>INSTEAD</Text>
+        <View style={styles.detailWordmarkWrap}>
+          <Text style={styles.detailWordmark}>INSTEAD</Text>
+        </View>
         <Pressable
           onPress={onSave}
-          style={[styles.iconButton, isSaved && styles.iconButtonSaved]}
+          style={({ pressed }) => [
+            styles.iconButton,
+            isSaved && styles.iconButtonSaved,
+            pressed && styles.pressed,
+          ]}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={
@@ -57,6 +66,7 @@ export function GuideDetailScreen({
           { paddingBottom: Math.max(bottomInset + 34, 50) },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
       >
         <View style={styles.detailHero}>
           <Text style={styles.detailCategory}>

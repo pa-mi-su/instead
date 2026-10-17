@@ -4,6 +4,7 @@ import {
   normalizeBarcode,
   parseProductLookup,
 } from '../src/lib/barcodeLookup';
+import { productCatalog } from '../src/catalog';
 
 describe('barcodeLookup', () => {
   it('accepts standard UPC and EAN lengths and rejects other scans', () => {
@@ -23,6 +24,9 @@ describe('barcodeLookup', () => {
     [{ categories_tags: ['en:hair-shampoos'] }, 'natural-shampoo'],
     [{ generic_name: 'Antiperspirant deodorant' }, 'natural-deodorant'],
     [{ product_name: 'Dishwashing liquid' }, 'natural-dish-cleaner'],
+    [{ product_name: 'Bar of Soap' }, 'natural-body-soap'],
+    [{ categories_tags: ['en:soaps'] }, 'natural-body-soap'],
+    [{ product_name: 'Solid shampoo bar' }, 'natural-shampoo'],
     [{ categories: 'Laundry detergent' }, 'natural-laundry-care'],
     [{ product_name: 'Window cleaner spray' }, 'natural-glass-cleaner'],
     [
@@ -42,6 +46,12 @@ describe('barcodeLookup', () => {
     [{ product_name: 'Mystery household product' }, null],
   ])('classifies only a recognized product category', (product, expected) => {
     expect(classifyProduct(product)).toBe(expected);
+  });
+
+  it('maps every catalog guide title back to its own guide', () => {
+    for (const guide of productCatalog) {
+      expect(classifyProduct({ product_name: guide.title })).toBe(guide.id);
+    }
   });
 
   it('parses the small product result and leaves unclear products unmatched', () => {

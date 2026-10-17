@@ -36,11 +36,11 @@ const categoryMatches: [RegExp, string][] = [
     'natural-deodorant',
   ],
   [
-    /\b(dish soap|dishwashing|dish detergent|dish liquid|washing up liquid|washing-up liquid)\b/,
+    /\b(dish cleaners?|dish soap|dishwashing|dish detergent|dish liquid|washing up liquid|washing-up liquid)\b/,
     'natural-dish-cleaner',
   ],
   [
-    /\b(laundry detergent|laundry soap|laundry powder|washing powder|clothes washing detergent|fabric softener)\b/,
+    /\b(laundry(?: care| detergent| soap| powder)?|washing powder|clothes washing detergent|fabric softener)\b/,
     'natural-laundry-care',
   ],
   [
@@ -56,30 +56,41 @@ const categoryMatches: [RegExp, string][] = [
     'natural-weed-killer',
   ],
   [
-    /\b(body wash|body soaps?|shower gel|bath soaps?|hand soaps?)\b/,
+    /\b(body wash|body soaps?|shower gel|bath soaps?|hand soaps?|bar soaps?|soap bars?|toilet soaps?|solid soaps?|handmade soaps?|soaps?)\b/,
     'natural-body-soap',
   ],
   [
     /\b(moisturizer|moisturiser|face cream|skin cream|body lotion|skin care|skincare|after sun lotion)\b/,
     'natural-skin-care',
   ],
-  [/\b(drain cleaner|pipe cleaner|drain opener)\b/, 'natural-clogged-drains'],
+  [
+    /\b(clogged drains?|drain cleaners?|drain openers?|pipe cleaners?|blocked drains?|sink uncloggers?)\b/,
+    'natural-clogged-drains',
+  ],
   [/\b(sunburn|sun burn|after sun|sunburn relief)\b/, 'natural-sunburn-care'],
   [
     /\b(bug bite|insect bite|mosquito bite|bite relief|sting relief)\b/,
     'natural-bug-bite-care',
   ],
   [
-    /\b(cough drops?|cough syrup|throat lozenges?|cough and cold)\b/,
+    /\b(cough comfort|cough drops?|cough syrup|throat lozenges?|cough and cold|cold remedies?)\b/,
     'natural-cough-comfort',
   ],
   [
-    /\b(mouse repellent|mice repellent|rodent repellent|mouse deterrent)\b/,
+    /\b(mouse|mice|rodent)(?:s)?(?:\s+(?:repellent|deterrent|control|prevention))?\b/,
     'natural-mouse-deterrents',
   ],
   [
-    /\b(spider repellent|spider deterrent|arachnid repellent)\b/,
+    /\b(spiders?|arachnids?)(?:\s+(?:repellent|deterrent|control|prevention))?\b/,
     'natural-spider-deterrents',
+  ],
+  [
+    /\b(roach(?:es)?|cockroaches?)(?:\s+(?:control|prevention|repellent))?\b/,
+    'natural-roach-control',
+  ],
+  [
+    /\b(ants?)(?:\s+(?:control|prevention|repellent))?\b/,
+    'natural-ant-control',
   ],
 ];
 

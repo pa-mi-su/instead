@@ -46,6 +46,7 @@ export function HomeScreen({
       ]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
     >
       <View style={styles.hero}>
         <View style={styles.kickerRow}>
@@ -132,7 +133,11 @@ export function HomeScreen({
           <Pressable
             key={item}
             onPress={() => onCategory(item)}
-            style={[styles.chip, category === item && styles.chipActive]}
+            style={({ pressed }) => [
+              styles.chip,
+              category === item && styles.chipActive,
+              pressed && styles.pressed,
+            ]}
             accessibilityRole="button"
             accessibilityLabel={`Filter by ${item}`}
             accessibilityState={{ selected: category === item }}

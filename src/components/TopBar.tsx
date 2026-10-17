@@ -20,6 +20,10 @@ export function TopBar({
     <View style={styles.topBar}>
       <Pressable
         onPress={onHome}
+        style={({ pressed }) => [
+          styles.wordmarkWrap,
+          pressed && styles.pressed,
+        ]}
         hitSlop={10}
         accessibilityRole="button"
         accessibilityLabel="Go to home"
@@ -31,18 +35,20 @@ export function TopBar({
         accessibilityRole="button"
         accessibilityLabel="Info and Safety"
         accessibilityState={{ selected: activeView === 'info' }}
-        style={[
+        style={({ pressed }) => [
           styles.savedButton,
           activeView === 'info' && styles.savedButtonActive,
+          pressed && styles.pressed,
         ]}
       >
         <Text style={styles.savedButtonText}>INFO</Text>
       </Pressable>
       <Pressable
         onPress={onSaved}
-        style={[
+        style={({ pressed }) => [
           styles.savedButton,
           activeView === 'saved' && styles.savedButtonActive,
+          pressed && styles.pressed,
         ]}
         hitSlop={8}
         accessibilityRole="button"
