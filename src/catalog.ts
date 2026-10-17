@@ -20,6 +20,7 @@ const topics: [string, Guide['category'], string][] = [
 ];
 
 const dishCleanerRecipe: StarterRecipe = {
+  id: 'builtin:dishCleanerRecipe',
   name: 'Citrus Castile Dish Cleaner',
   ingredients: [
     '1 cup unscented liquid castile soap',
@@ -41,6 +42,7 @@ const dishCleanerRecipe: StarterRecipe = {
 };
 
 const dishScrubRecipe: StarterRecipe = {
+  id: 'builtin:dishScrubRecipe',
   name: 'Baking Soda Scrub & Separate Vinegar Rinse',
   ingredients: [
     'Baking soda — enough to lightly sprinkle over the soiled area',
@@ -61,6 +63,7 @@ const dishScrubRecipe: StarterRecipe = {
 };
 
 const toothpasteRecipe: StarterRecipe = {
+  id: 'builtin:toothpasteRecipe',
   name: 'Zero-Sweetener Coconut Toothpaste',
   ingredients: [
     '4 tablespoons coconut oil',
@@ -91,6 +94,7 @@ const toothpasteRecipe: StarterRecipe = {
 };
 
 const glassCleanerRecipe: StarterRecipe = {
+  id: 'builtin:glassCleanerRecipe',
   name: 'Vinegar & Alcohol Glass Cleaner',
   ingredients: [
     '1 cup distilled water',
@@ -117,6 +121,7 @@ const glassCleanerRecipe: StarterRecipe = {
 };
 
 const vinegarGlassRecipe: StarterRecipe = {
+  id: 'builtin:vinegarGlassRecipe',
   name: 'Two-Ingredient Vinegar Glass Cleaner',
   ingredients: [
     '1 cup plain white vinegar (5% acidity)',
@@ -139,6 +144,7 @@ const vinegarGlassRecipe: StarterRecipe = {
 };
 
 const laundryPowderRecipe: StarterRecipe = {
+  id: 'builtin:laundryPowderRecipe',
   name: 'Mineral Laundry Powder — Booster Formula',
   ingredients: [
     '1½ cups washing soda (sodium carbonate)',
@@ -166,6 +172,7 @@ const laundryPowderRecipe: StarterRecipe = {
 };
 
 const surfaceCleanerRecipe: StarterRecipe = {
+  id: 'builtin:surfaceCleanerRecipe',
   name: 'Vinegar & Dish Soap Surface Cleaner',
   ingredients: [
     '1 cup plain white vinegar (5% acidity)',
@@ -191,6 +198,7 @@ const surfaceCleanerRecipe: StarterRecipe = {
 };
 
 const shampooRecipe: StarterRecipe = {
+  id: 'builtin:shampooRecipe',
   name: 'Simple Castile Soap Shampoo',
   ingredients: [
     '¼ cup distilled water',
@@ -212,6 +220,7 @@ const shampooRecipe: StarterRecipe = {
 };
 
 const twoStepHairRecipe: StarterRecipe = {
+  id: 'builtin:twoStepHairRecipe',
   name: 'Two-Step Baking Soda Wash & ACV Rinse',
   ingredients: [
     'Wash: 1 tablespoon baking soda + 1 cup warm water',
@@ -235,6 +244,7 @@ const twoStepHairRecipe: StarterRecipe = {
 };
 
 const deodorantRecipe: StarterRecipe = {
+  id: 'builtin:deodorantRecipe',
   name: 'Three-Ingredient Coconut Deodorant',
   ingredients: [
     '3 tablespoons coconut oil — softened, not fully melted',
@@ -260,6 +270,7 @@ const deodorantRecipe: StarterRecipe = {
 };
 
 const tallowDeodorantRecipe: StarterRecipe = {
+  id: 'builtin:tallowDeodorantRecipe',
   name: 'Tallow & Orange Deodorant',
   ingredients: [
     '3 tablespoons rendered beef tallow — gently softened',
@@ -290,6 +301,7 @@ const tallowDeodorantRecipe: StarterRecipe = {
 };
 
 const weedControlRecipe: StarterRecipe = {
+  id: 'builtin:weedControlRecipe',
   name: 'Vinegar, Salt & Dish Soap Weed Spray',
   ingredients: [
     '1 US gallon plain household white vinegar (5% acidity only)',
@@ -316,6 +328,7 @@ const weedControlRecipe: StarterRecipe = {
 };
 
 const saltFreeWeedRecipe: StarterRecipe = {
+  id: 'builtin:saltFreeWeedRecipe',
   name: 'Salt-Free Vinegar Weed Spray',
   ingredients: [
     '2 cups plain household white vinegar (5% acidity only)',

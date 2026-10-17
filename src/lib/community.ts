@@ -31,6 +31,7 @@ export type CommunityClient = {
 };
 export const COMMENT_LIMIT = 1000;
 export type CommunityComment = {
+  public_count?: number;
   id: string;
   nickname: string;
   body: string;

@@ -1,10 +1,11 @@
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { ProductComments } from '../components/ProductComments';
+import { ProductCommunity as ProductComments } from '../components/ProductCommunity';
 import { DetailSection } from '../components/DetailSection';
 import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';
-import { universalSafetyNotices } from '../safetyNotices';
+import { ExpandableSafety } from '../components/ExpandableSafety';
+import { RecipeComments } from '../components/RecipeComments';
 
 export function GuideDetailScreen({
   guide,
@@ -73,22 +74,7 @@ export function GuideDetailScreen({
           <Text style={styles.answerText}>{guide.answer}</Text>
         </View>
 
-        <View style={styles.safetyCard}>
-          <Text style={styles.safetyLabel}>UNIVERSAL SAFETY</Text>
-          {universalSafetyNotices.map(notice => (
-            <View key={notice.title} style={styles.safetyNotice}>
-              <Text style={styles.optionName}>{notice.title}</Text>
-              <Text style={styles.safetyText}>{notice.body}</Text>
-            </View>
-          ))}
-        </View>
-
-        {!!guide.reviewNotice && (
-          <View style={styles.safetyCard}>
-            <Text style={styles.safetyLabel}>CONTENT REVIEW</Text>
-            <Text style={styles.safetyText}>{guide.reviewNotice}</Text>
-          </View>
-        )}
+        <ExpandableSafety key={guide.id} guide={guide} />
         {guide.recipes?.length ? (
           <DetailSection number="01" title="RECIPES">
             <View style={styles.optionList}>
@@ -127,6 +113,11 @@ export function GuideDetailScreen({
                     CAUTIONS
                   </Text>
                   <Text style={styles.optionDetail}>{recipe.cautions}</Text>
+                  <RecipeComments
+                    productId={guide.id}
+                    recipeId={recipe.id}
+                    title={recipe.name}
+                  />
                 </View>
               ))}
             </View>
@@ -135,18 +126,7 @@ export function GuideDetailScreen({
 
         <DetailSection
           number={guide.recipes?.length ? '02' : '01'}
-          title="BEFORE YOU TRY ANYTHING"
-        >
-          <View style={styles.safetyCard}>
-            <Text style={styles.safetyLabel}>USE AT YOUR OWN RISK</Text>
-            <Text style={styles.safetyText}>{guide.safetyNote}</Text>
-            <Text style={styles.evidenceNote}>{guide.evidenceNote}</Text>
-          </View>
-        </DetailSection>
-
-        <DetailSection
-          number={guide.recipes?.length ? '03' : '02'}
-          title="COMMUNITY SUGGESTIONS"
+          title="COMMUNITY RECIPES & ACCOUNT"
         >
           <ProductComments key={guide.id} productId={guide.id} />
         </DetailSection>

@@ -406,7 +406,10 @@ function renderContent(item) {
       );
       card.append(loadPhotos, photos);
     }
-  } else details(card, 'Comment', item.body);
+  } else {
+    details(card, 'Recipe', item.recipe_title || 'Earlier product discussion');
+    details(card, 'Comment', item.body);
+  }
   if (item.reports?.length) {
     const reports = element('div', undefined, 'reports');
     reports.append(

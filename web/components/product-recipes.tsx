@@ -1,4 +1,5 @@
 "use client";
+import { RecipeComments } from "./recipe-comments";
 import Image from "next/image";
 import { useRef, useState } from 'react';
 import { useRecipes } from '../../src/hooks/useRecipes';
@@ -48,7 +49,7 @@ export function ProductRecipes({ productId, userId, canContribute, canManage, on
       {recipe.photoError && <p>Some photos could not load. Refresh recipes to retry.</p>}
       <dl>{[['Ingredients and quantities', recipe.ingredients], ['Instructions', recipe.instructions], ['Storage and shelf life', recipe.storage_notes], ['Cautions', recipe.cautions], ...(recipe.source ? [['Source / credit', recipe.source]] : [])].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
       {!!recipe.moderation_note && <p>Review note: {recipe.moderation_note}</p>}
-      {recipe.status === 'approved' && <><p>Score: {recipe.score} · {recipe.upvotes} upvotes · {recipe.downvotes} downvotes</p>
+      {recipe.status === "approved" && <RecipeComments productId={productId} recipeId={recipe.id} title={recipe.title} />}{recipe.status === 'approved' && <><p>Score: {recipe.score} · {recipe.upvotes} upvotes · {recipe.downvotes} downvotes</p>
         <button type="button" aria-pressed={recipe.my_vote === 1} disabled={r.busy || !canContribute || recipe.mine} onClick={() => r.vote(recipe, 1)}>▲ Upvote</button>
         <button type="button" aria-pressed={recipe.my_vote === -1} disabled={r.busy || !canContribute || recipe.mine} onClick={() => r.vote(recipe, -1)}>▼ Downvote</button>
         {canManage && <button type="button" disabled={r.busy || recipe.reported} onClick={() => setReportId(reportId === recipe.id ? null : recipe.id)}>{recipe.reported ? 'Reported' : 'Report recipe'}</button>}

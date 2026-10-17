@@ -41,3 +41,5 @@ The database requires current owner membership, AAL2 signed JWT claims, a curren
 There is no email-only MFA bypass or public reset endpoint. If the authenticator is lost, use the independently secured Supabase project-owner console for recovery after verifying identity; disabling/replacing a verified factor is a separate security-sensitive action. Supabase does not supply app recovery codes in this implementation. The owner must complete real enrollment and a real sign-in; development tests use synthetic factors/codes only.
 
 References: https://supabase.com/docs/guides/auth/auth-mfa/totp and https://supabase.com/docs/guides/auth/sessions#how-to-ensure-an-access-token-jwt-cannot-be-used-after-a-user-signs-out
+
+Recipe-specific comments: apply `supabase/recipe-comments.sql` before the updated `supabase/admin-panel.sql`. Bundled recipes have explicit stable IDs; community recipes use their existing UUIDs. Existing unscoped comments remain in admin as “Earlier product discussion” and are not guessed onto a recipe. The app shows one approved top-comment preview per recipe and a separate comments view with helpful/newest sorting.

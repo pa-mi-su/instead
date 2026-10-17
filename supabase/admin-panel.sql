@@ -91,7 +91,7 @@ begin
    ) q;
   else
    select coalesce(jsonb_agg(to_jsonb(q)),'[]') into items from (
-    select r.id,r.product_id,r.user_id,r.body,r.moderation_status as status,r.created_at,r.hidden,r.admin_removed_at,
+    select r.id,r.product_id,r.recipe_key,coalesce((select title from public.community_builtin_recipes where id=r.recipe_key),(select title from public.community_recipes where id::text=r.recipe_key),'Earlier product discussion') as recipe_title,r.user_id,r.body,r.moderation_status as status,r.created_at,r.hidden,r.admin_removed_at,
      coalesce(c.suspended,false) as suspended,c.deletion_requested_at,
      (select coalesce(jsonb_agg(to_jsonb(x)),'[]') from (select reason,count(*) as count,max(created_at) as created_at from public.community_reports where comment_id=r.id group by reason) x) as reports,
      (select count(*) from public.community_reports x where x.comment_id=r.id and x.created_at>coalesce(v.reviewed_at,'-infinity'::timestamptz)) as open_reports

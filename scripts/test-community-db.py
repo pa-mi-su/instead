@@ -39,9 +39,12 @@ grant select,insert,delete on storage.objects to authenticated;
  run(psql+['-f',str(root/'supabase/community-safeguards.sql')])
  run(psql+['-f',str(root/'supabase/community-safeguards.sql')])
  print(run(psql+['-f',str(root/'supabase/safeguards.test.sql')])[-500:])
+ run(psql+['-f',str(root/'supabase/recipe-comments.sql')])
+ run(psql+['-f',str(root/'supabase/recipe-comments.sql')])
  run(psql+['-f',str(root/'supabase/admin-panel.sql')])
  run(psql+['-f',str(root/'supabase/admin-panel.sql')])
  print(run(psql+['-f',str(root/'supabase/admin-panel.test.sql')])[-800:])
+ print(run(psql+['-f',str(root/'supabase/recipe-comments.test.sql')])[-800:])
 finally:
  if started: run([str(bin/'pg_ctl'),'-D',str(base/'data'),'-m','immediate','stop'])
  shutil.rmtree(base)
