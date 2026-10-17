@@ -663,6 +663,30 @@ const antControlRecipe: StarterRecipe = {
     'Chemical-free trail cleanup and exclusion can reduce indoor ant activity, but results depend on the ant species, food sources, and entry points. Vinegar may damage natural stone and some finishes; spot-test first and avoid delicate surfaces. Never mix vinegar with bleach or other cleaning products. Keep solutions away from eyes, children, and pets.',
 };
 
+const drainClearingGuide: StarterRecipe = {
+  id: 'builtin:drainClearingGuide',
+  name: 'Chemical-Free Clog Clearing',
+  ingredients: [
+    'No chemical drain opener or homemade chemical mixture',
+    'Warm tap water for rinsing after the blockage is removed',
+  ],
+  equipment: [
+    'Cup plunger',
+    'Plastic hair-removal tool or hand drain snake',
+    'Bucket and gloves for catching or handling debris',
+  ],
+  instructions: [
+    'Remove the drain stopper or strainer and clear any hair or debris you can reach. Put the material in the trash rather than pushing it farther down the drain.',
+    'For a sink or tub clog, use a cup plunger. Add enough water to cover the plunger cup, seal the overflow opening and any second sink opening with a wet cloth, then plunge steadily. Lift the plunger to check whether water drains.',
+    'If the clog is likely hair or debris, use a plastic drain-cleaning tool or hand snake according to its instructions. Turn gently, pull debris out, and do not force the tool if it catches.',
+    'When water flows freely, rinse with warm tap water and reinstall the stopper or strainer. If the drain remains blocked, several drains back up together, or you smell sewage, stop and contact a plumber.',
+  ],
+  storage:
+    'Rinse reusable tools, allow them to dry, and store them away from children and pets. Dispose of removed hair and debris in household trash.',
+  cautions:
+    'Do not use a plunger or snake if chemical drain opener is still in the drain; splashes can cause serious injury. Follow the product label and contact a plumber if you are unsure. Do not pour boiling water into a drain; it can cause burns and may damage some fixtures or plumbing. Never mix drain products or combine household cleaners. Stop if you meet resistance, have damaged plumbing, or are not comfortable removing a stopper.',
+};
+
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
   title,
@@ -698,6 +722,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Chemical-free prevention and physical removal'
       : title === 'Ant control'
       ? 'Wipe trails, remove food, and seal entry gaps'
+      : title === 'Clogged drains'
+      ? 'Plunge or remove hair and debris without drain chemicals'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -750,6 +776,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [roachControlRecipe]
       : title === 'Ant control'
       ? [antControlRecipe]
+      : title === 'Clogged drains'
+      ? [drainClearingGuide]
       : [],
   safetyNote:
     title === 'Toothpaste'
@@ -766,6 +794,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'This guide uses sanitation, sealing, and physical removal without pesticide or spray mixtures. These steps can reduce activity, but may not eliminate an established infestation.'
       : title === 'Ant control'
       ? 'This guide uses cleaning and exclusion without pesticide bait or traps. It can help keep ants out of living areas but does not promise to eliminate a colony.'
+      : title === 'Clogged drains'
+      ? 'This guide uses physical drain-clearing tools rather than corrosive drain products or untested chemical mixtures. Stop and seek plumbing help when the clog does not clear safely.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
@@ -784,6 +814,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'University of Minnesota Extension recommends limiting food and water, and says vacuuming can remove roaches and egg cases when combined with other measures. This chemical-free approach may reduce activity; no eradication guarantee is made.'
       : title === 'Ant control'
       ? 'UC IPM recommends removing food sources, wiping ant trails with soapy water, and sealing entry points. University of Minnesota Extension says vinegar and water may temporarily disrupt ant trails; neither source supports a guaranteed colony-elimination claim for these steps.'
+      : title === 'Clogged drains'
+      ? 'The U.S. EPA lists a plunger or plumber’s snake as alternatives to chemical drain cleaner. This guide focuses on physical removal; effectiveness depends on the clog and plumbing.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
