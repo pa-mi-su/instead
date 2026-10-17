@@ -149,6 +149,27 @@ const tallowSkinBalmRecipe: StarterRecipe = {
     'Owner-supplied, untested formula for external use only. It has not been evaluated for treating dry skin or any skin condition. Tallow, plant oils, and essential oils can cause irritation or allergic reactions; essential oil is optional. Do not use on broken, infected, or severely irritated skin, near the eyes, or on infants or young children without qualified advice. Stop use if a reaction occurs. Do not ingest. Warm oils can burn; take care while melting and pouring.',
 };
 
+const sunburnFirstAid: StarterRecipe = {
+  id: 'builtin:sunburnFirstAid',
+  name: 'Cool Compress & Aloe or Soy Moisturizer',
+  ingredients: [
+    'Cool, clean water or a clean, cool, damp cloth',
+    'A plain moisturizer containing aloe or soy for mild sunburn without blisters',
+    'Drinking water',
+  ],
+  equipment: ['Clean washcloth (optional)'],
+  instructions: [
+    'Move out of the sun and indoors. Use a cool shower or bath, or place a clean, cool, damp cloth on the affected skin. Pat gently dry.',
+    'For mild sunburn without blisters, apply a plain moisturizer containing aloe or soy while the skin is still slightly damp. Stop if it stings or causes irritation.',
+    'Drink water and protect the affected skin from further sun exposure while it heals. Do not pop blisters or peel skin.',
+    'Get medical advice promptly for fever, chills, dizziness, severe or painful blistering, signs of dehydration, or a severe or worsening reaction.',
+  ],
+  storage:
+    'No homemade mixture to store. Keep any moisturizer in its original, labeled container and follow its label directions.',
+  cautions:
+    'This is general first-aid information, not a homemade sunburn treatment or medical advice. The submitted tallow-and-oil balm is omitted: oil-based products are not recommended on active sunburn by NIH MedlinePlus, and essential oils can irritate injured skin. Do not apply tallow, olive or jojoba oil, peppermint oil, or lavender oil to sunburned skin. Seek medical care for severe symptoms or if you are unsure how serious the burn is.',
+};
+
 const glassCleanerRecipe: StarterRecipe = {
   id: 'builtin:glassCleanerRecipe',
   name: 'Vinegar & Alcohol Glass Cleaner',
@@ -420,6 +441,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Honey and oatmeal melt-and-pour soap'
       : title === 'Skin care'
       ? 'Tallow balm with olive or jojoba oil'
+      : title === 'Sunburn care'
+      ? 'Cooling first aid for mild sunburn'
       : title === 'Laundry care'
       ? 'Mineral laundry booster formula'
       : title === 'Surface cleaner'
@@ -453,6 +476,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [bodySoapRecipe]
       : title === 'Skin care'
       ? [tallowSkinBalmRecipe]
+      : title === 'Sunburn care'
+      ? [sunburnFirstAid]
       : title === 'Glass cleaner'
       ? [glassCleanerRecipe, vinegarGlassRecipe]
       : title === 'Laundry care'
@@ -469,12 +494,16 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   safetyNote:
     title === 'Toothpaste'
       ? 'Fluoride-free and untested. Review this formula with a dentist before oral use. Natural ingredients do not establish dental safety or cavity protection.'
+      : title === 'Sunburn care'
+      ? 'Sunburn is a burn injury. This entry covers mild self-care only; do not rely on it for a severe burn or other urgent symptoms.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
   evidenceNote:
     title === 'Dish cleaner'
       ? 'Owner-supplied recipes. These exact methods have not been independently tested for effectiveness or compatibility; shelf life has not been established for the mixed cleaner.'
+      : title === 'Sunburn care'
+      ? 'General first-aid steps based on public dermatology and NIH MedlinePlus guidance. This is not individualized medical advice.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
