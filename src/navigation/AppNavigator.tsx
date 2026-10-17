@@ -77,7 +77,16 @@ export function AppNavigator() {
 
     try {
       const scanned = await DataScanner.scanBarcode({
-        targetFormats: ['ean-13', 'ean-8', 'upc-a', 'upc-e'],
+        targetFormats: [
+          'ean-13',
+          'ean-8',
+          'upc-a',
+          'upc-e',
+          'itf',
+          'code-128',
+          'data-matrix',
+        ],
+        qualityLevel: 'accurate',
         enableAutoZoom: true,
       });
       const barcode = normalizeBarcode(scanned.value);
@@ -98,7 +107,7 @@ export function AppNavigator() {
       });
 
       try {
-        const product = await lookupBarcodeProduct(barcode);
+        const product = await lookupBarcodeProduct(barcode, scanned.format);
         setBarcodeLookup(
           product
             ? { status: 'found', barcode, product, error: '' }
