@@ -614,26 +614,27 @@ const spiderDeterrentSpray: StarterRecipe = {
 
 const roachControlRecipe: StarterRecipe = {
   id: 'builtin:roachControlRecipe',
-  name: 'Label-Directed Roach Bait and Prevention',
+  name: 'Chemical-Free Roach Reduction',
   ingredients: [
-    'A ready-to-use cockroach bait station or bait product registered for the intended use in your area',
-    'Caulk or another suitable material for sealing small entry gaps',
+    'No pesticide or spray mixture',
+    'Food stored in tightly sealed containers',
+    'Caulk or another suitable material for sealing small gaps',
   ],
   equipment: [
-    'The product’s original label and applicator',
-    'Cleaning supplies for removing crumbs, grease, and standing water',
-    'Sticky monitoring traps, placed out of reach of children and pets',
+    'Vacuum cleaner with a hose or crevice attachment',
+    'Cleaning supplies for crumbs and grease',
+    'A sealable bag for vacuum contents',
   ],
   instructions: [
-    'Reduce food and water sources: clean crumbs and grease, store food and pet food in sealed containers, empty garbage regularly, and repair leaks.',
-    'Use only a ready-to-use product labeled for cockroaches. Read and follow its full label, including where and how much to place it. Place bait only in locations inaccessible to children and pets, and keep it away from food, dishes, and food-contact surfaces.',
-    'Do not make homemade boric-acid bait, puff loose boric-acid powder, or apply pesticide dust into the air. Do not combine bait with sprays or cleaners unless the product label specifically allows it.',
-    'Use monitoring traps to identify where activity is highest. Seal small gaps around pipes and baseboards when practical. If activity persists or is widespread, contact a licensed pest-management professional.',
+    'Remove food sources: wipe crumbs and grease, wash dishes after meals, store food in tightly sealed containers, and empty kitchen waste regularly.',
+    'Reduce moisture and shelter: repair leaks, dry sinks and counters, clear clutter and cardboard, and seal small gaps around pipes, baseboards, and cabinets.',
+    'Vacuum visible roaches and egg cases from cracks and crevices. Immediately seal vacuum contents in a bag and put it in an outdoor bin. Clean the vacuum attachment and canister according to its manufacturer’s instructions.',
+    'Repeat cleaning, moisture control, and gap sealing consistently. For a persistent infestation, ask a licensed pest-management professional about an integrated approach focused on prevention and physical removal.',
   ],
   storage:
-    'Keep any pesticide in its original, labeled container, locked away from children, pets, food, and feed. Follow the product label for storage and disposal; never transfer pesticide to a food or drink container.',
+    'Keep cleaning supplies and caulk in their original containers and follow their labels. No mixed product or pesticide is used in this method.',
   cautions:
-    'Pesticides can harm people and animals if swallowed, inhaled, or misused. Boric acid is not harmless because it is naturally occurring. Do not use the submitted homemade dough bait or loose-powder dusting method: food-based bait can attract children or pets, and airborne dust can be inhaled. Product labels differ; follow the exact label for the registered product you choose, including exposure, placement, cleanup, and first-aid instructions. Keep bait inaccessible to children and pets and prevent contamination of food, dishes, and food-contact surfaces.',
+    'This method avoids pesticides and chemical sprays. Vacuuming and sanitation physically remove roaches and egg cases; take care when handling vacuum contents and wash hands afterward. Consistent prevention can reduce cockroach activity, but a serious or established infestation may not be eliminated by nonchemical steps alone.',
 };
 
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
@@ -668,7 +669,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Spider deterrents'
       ? 'Owner-supplied peppermint and citrus spray'
       : title === 'Roach control'
-      ? 'Label-directed bait and prevention'
+      ? 'Chemical-free prevention and physical removal'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -732,7 +733,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Spider deterrents'
       ? 'Owner-supplied peppermint and citrus spray; its effectiveness and the suggested weekly reapplication schedule have not been established. Keep essential oils away from pets and follow the recipe’s handling cautions.'
       : title === 'Roach control'
-      ? 'Use only pesticide products labeled for cockroach control, exactly as directed. Boric-acid bait and dust can harm people and pets if mishandled; do not use homemade bait or loose powder.'
+      ? 'This guide uses sanitation, sealing, and physical removal without pesticide or spray mixtures. These steps can reduce activity, but may not eliminate an established infestation.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
@@ -748,7 +749,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Spider deterrents'
       ? 'The submitted spray, its claimed barrier effect, and its weekly reapplication interval have not been independently evaluated. Public spider-management guidance emphasizes removing spiders, egg cases, and webs and sealing gaps around windows and doors.'
       : title === 'Roach control'
-      ? 'EPA product labels require boric-acid dust to be kept away from children and pets and food, and specify where visible dust must be removed. University extension guidance recommends placing boric acid only in isolated, inaccessible locations and describes ready-to-use bait stations.'
+      ? 'University of Minnesota Extension recommends limiting food and water, and says vacuuming can remove roaches and egg cases when combined with other measures. This chemical-free approach may reduce activity; no eradication guarantee is made.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
