@@ -1,4 +1,4 @@
-import { Search, XCircle } from 'lucide-react-native';
+import { ArrowRight, ScanLine, Search, XCircle } from 'lucide-react-native';
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useRef } from 'react';
 import { categories } from '../categories';
 import { GuideCard } from '../components/GuideCard';
 import { COLORS, styles } from '../styles';
@@ -19,6 +20,8 @@ export function HomeScreen({
   category,
   onCategory,
   onOpen,
+  onScan,
+  onBrowse,
   isLoadingLive,
   bottomInset,
 }: {
@@ -28,9 +31,13 @@ export function HomeScreen({
   category: (typeof categories)[number];
   onCategory: (value: (typeof categories)[number]) => void;
   onOpen: (id: string) => void;
+  onScan: () => void;
+  onBrowse: () => void;
   isLoadingLive: boolean;
   bottomInset: number;
 }) {
+  const searchInput = useRef<TextInput>(null);
+
   return (
     <ScrollView
       contentContainerStyle={[
@@ -55,9 +62,52 @@ export function HomeScreen({
         </Text>
       </View>
 
+      <View style={styles.homeChoices}>
+        <Pressable
+          onPress={onScan}
+          style={({ pressed }) => [
+            styles.scanChoice,
+            pressed && styles.pressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Scan a product barcode"
+        >
+          <View style={styles.choiceIcon}>
+            <ScanLine size={22} color={COLORS.ink} />
+          </View>
+          <View style={styles.choiceCopy}>
+            <Text style={styles.choiceTitle}>Scan a product</Text>
+            <Text style={styles.choiceCaption}>Find a related alternative</Text>
+          </View>
+          <ArrowRight size={18} color={COLORS.ink} />
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            onBrowse();
+            searchInput.current?.focus();
+          }}
+          style={({ pressed }) => [
+            styles.browseChoice,
+            pressed && styles.pressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Browse and search alternatives"
+        >
+          <Search size={19} color={COLORS.ink} />
+          <Text style={styles.browseChoiceText}>Browse alternatives</Text>
+          <ArrowRight size={17} color={COLORS.ink} />
+        </Pressable>
+      </View>
+
+      <Text style={styles.scanPrivacyNote}>
+        Scans look up the barcode with Open Food Facts. INSTEAD does not save
+        scan history.
+      </Text>
+
       <View style={styles.searchWrap}>
         <Search size={21} color={COLORS.ink} />
         <TextInput
+          ref={searchInput}
           value={query}
           onChangeText={onQuery}
           placeholder="Try “toothpaste” or “weed killer”"
