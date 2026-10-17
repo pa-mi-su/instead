@@ -558,6 +558,32 @@ const peppermintMouseSpray: StarterRecipe = {
     'Owner-supplied, untested formula; peppermint oil spray is not proven to repel or control mice, and this mixture is not a disinfectant. Do not use it to clean droppings, urine, nests, or other rodent waste. CDC advises wearing rubber or plastic gloves, wetting rodent waste with a household disinfectant labeled as a disinfectant or a bleach solution, letting it soak as directed, and wiping it up; never sweep or vacuum it. Keep peppermint oil and spray away from cats and dogs, children, food, and food-contact surfaces; essential oils may harm pets, and the user-supplied claim that diluted spray is generally safe for pets has not been verified. Vinegar may damage stone and some finishes. Do not mix with bleach or other cleaners.',
 };
 
+const mouseDeterrentSachet: StarterRecipe = {
+  id: 'builtin:mouseDeterrentSachet',
+  name: 'The “Sachet” Alternative for Tight Spaces',
+  ingredients: [
+    'A handful of whole cloves',
+    '2–3 cinnamon sticks',
+    'A few dry bay leaves',
+    '5 drops peppermint or eucalyptus essential oil, applied to the outside of each bag',
+  ],
+  equipment: [
+    'Small mesh or muslin bags',
+    'Steel wool',
+    'Caulk for securing steel wool',
+  ],
+  instructions: [
+    'Fill small mesh or muslin bags with the whole cloves, cinnamon sticks, and dry bay leaves.',
+    'Put 5 drops of peppermint or eucalyptus essential oil directly onto the outside of each bag. Place the sachets in drawer corners, closets, or an RV in storage, only where children and pets cannot reach them.',
+    'The submitted suggestion is to replace the sachets once a month; this schedule and their ability to deter mice have not been established.',
+    'For small entry holes, pack in steel wool and secure it with caulk so rodents cannot push it out. Use metal screen, hardware cloth, or another suitable durable repair for larger openings. Inspect repairs; this is not foolproof.',
+  ],
+  storage:
+    'Replace the sachet monthly as suggested, or sooner if damp, damaged, or no longer intact. Keep essential oils and sachets sealed away from children and pets. No effective duration has been established.',
+  cautions:
+    'Owner-supplied, untested deterrent; the effectiveness of this spice-and-oil sachet and monthly replacement schedule has not been established. Peppermint and eucalyptus essential oils can be toxic to cats and dogs; do not use the sachets where pets can reach, chew, or contact them. Steel wool alone is not a foolproof seal: CDC advises securing it with caulk, and using durable metal or hardware cloth for larger openings. Take care around electrical wiring, hot pipes, and gas lines; use an appropriate seal or a qualified professional. Keep spices and oils away from food and food-contact surfaces.',
+};
+
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
   title,
@@ -586,7 +612,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Weed killer'
       ? 'Two vinegar-based formulas with site restrictions'
       : title === 'Mouse deterrents'
-      ? 'Owner-supplied peppermint and vinegar perimeter spray'
+      ? 'Peppermint perimeter spray and spice sachet'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -632,7 +658,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Weed killer'
       ? [weedControlRecipe, saltFreeWeedRecipe]
       : title === 'Mouse deterrents'
-      ? [peppermintMouseSpray]
+      ? [peppermintMouseSpray, mouseDeterrentSachet]
       : [],
   safetyNote:
     title === 'Toothpaste'
@@ -642,7 +668,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Bug bite care'
       ? 'Owner-supplied, untested bite paste. It is not medical advice and is not a substitute for care for a severe allergic reaction.'
       : title === 'Mouse deterrents'
-      ? 'Owner-supplied peppermint spray is untested and is not a proven rodent control method. Never use it on rodent waste; follow the cleanup instructions in the recipe cautions.'
+      ? 'Owner-supplied peppermint spray and spice sachet are untested and are not proven rodent control methods. Never use the spray on rodent waste; follow the cleanup instructions in the recipe cautions. Keep essential oils away from pets.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
@@ -654,7 +680,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Bug bite care'
       ? 'This owner-supplied formula and its benefit claims have not been independently evaluated. Publication or votes do not establish safety or effectiveness.'
       : title === 'Mouse deterrents'
-      ? 'Peppermint oil products exempt from EPA registration have not been evaluated by EPA for effectiveness. Physical exclusion and safe sanitation are better established parts of rodent control.'
+      ? 'Peppermint oil products exempt from EPA registration have not been evaluated by EPA for effectiveness. Physical exclusion and safe sanitation are better established parts of rodent control; steel wool should be secured and inspected.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
