@@ -183,7 +183,7 @@ test('unaccepted account cannot post and acceptance uses the current server vers
   expect(m.rpc).not.toHaveBeenCalledWith('community_post', expect.anything());
   await act(() => hook.result.current.acceptPolicy());
   expect(m.rpc).toHaveBeenCalledWith('community_accept_policy', {
-    p_version: '2026-10-16.2',
+    p_version: '2026-10-16.3',
   });
   expect(hook.result.current.canContribute).toBe(true);
 });

@@ -1,5 +1,5 @@
 // Shared policy text for offline mobile reading and the website.
-export const POLICY_VERSION = '2026-10-16.2';
+export const POLICY_VERSION = '2026-10-16.3';
 export const POLICY_DATE = 'October 16, 2026';
 export const policyDocuments = {
   terms: [
@@ -58,7 +58,7 @@ export const policyDocuments = {
     {
       title: '6. Third-party products and services',
       paragraphs: [
-        'Guides may discuss third-party products, manufacturers, service providers, or external resources. Availability, formulation, instructions, pricing, safety information, and claims can change. Unless expressly stated, a mention is not an endorsement, partnership, warranty, or paid placement. Third parties have their own terms and privacy practices.',
+        'Guides may discuss third-party products, manufacturers, service providers, or external resources. Barcode lookup uses product information from Open Food Facts and connected product databases. The Open Food Facts database is available under the Open Database License (ODbL), and its individual contents are available under the Database Contents License. Product records may be incomplete, incorrect, or out of date. Availability, formulation, instructions, pricing, safety information, and claims can change. Unless expressly stated, a mention is not an endorsement, partnership, warranty, or paid placement. Third parties have their own terms and privacy practices.',
       ],
     },
     {
@@ -121,7 +121,7 @@ export const policyDocuments = {
         'Network and service information',
         'Supabase provides authentication and the shared community database. Public responses include community content, dates, and vote totals; they do not include email addresses or account identifiers. Reports and account information are not public. As with ordinary internet traffic, the service provider may process technical request information such as an IP address, user agent, timestamps, and diagnostic or security logs to deliver content, prevent abuse, and maintain the service.',
         'Information we do not request',
-        'The current Services do not request access to precise location, contacts, camera, microphone, health records, or advertising identifiers. We do not use advertising SDKs or behavioral tracking tools. You can optionally select up to three recipe photos through the system photo picker or browser. Only selected images are uploaded. Photos are stored privately in Supabase until publication. Temporary photo links may remain usable for up to five minutes after content is hidden.',
+        'If you choose “Scan a product,” the mobile app uses the platform’s barcode-scanning interface to read a product barcode. The scan is not recorded by INSTEAD, and camera images or video are not uploaded or stored by INSTEAD. The barcode is sent directly from your device to Open Food Facts to request product name and category information. Open Food Facts and its connected product databases receive the barcode and ordinary request data such as your IP address and may handle or log requests under their own privacy practices. INSTEAD does not store the barcode, lookup result, or scan history. Product lookup is optional; you can browse and search without scanning. The current Services do not request access to precise location, contacts, microphone, health records, or advertising identifiers. We do not use advertising SDKs or behavioral tracking tools. You can optionally select up to three recipe photos through the system photo picker or browser. Only selected images are uploaded. Photos are stored privately in Supabase until publication. Temporary photo links may remain usable for up to five minutes after content is hidden.',
         'We store the safety acknowledgement version and acceptance date locally on your device or browser. The first-use device record is not uploaded. Signed-in contributors explicitly accept the current community terms separately; Supabase stores the account ID, policy version, and server-recorded acceptance time for each accepted version. Clearing storage, reinstalling, using another device, or a new acknowledgement version may show the notice again.',
       ],
     },
@@ -138,7 +138,7 @@ export const policyDocuments = {
     {
       title: '5. Service providers and disclosure',
       paragraphs: [
-        'Supabase provides authentication, database, and recipe photo storage. Amazon Web Services SES sends sign-in emails through Supabase. Service providers may process information to operate and protect these services under their applicable terms and privacy practices.',
+        'Supabase provides authentication, database, and recipe photo storage. Amazon Web Services SES sends sign-in emails through Supabase. Open Food Facts provides external product data when you request a barcode lookup; that request goes directly from your device to its service. These providers may process information to operate and protect their services under their applicable terms and privacy practices.',
         'We do not sell personal information or share it for cross-context behavioral advertising. Information may be disclosed if reasonably necessary to comply with law, address fraud or security, protect safety or legal rights, or complete a business reorganization subject to appropriate protections.',
       ],
     },

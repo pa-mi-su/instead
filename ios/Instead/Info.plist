@@ -56,5 +56,7 @@
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choose optional photos to attach to your recipe submission.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>INSTEAD uses the camera to scan a product barcode when you choose Scan a product. Camera images are not saved or uploaded by INSTEAD.</string>
 </dict>
 </plist>
