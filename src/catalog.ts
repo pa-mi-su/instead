@@ -167,7 +167,7 @@ const sunburnFirstAid: StarterRecipe = {
   storage:
     'No homemade mixture to store. Keep any moisturizer in its original, labeled container and follow its label directions.',
   cautions:
-    'This is general first-aid information, not medical advice. The separate owner-supplied spray in this category contains fractionated coconut oil. NIH MedlinePlus advises against oil-based products on active sunburn; that spray is included as untested owner content, not recommended treatment. Seek medical care for severe symptoms or if you are unsure how serious the burn is.',
+    'This is general first-aid information, not medical advice. The separate owner-supplied spray and balm in this category contain oils. NIH MedlinePlus advises against oil-based products on active sunburn; these are included as untested owner content, not recommended treatments. Seek medical care for severe symptoms or if you are unsure how serious the burn is.',
 };
 
 const bugBitePaste: StarterRecipe = {
@@ -250,6 +250,32 @@ const aloeCoconutSunburnSpray: StarterRecipe = {
     'Keep the bottle in the refrigerator. No safe shelf life has been established for this mixture.',
   cautions:
     'Owner-supplied, untested formula. Its claim of instant cooling relief has not been independently established for this mixture. This spray contains fractionated coconut oil; NIH MedlinePlus advises against oil-based products on active sunburn. It is included as owner content for reference, not recommended treatment. Aloe and coconut products can irritate skin or cause allergic reactions; stop if a reaction occurs. Do not use this instead of medical care for severe symptoms, blistering, or a worsening burn.',
+};
+
+const sunburnTallowBalm: StarterRecipe = {
+  id: 'builtin:sunburnTallowBalm',
+  name: 'Sunburn Balm',
+  ingredients: [
+    'Grass-fed beef tallow: 8 oz (approx. 1 cup) — forms a rich lipid barrier to lock in healing moisture.',
+    'Organic jojoba oil or olive oil: 2 oz (approx. 4 tablespoons) — keeps the balm soft enough to glide easily over painful skin.',
+    'Lavender essential oil: 20 drops — widely praised for its natural ability to soothe stings, cool burns, and minimize peeling.',
+    'Peppermint essential oil: 5 drops — adds an immediate, refreshing cooling sensation to take the heat out of the skin.',
+  ],
+  equipment: [
+    'Small pot or double boiler',
+    'Spoon or spatula',
+    'Clean glass jar or shallow tin',
+  ],
+  instructions: [
+    'Combine the tallow and olive or jojoba oil in a small pot or double boiler. Melt on low heat just until completely liquefied, then immediately remove from the burner.',
+    'Let the liquid sit for 5 minutes so it is warm but no longer steaming hot. Stir in the lavender and peppermint essential oils.',
+    'Pour the liquid into a clean glass jar or shallow tin. Leave it undisturbed at room temperature for a couple of hours until it cools and hardens into a firm, silky salve.',
+    'Gently press your fingers into the balm. Your body heat will instantly liquefy it into an oil. Lightly pat — do not rub — onto your sunburned skin.',
+  ],
+  storage:
+    'Keep covered in a clean, dry container. No safe shelf life has been established for this owner-supplied formula; discard if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula. The claims to lock in healing moisture, soothe stings, cool burns, minimize peeling, or provide immediate cooling have not been independently established for this formula. This balm is oil-based; NIH MedlinePlus advises against oil-based products on active sunburn. It is included as owner content for reference, not recommended treatment. Lavender and peppermint oils can irritate skin or cause allergic reactions. Do not use instead of medical care for severe symptoms, blistering, or a worsening burn.',
 };
 
 const glassCleanerRecipe: StarterRecipe = {
@@ -561,7 +587,12 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Skin care'
       ? [tallowSkinBalmRecipe]
       : title === 'Sunburn care'
-      ? [sunburnFirstAid, aloeSunburnCare, aloeCoconutSunburnSpray]
+      ? [
+          sunburnFirstAid,
+          aloeSunburnCare,
+          aloeCoconutSunburnSpray,
+          sunburnTallowBalm,
+        ]
       : title === 'Bug bite care'
       ? [bugBitePaste, bugBiteTallowBalm]
       : title === 'Glass cleaner'
