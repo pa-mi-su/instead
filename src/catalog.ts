@@ -18,6 +18,7 @@ const topics: [string, Guide['category'], string][] = [
   ['Mouse deterrents', 'Pest Prevention', 'mice mouse repel rodent'],
   ['Spider deterrents', 'Pest Prevention', 'spiders spider repel pest'],
   ['Roach control', 'Pest Prevention', 'roach roaches cockroach cockroaches'],
+  ['Ant control', 'Pest Prevention', 'ants ant trails kitchen sugar entry'],
 ];
 
 const dishCleanerRecipe: StarterRecipe = {
@@ -637,6 +638,31 @@ const roachControlRecipe: StarterRecipe = {
     'This method avoids pesticides and chemical sprays. Vacuuming and sanitation physically remove roaches and egg cases; take care when handling vacuum contents and wash hands afterward. Consistent prevention can reduce cockroach activity, but a serious or established infestation may not be eliminated by nonchemical steps alone.',
 };
 
+const antControlRecipe: StarterRecipe = {
+  id: 'builtin:antControlRecipe',
+  name: 'Chemical-Free Ant Trail Cleanup and Prevention',
+  ingredients: [
+    'Warm water with a few drops of mild dish soap for wiping trails',
+    'Optional: equal parts white vinegar and water for wiping compatible surfaces',
+    'Caulk or another suitable material for sealing small entry gaps',
+  ],
+  equipment: [
+    'Small bowl or spray bottle for the chosen cleaning solution',
+    'Sponge or microfiber cloth',
+    'Sealed food-storage containers',
+  ],
+  instructions: [
+    'Remove what is attracting the ants: wipe up crumbs, grease, and spills; store food and pet food in sealed containers; rinse recycling; and empty the kitchen garbage regularly.',
+    'Wipe visible ant trails with soapy water. Alternatively, wipe compatible surfaces with a 50/50 white vinegar and water solution. Repeat as needed; this can temporarily disrupt trails but does not eliminate the colony.',
+    'Follow the ants to likely entry gaps around windows, doors, pipes, and baseboards, then seal suitable gaps. Trim branches touching the building and remove outdoor debris or food sources near entry points when practical.',
+    'Keep surfaces clean and dry and repeat these steps when ants return. This approach helps keep ants out of living areas; it does not promise to eradicate an outdoor colony or a persistent indoor nest.',
+  ],
+  storage:
+    'If you prepare a cleaning solution, label the container and make only what you need. Keep it away from children, pets, and food. Do not store it in a beverage container.',
+  cautions:
+    'Chemical-free trail cleanup and exclusion can reduce indoor ant activity, but results depend on the ant species, food sources, and entry points. Vinegar may damage natural stone and some finishes; spot-test first and avoid delicate surfaces. Never mix vinegar with bleach or other cleaning products. Keep solutions away from eyes, children, and pets.',
+};
+
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
   title,
@@ -670,6 +696,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Owner-supplied peppermint and citrus spray'
       : title === 'Roach control'
       ? 'Chemical-free prevention and physical removal'
+      : title === 'Ant control'
+      ? 'Wipe trails, remove food, and seal entry gaps'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -720,6 +748,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [spiderDeterrentSpray]
       : title === 'Roach control'
       ? [roachControlRecipe]
+      : title === 'Ant control'
+      ? [antControlRecipe]
       : [],
   safetyNote:
     title === 'Toothpaste'
@@ -734,6 +764,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Owner-supplied peppermint and citrus spray; its effectiveness and the suggested weekly reapplication schedule have not been established. Keep essential oils away from pets and follow the recipe’s handling cautions.'
       : title === 'Roach control'
       ? 'This guide uses sanitation, sealing, and physical removal without pesticide or spray mixtures. These steps can reduce activity, but may not eliminate an established infestation.'
+      : title === 'Ant control'
+      ? 'This guide uses cleaning and exclusion without pesticide bait or traps. It can help keep ants out of living areas but does not promise to eliminate a colony.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
@@ -750,6 +782,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'The submitted spray, its claimed barrier effect, and its weekly reapplication interval have not been independently evaluated. Public spider-management guidance emphasizes removing spiders, egg cases, and webs and sealing gaps around windows and doors.'
       : title === 'Roach control'
       ? 'University of Minnesota Extension recommends limiting food and water, and says vacuuming can remove roaches and egg cases when combined with other measures. This chemical-free approach may reduce activity; no eradication guarantee is made.'
+      : title === 'Ant control'
+      ? 'UC IPM recommends removing food sources, wiping ant trails with soapy water, and sealing entry points. University of Minnesota Extension says vinegar and water may temporarily disrupt ant trails; neither source supports a guaranteed colony-elimination claim for these steps.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
