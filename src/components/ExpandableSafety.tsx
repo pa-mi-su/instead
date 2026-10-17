@@ -16,11 +16,15 @@ export function ExpandableSafety({ guide }: { guide: Guide }) {
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         onPress={() => setExpanded(!expanded)}
-        style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.safetyToggle,
+          pressed && styles.pressed,
+        ]}
       >
-        <Text style={styles.chipText}>
+        <Text style={styles.safetyToggleText}>
           {expanded ? 'Hide safety warnings' : 'Read all safety warnings'}
         </Text>
+        <Text style={styles.safetyToggleChevron}>{expanded ? '⌃' : '⌄'}</Text>
       </Pressable>
       {expanded && (
         <>

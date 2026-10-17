@@ -159,7 +159,7 @@ export function BarcodeMatchScreen({
                 <Text style={styles.barcodePrimaryText}>
                   See {matchedGuide.title.toLowerCase()} alternatives
                 </Text>
-                <ArrowRight size={18} color={COLORS.ink} />
+                <ArrowRight size={18} color={COLORS.white} />
               </Pressable>
             </>
           ) : (

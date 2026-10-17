@@ -238,7 +238,6 @@ export function AppNavigator() {
               onCategory={setCategory}
               onOpen={openGuide}
               onScan={scanProduct}
-              onBrowse={() => setCategory('All')}
               isLoadingLive={isLoading}
               bottomInset={insets.bottom}
             />

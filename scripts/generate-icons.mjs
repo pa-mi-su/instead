@@ -8,10 +8,13 @@ const sourceArtworkPath = path.join(
   root,
   'assets',
   'branding',
-  'instead-modern-card-concept.png',
+  'instead-app-icon.svg',
 );
 const sourceArtwork = await readFile(sourceArtworkPath);
-const iconBackground = '#171714';
+const foregroundArtwork = await readFile(
+  path.join(root, 'assets', 'branding', 'instead-mark.svg'),
+);
+const iconBackground = '#FFD95B';
 
 async function writeSquare(size, output) {
   await mkdir(path.dirname(output), { recursive: true });
@@ -34,6 +37,14 @@ async function writeRound(size, output) {
   await sharp(sourceArtwork)
     .resize(size, size, { fit: 'cover' })
     .composite([{ input: circle, blend: 'dest-in' }])
+    .png()
+    .toFile(output);
+}
+
+async function writeForeground(size, output) {
+  await mkdir(path.dirname(output), { recursive: true });
+  await sharp(foregroundArtwork, { density: 144 })
+    .resize(size, size, { fit: 'contain' })
     .png()
     .toFile(output);
 }
@@ -95,7 +106,7 @@ for (const [directory, legacySize, adaptiveSize] of androidIcons) {
     legacySize,
     path.join(androidDirectory, directory, 'ic_launcher_round.png'),
   );
-  await writeSquare(
+  await writeForeground(
     adaptiveSize,
     path.join(androidDirectory, directory, 'ic_launcher_foreground.png'),
   );
