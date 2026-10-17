@@ -93,6 +93,36 @@ const toothpasteRecipe: StarterRecipe = {
     'Owner-supplied, untested formula for reference, not a dentist-approved daily brushing recommendation. It contains no fluoride and is not an equivalent replacement for fluoride toothpaste for cavity prevention. Abrasiveness depends on the powder grade, particle size, and finished formula and has not been measured here. Essential oils can irritate the mouth and be harmful if swallowed; do not swallow or give this mixture to children. Have a dentist review it before oral use, especially with sensitivity, exposed roots, or dental work. Stop if irritation occurs. No brushing dose is recommended for this untested formula.',
 };
 
+const bodySoapRecipe: StarterRecipe = {
+  id: 'builtin:bodySoapRecipe',
+  name: 'Honey & Oat Melt-and-Pour Soap',
+  ingredients: [
+    '1 lb (454 g) melt-and-pour soap base (goat’s milk, shea butter, or glycerin; follow the base manufacturer’s directions)',
+    '2 tablespoons finely ground oatmeal',
+    '1 tablespoon honey',
+    '10–15 drops skin-safe essential oil (optional; use only an oil approved for the intended use and follow its supplier’s maximum use level)',
+  ],
+  equipment: [
+    'Microwave-safe glass measuring cup or double boiler',
+    'Knife and cutting board',
+    'Spoon or spatula',
+    'Silicone soap mold',
+    'Small spray bottle with rubbing alcohol (optional)',
+  ],
+  instructions: [
+    'Cut the soap base into small, even cubes so it melts evenly.',
+    'Place the cubes in a microwave-safe glass measuring cup. Heat in short intervals, stirring between each, until melted. Do not boil. If using a double boiler, keep water out of the soap.',
+    'Let the melted base cool briefly while it remains pourable. Stir in the honey and finely ground oatmeal. Add essential oil only if it is labeled for skin use, and stay within its supplier’s maximum use level for soap.',
+    'Pour the mixture into a clean silicone mold. Avoid splashes and handle the hot container carefully.',
+    'If bubbles form on top, lightly mist the surface with rubbing alcohol immediately after pouring, if desired. Keep alcohol away from heat, sparks, and flame.',
+    'Leave the mold undisturbed until the bars are fully firm, following the soap-base manufacturer’s cooling directions. Unmold and use as directed for that base.',
+  ],
+  storage:
+    'Let bars cool and dry fully, then store them in a clean, dry place according to the soap-base manufacturer’s instructions. Label with the ingredients and preparation date. No shelf life has been established for this altered formula; discard if the bar changes unexpectedly in appearance or smell.',
+  cautions:
+    'Owner-supplied, untested formula for external use only. Add-ins may change the base’s texture, lather, or stability; the manufacturer’s directions take priority. Honey can trigger an allergic reaction, and oatmeal or essential oils can irritate skin. Essential oils are optional; do not use them on infants or young children without qualified advice, and stop use if irritation occurs. Avoid eyes, broken or irritated skin, and swallowing. Do not claim this soap treats skin conditions or acts as an antibacterial product. Rubbing alcohol is flammable; keep it away from heat and flame.',
+};
+
 const glassCleanerRecipe: StarterRecipe = {
   id: 'builtin:glassCleanerRecipe',
   name: 'Vinegar & Alcohol Glass Cleaner',
@@ -360,6 +390,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Two options for hand-washing dishes'
       : title === 'Glass cleaner'
       ? 'Two options for compatible window glass'
+      : title === 'Body soap'
+      ? 'Honey and oatmeal melt-and-pour soap'
       : title === 'Laundry care'
       ? 'Mineral laundry booster formula'
       : title === 'Surface cleaner'
@@ -389,6 +421,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [dishCleanerRecipe, dishScrubRecipe]
       : title === 'Toothpaste'
       ? [toothpasteRecipe]
+      : title === 'Body soap'
+      ? [bodySoapRecipe]
       : title === 'Glass cleaner'
       ? [glassCleanerRecipe, vinegarGlassRecipe]
       : title === 'Laundry care'
