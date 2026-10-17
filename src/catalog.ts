@@ -123,6 +123,32 @@ const bodySoapRecipe: StarterRecipe = {
     'Owner-supplied, untested formula for external use only. Add-ins may change the base’s texture, lather, or stability; the manufacturer’s directions take priority. Honey can trigger an allergic reaction, and oatmeal or essential oils can irritate skin. Essential oils are optional; do not use them on infants or young children without qualified advice, and stop use if irritation occurs. Avoid eyes, broken or irritated skin, and swallowing. Do not claim this soap treats skin conditions or acts as an antibacterial product. Rubbing alcohol is flammable; keep it away from heat and flame.',
 };
 
+const tallowSkinBalmRecipe: StarterRecipe = {
+  id: 'builtin:tallowSkinBalmRecipe',
+  name: 'Tallow & Olive or Jojoba Balm',
+  ingredients: [
+    '8 oz (227 g) beef tallow',
+    '2 oz (57 g) olive oil or jojoba oil',
+    '30–40 drops essential oil (optional; use only a skin-safe oil and follow the supplier’s maximum use level)',
+  ],
+  equipment: [
+    'Small saucepan and double boiler, or another suitable low-heat setup',
+    'Spoon or spatula',
+    'Clean, dry glass jars or metal tins',
+  ],
+  instructions: [
+    'Place the tallow and olive or jojoba oil in the top of a double boiler. Warm gently until the tallow is fully melted. Avoid overheating and keep water out of the mixture.',
+    'Remove from the heat and let the mixture cool until warm but still liquid.',
+    'If using essential oil, add only an oil labeled for skin use and stay within the supplier’s maximum use level. Stir thoroughly.',
+    'Pour into clean, completely dry jars or tins. Handle the warm mixture carefully.',
+    'Leave the containers undisturbed until the balm has fully solidified. Apply a small amount to a small area of intact skin first and stop if irritation occurs.',
+  ],
+  storage:
+    'Close the container after use. Use clean, dry hands or a clean, dry scoop, and keep water out of the balm. Store cool and away from direct sunlight. No safe shelf life has been established for this owner-supplied formula; discard if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula for external use only. It has not been evaluated for treating dry skin or any skin condition. Tallow, plant oils, and essential oils can cause irritation or allergic reactions; essential oil is optional. Do not use on broken, infected, or severely irritated skin, near the eyes, or on infants or young children without qualified advice. Stop use if a reaction occurs. Do not ingest. Warm oils can burn; take care while melting and pouring.',
+};
+
 const glassCleanerRecipe: StarterRecipe = {
   id: 'builtin:glassCleanerRecipe',
   name: 'Vinegar & Alcohol Glass Cleaner',
@@ -392,6 +418,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Two options for compatible window glass'
       : title === 'Body soap'
       ? 'Honey and oatmeal melt-and-pour soap'
+      : title === 'Skin care'
+      ? 'Tallow balm with olive or jojoba oil'
       : title === 'Laundry care'
       ? 'Mineral laundry booster formula'
       : title === 'Surface cleaner'
@@ -423,6 +451,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [toothpasteRecipe]
       : title === 'Body soap'
       ? [bodySoapRecipe]
+      : title === 'Skin care'
+      ? [tallowSkinBalmRecipe]
       : title === 'Glass cleaner'
       ? [glassCleanerRecipe, vinegarGlassRecipe]
       : title === 'Laundry care'
@@ -451,7 +481,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
 
 // Keep supplied recipes visible with prominent, topic-specific safety context.
 export const productCatalog: Guide[] = draftCatalog.map(guide => {
-  if (guide.category === 'Personal Care')
+  if (guide.category === 'Personal Care' || guide.category === 'Skin Care')
     return {
       ...guide,
       reviewNotice:
