@@ -137,3 +137,55 @@ for (const [route, title, body] of pages) {
 console.log(
   'Built six public, script-free policy/support pages in website/dist.',
 );
+
+// Static admin shell contains only the publishable key; every data action is
+// independently authorized by Supabase against the private admin membership.
+const adminDirectory = new URL('admin/', output);
+await fs.mkdir(adminDirectory, { recursive: true });
+const adminUrl = process.env.SUPABASE_URL?.trim() ?? '';
+const adminKey = process.env.SUPABASE_PUBLISHABLE_KEY?.trim() ?? '';
+if (Boolean(adminUrl) !== Boolean(adminKey))
+  throw new Error('Set both public Supabase configuration values.');
+if (adminUrl && new URL(adminUrl).protocol !== 'https:')
+  throw new Error('Admin Supabase URL must use HTTPS.');
+if (adminKey && !adminKey.startsWith('sb_publishable_')) {
+  let role;
+  try {
+    role = JSON.parse(
+      Buffer.from(adminKey.split('.')[1], 'base64url').toString(),
+    ).role;
+  } catch {
+    /* Reject unknown key types. */
+  }
+  if (role !== 'anon')
+    throw new Error(
+      'Admin website requires a publishable/anon key, never a privileged key.',
+    );
+}
+for (const file of [
+  'index.html',
+  'admin.css',
+  'admin.mjs',
+  'auth-security.mjs',
+]) {
+  let content = await fs.readFile(
+    new URL(`website/admin/${file}`, root),
+    'utf8',
+  );
+  if (file === 'index.html')
+    content = content.replaceAll(
+      '__SUPABASE_ORIGIN__',
+      adminUrl ? new URL(adminUrl).origin : "'none'",
+    );
+  await fs.writeFile(new URL(file, adminDirectory), content);
+}
+await fs.writeFile(
+  new URL('config.mjs', adminDirectory),
+  `export const config = ${JSON.stringify({
+    url: adminUrl,
+    key: adminKey,
+  })};\n`,
+);
+console.log(
+  'Built admin shell. Database authorization is required for all admin data and actions.',
+);

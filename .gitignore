@@ -57,3 +57,6 @@ coverage/
 
 # Generated artifacts
 *.log
+
+# Python validation artifacts
+__pycache__/

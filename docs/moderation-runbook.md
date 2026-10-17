@@ -1,6 +1,6 @@
 # Private moderation runbook
 
-Only the project owner in the SQL editor or a trusted server using the service role can moderate or suspend accounts. Never ship service-role credentials in mobile/web or give them to a contributor. Public RPCs expose no author account IDs. Blocking uses a content ID; opaque upload folders avoid exposing Auth UUIDs in public photo paths.
+Authorized moderators can use the private website admin panel described in docs/admin-panel.md. The Supabase project owner can also use the SQL editor, or a trusted server can use the service role. Never ship service-role credentials in mobile/web or give them to a contributor. Public RPCs expose no author account IDs. Blocking uses a content ID; opaque upload folders avoid exposing Auth UUIDs in public photo paths.
 
 ## Review queues (owner SQL editor)
 
@@ -17,7 +17,7 @@ select * from public.community_deletion_queue();
 
 Before approval: confirm permitted subject, quantities/ingredient grade and concentration, credible evidence, compatibility, preservation/storage, contraindications, and no cure guarantees or individualized treatment. Verify image ownership, private information, inappropriate images, and that images match the content. Do not approve a formula simply because it includes a disclaimer, is popular, or was AI-generated. Preserve internal provenance and evidence even where no public links are displayed.
 
-Reject personalized diagnosis/dosing, advice to stop prescribed care, unsupported cure/antibacterial claims, dangerous chemical combinations, concentrated-acid shortcuts, inappropriate child/pet use, unsubstantiated shelf-life claims, harassment, spam, and private information. Comments and photos must receive the same screening as recipe text. Medical, oral, scalp, skin, first-aid, and cough content requires an actual qualified reviewer and evidence sources. Software cannot validate a person's license or perform that review. Bundled personal-care formulas and the salt weed spray remain withheld in src/catalog.ts; do not release them without the same process.
+Reject personalized diagnosis/dosing, advice to stop prescribed care, unsupported cure/antibacterial claims, dangerous chemical combinations, concentrated-acid shortcuts, inappropriate child/pet use, unsubstantiated shelf-life claims, harassment, spam, and private information. Comments and photos must receive the same screening as recipe text. Medical, oral, scalp, skin, first-aid, and cough content requires an actual qualified reviewer and evidence sources. Software cannot validate a person's license or perform that review. At the owner’s request, bundled personal-care formulas and the salt weed spray remain visible in src/catalog.ts with safety context. They have not received qualified review; do not represent otherwise.
 
 ## Record an actual review
 

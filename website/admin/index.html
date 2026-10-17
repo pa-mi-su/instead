@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src __SUPABASE_ORIGIN__; img-src __SUPABASE_ORIGIN__ data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Admin — INSTEAD</title>
+    <link rel="stylesheet" href="/admin/admin.css" />
+    <script type="module" src="/admin/admin.mjs"></script>
+  </head>
+  <body>
+    <header>
+      <div><a href="/">INSTEAD</a><span class="tag">ADMIN</span></div>
+      <button id="signout" hidden>Sign out</button>
+    </header>
+    <main>
+      <h1>Community review</h1>
+      <p id="status" role="status" aria-live="polite">
+        Sign in with your authorized administrator account.
+      </p>
+      <section id="login">
+        <h2>Administrator sign-in</h2>
+        <p>
+          Use an email code, then your authenticator. Only explicitly authorized
+          accounts can access submissions. No public profile is needed.
+        </p>
+        <form id="email-form">
+          <label for="email">Email address</label
+          ><input
+            id="email"
+            type="email"
+            autocomplete="email"
+            required
+            placeholder="you@example.com"
+          /><button id="send" type="submit">Send sign-in code</button>
+        </form>
+        <form id="code-form" hidden>
+          <label for="code">Email sign-in code</label
+          ><input
+            id="code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            pattern="[0-9]{8}"
+            maxlength="8"
+            required
+            placeholder="8-digit code"
+          /><button type="submit">Verify email and continue</button>
+        </form>
+      </section>
+      <section id="mfa" hidden>
+        <h2 id="mfa-title">Authenticator verification</h2>
+        <p id="mfa-instructions"></p>
+        <button id="mfa-start" type="button" hidden>
+          Set up authenticator
+        </button>
+        <div id="mfa-setup" hidden>
+          <img
+            id="mfa-qr"
+            alt="Authenticator setup QR code"
+            width="240"
+            height="240"
+          />
+          <label for="mfa-secret"
+            >Manual setup key (if you cannot scan the QR)</label
+          >
+          <input
+            id="mfa-secret"
+            readonly
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <p>
+            Keep this QR and setup key private. Save your authenticator’s backup
+            or recovery method before continuing.
+          </p>
+        </div>
+        <form id="mfa-form" hidden>
+          <label for="mfa-code">Six-digit authenticator code</label>
+          <input
+            id="mfa-code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            required
+            placeholder="123456"
+          />
+          <button type="submit">Verify authenticator and open admin</button>
+        </form>
+        <p>
+          The admin panel signs out after 15 minutes without activity and
+          requires authenticator verification again after eight hours. This does
+          not shorten ordinary app users’ sessions.
+        </p>
+      </section>
+      <div id="workspace" hidden>
+        <div id="counts" class="counts"></div>
+        <nav aria-label="Admin queues">
+          <button data-view="recipe" aria-pressed="true">Recipes</button
+          ><button data-view="comment" aria-pressed="false">Comments</button
+          ><button data-view="accounts" aria-pressed="false">
+            Restricted accounts & deletion requests</button
+          ><button data-view="audit" aria-pressed="false">Activity log</button>
+        </nav>
+        <form id="filters">
+          <label for="filter">Queue</label
+          ><select id="filter">
+            <option value="pending">Awaiting review</option>
+            <option value="reported">Open reports</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All submissions</option>
+            <option value="trash">Trash</option></select
+          ><label for="search">Search topic or content</label
+          ><input
+            id="search"
+            maxlength="100"
+            placeholder="Search submissions"
+          /><button type="submit">Apply filters</button>
+        </form>
+        <p class="notice">
+          Votes do not prove safety. Review quantities, instructions,
+          preservation, cautions, rights, and every photo. Health and
+          personal-care content requires genuine qualified review and evidence.
+          Do not invent reviewer qualifications.
+        </p>
+        <div id="items"></div>
+        <div id="pagination">
+          <button id="previous">Previous 20</button
+          ><button id="next">Next 20</button>
+        </div>
+      </div>
+    </main>
+    <footer>
+      INSTEAD, USA · <a href="/support">Support</a> ·
+      <a href="/privacy">Privacy</a>
+    </footer>
+  </body>
+</html>
