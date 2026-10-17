@@ -170,6 +170,24 @@ const sunburnFirstAid: StarterRecipe = {
     'This is general first-aid information, not a homemade sunburn treatment or medical advice. The submitted tallow-and-oil balm is omitted: oil-based products are not recommended on active sunburn by NIH MedlinePlus, and essential oils can irritate injured skin. Do not apply tallow, olive or jojoba oil, peppermint oil, or lavender oil to sunburned skin. Seek medical care for severe symptoms or if you are unsure how serious the burn is.',
 };
 
+const aloeSunburnCare: StarterRecipe = {
+  id: 'builtin:aloeSunburnCare',
+  name: 'Plain Aloe Vera Moisturizer',
+  ingredients: [
+    'A plain, skin-labeled aloe vera gel or moisturizer, used as packaged (do not add fractionated coconut oil)',
+  ],
+  equipment: [],
+  instructions: [
+    'First move out of the sun and cool the skin with a cool shower or a clean, cool, damp cloth.',
+    'For mild sunburn without blisters, apply the aloe product according to its label while the skin is slightly damp. Use it as packaged; do not mix it with oils or transfer it to another bottle.',
+    'Stop using it if it stings or causes irritation. Keep the area protected from further sun exposure while it heals.',
+  ],
+  storage:
+    'Keep the product in its original container and follow the label’s storage and expiration directions. Do not prepare or store a homemade mixture.',
+  cautions:
+    'For mild sunburn only; this is not medical advice or a treatment for severe burns. The submitted fractionated coconut oil is omitted because NIH MedlinePlus advises against oil-based products on active sunburn. Aloe products can still irritate or cause allergy; stop if a reaction occurs. Do not rely on this for blistering, fever, chills, dizziness, dehydration, or worsening symptoms; seek medical advice.',
+};
+
 const glassCleanerRecipe: StarterRecipe = {
   id: 'builtin:glassCleanerRecipe',
   name: 'Vinegar & Alcohol Glass Cleaner',
@@ -477,7 +495,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Skin care'
       ? [tallowSkinBalmRecipe]
       : title === 'Sunburn care'
-      ? [sunburnFirstAid]
+      ? [sunburnFirstAid, aloeSunburnCare]
       : title === 'Glass cleaner'
       ? [glassCleanerRecipe, vinegarGlassRecipe]
       : title === 'Laundry care'
