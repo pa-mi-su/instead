@@ -17,6 +17,7 @@ const topics: [string, Guide['category'], string][] = [
   ['Clogged drains', 'Home Maintenance', 'blocked sink drain clog plumbing'],
   ['Mouse deterrents', 'Pest Prevention', 'mice mouse repel rodent'],
   ['Spider deterrents', 'Pest Prevention', 'spiders spider repel pest'],
+  ['Roach control', 'Pest Prevention', 'roach roaches cockroach cockroaches'],
 ];
 
 const dishCleanerRecipe: StarterRecipe = {
@@ -611,6 +612,30 @@ const spiderDeterrentSpray: StarterRecipe = {
     'Owner-supplied, untested formula. The claim that this creates an active barrier spiders will not cross, and the 7-day reapplication schedule, have not been established. Keep peppermint and citrus essential oils away from cats and dogs; essential oils may harm pets. If using rubbing alcohol, keep the mixture away from flames, sparks, heat, and hot surfaces, and use it with good ventilation. Avoid eyes, skin contact, breathing spray, and spraying food, food-contact surfaces, or delicate finishes. Spot-test surface compatibility and keep children and pets away until sprayed surfaces are dry. Follow the witch hazel product label; some witch hazel products contain alcohol.',
 };
 
+const roachControlRecipe: StarterRecipe = {
+  id: 'builtin:roachControlRecipe',
+  name: 'Label-Directed Roach Bait and Prevention',
+  ingredients: [
+    'A ready-to-use cockroach bait station or bait product registered for the intended use in your area',
+    'Caulk or another suitable material for sealing small entry gaps',
+  ],
+  equipment: [
+    'The product’s original label and applicator',
+    'Cleaning supplies for removing crumbs, grease, and standing water',
+    'Sticky monitoring traps, placed out of reach of children and pets',
+  ],
+  instructions: [
+    'Reduce food and water sources: clean crumbs and grease, store food and pet food in sealed containers, empty garbage regularly, and repair leaks.',
+    'Use only a ready-to-use product labeled for cockroaches. Read and follow its full label, including where and how much to place it. Place bait only in locations inaccessible to children and pets, and keep it away from food, dishes, and food-contact surfaces.',
+    'Do not make homemade boric-acid bait, puff loose boric-acid powder, or apply pesticide dust into the air. Do not combine bait with sprays or cleaners unless the product label specifically allows it.',
+    'Use monitoring traps to identify where activity is highest. Seal small gaps around pipes and baseboards when practical. If activity persists or is widespread, contact a licensed pest-management professional.',
+  ],
+  storage:
+    'Keep any pesticide in its original, labeled container, locked away from children, pets, food, and feed. Follow the product label for storage and disposal; never transfer pesticide to a food or drink container.',
+  cautions:
+    'Pesticides can harm people and animals if swallowed, inhaled, or misused. Boric acid is not harmless because it is naturally occurring. Do not use the submitted homemade dough bait or loose-powder dusting method: food-based bait can attract children or pets, and airborne dust can be inhaled. Product labels differ; follow the exact label for the registered product you choose, including exposure, placement, cleanup, and first-aid instructions. Keep bait inaccessible to children and pets and prevent contamination of food, dishes, and food-contact surfaces.',
+};
+
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
   title,
@@ -642,6 +667,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Peppermint perimeter spray and spice sachet'
       : title === 'Spider deterrents'
       ? 'Owner-supplied peppermint and citrus spray'
+      : title === 'Roach control'
+      ? 'Label-directed bait and prevention'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -690,6 +717,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [peppermintMouseSpray, mouseDeterrentSachet]
       : title === 'Spider deterrents'
       ? [spiderDeterrentSpray]
+      : title === 'Roach control'
+      ? [roachControlRecipe]
       : [],
   safetyNote:
     title === 'Toothpaste'
@@ -702,6 +731,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Owner-supplied peppermint spray and spice sachet are untested and are not proven rodent control methods. Never use the spray on rodent waste; follow the cleanup instructions in the recipe cautions. Keep essential oils away from pets.'
       : title === 'Spider deterrents'
       ? 'Owner-supplied peppermint and citrus spray; its effectiveness and the suggested weekly reapplication schedule have not been established. Keep essential oils away from pets and follow the recipe’s handling cautions.'
+      : title === 'Roach control'
+      ? 'Use only pesticide products labeled for cockroach control, exactly as directed. Boric-acid bait and dust can harm people and pets if mishandled; do not use homemade bait or loose powder.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
@@ -716,6 +747,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Peppermint oil products exempt from EPA registration have not been evaluated by EPA for effectiveness. Physical exclusion and safe sanitation are better established parts of rodent control; steel wool should be secured and inspected.'
       : title === 'Spider deterrents'
       ? 'The submitted spray, its claimed barrier effect, and its weekly reapplication interval have not been independently evaluated. Public spider-management guidance emphasizes removing spiders, egg cases, and webs and sealing gaps around windows and doors.'
+      : title === 'Roach control'
+      ? 'EPA product labels require boric-acid dust to be kept away from children and pets and food, and specify where visible dust must be removed. University extension guidance recommends placing boric acid only in isolated, inaccessible locations and describes ready-to-use bait stations.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
