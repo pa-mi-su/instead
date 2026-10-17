@@ -23,12 +23,30 @@ alter table public.community_report_reviews enable row level security;
 revoke all on public.community_admins,public.community_admin_audit,public.community_report_reviews from public,anon,authenticated;
 alter table public.community_recipes add column if not exists admin_removed_at timestamptz;
 alter table public.community_comments add column if not exists admin_removed_at timestamptz;
-create or replace function public.community_is_admin() returns boolean
+create or replace function public.community_admin_identity() returns boolean
 language sql stable security definer set search_path='' as $$
  select exists(select 1 from public.community_admins a join auth.users u on u.id=a.user_id
  where a.user_id=auth.uid() and a.enabled and u.email_confirmed_at is not null and not coalesce(u.is_anonymous,false)
  and (u.banned_until is null or u.banned_until<=now())
  and not exists(select 1 from public.community_account_controls c where c.user_id=u.id and (c.suspended or c.deletion_requested_at is not null)));
+$$;
+-- Membership can be checked before MFA solely to start enrollment. No queues
+-- or private photos are exposed by this bootstrap check.
+create or replace function public.community_admin_mfa_state() returns jsonb
+language plpgsql security definer set search_path='' as $$
+begin
+ if not public.community_admin_identity() then raise exception 'Administrator access required.' using errcode='42501'; end if;
+ return jsonb_build_object('reviewer',(select label from public.community_admins where user_id=auth.uid()));
+end $$;
+create or replace function public.community_is_admin() returns boolean
+language sql stable security definer set search_path='' as $$
+ select public.community_admin_identity()
+ and coalesce(auth.jwt()->>'aal','aal1')='aal2'
+ and exists(select 1 from auth.mfa_factors where user_id=auth.uid() and factor_type='totp' and status='verified')
+ and exists(select 1 from auth.sessions where id=(auth.jwt()->>'session_id')::uuid and user_id=auth.uid())
+ and exists(select 1 from jsonb_array_elements(coalesce(auth.jwt()->'amr','[]'::jsonb)) a
+  where a->>'method'='totp' and to_timestamp((a->>'timestamp')::double precision)>now()-interval '8 hours'
+  and to_timestamp((a->>'timestamp')::double precision)<=now()+interval '1 minute');
 $$;
 create or replace function public.community_admin_photo_allowed(p_path text) returns boolean
 language sql stable security definer set search_path='' as $$
@@ -169,7 +187,7 @@ drop trigger if exists admin_comment_cleanup on public.community_comments;
 create trigger admin_comment_cleanup before delete on public.community_comments for each row execute function public.community_admin_content_cleanup();
 drop trigger if exists admin_recipe_cleanup on public.community_recipes;
 create trigger admin_recipe_cleanup before delete on public.community_recipes for each row execute function public.community_admin_content_cleanup();
-revoke all on function public.community_is_admin(),public.community_admin_photo_allowed(text),public.community_admin(text,jsonb),public.community_admin_content_cleanup() from public,anon,authenticated;
-grant execute on function public.community_is_admin(),public.community_admin_photo_allowed(text),public.community_admin(text,jsonb) to authenticated;
+revoke all on function public.community_admin_identity(),public.community_admin_mfa_state(),public.community_is_admin(),public.community_admin_photo_allowed(text),public.community_admin(text,jsonb),public.community_admin_content_cleanup() from public,anon,authenticated;
+grant execute on function public.community_admin_mfa_state(),public.community_is_admin(),public.community_admin_photo_allowed(text),public.community_admin(text,jsonb) to authenticated;
 notify pgrst,'reload schema';
 commit;

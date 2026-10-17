@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src __SUPABASE_ORIGIN__; img-src __SUPABASE_ORIGIN__; object-src 'none'; base-uri 'none'; form-action 'none'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src __SUPABASE_ORIGIN__; img-src __SUPABASE_ORIGIN__ data:; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <meta name="robots" content="noindex,nofollow" />
     <meta name="referrer" content="no-referrer" />
@@ -26,8 +26,8 @@
       <section id="login">
         <h2>Administrator sign-in</h2>
         <p>
-          Only explicitly authorized accounts can access submissions. No public
-          profile is needed.
+          Use an email code, then your authenticator. Only explicitly authorized
+          accounts can access submissions. No public profile is needed.
         </p>
         <form id="email-form">
           <label for="email">Email address</label
@@ -50,8 +50,54 @@
             maxlength="8"
             required
             placeholder="8-digit code"
-          /><button type="submit">Verify and open admin</button>
+          /><button type="submit">Verify email and continue</button>
         </form>
+      </section>
+      <section id="mfa" hidden>
+        <h2 id="mfa-title">Authenticator verification</h2>
+        <p id="mfa-instructions"></p>
+        <button id="mfa-start" type="button" hidden>
+          Set up authenticator
+        </button>
+        <div id="mfa-setup" hidden>
+          <img
+            id="mfa-qr"
+            alt="Authenticator setup QR code"
+            width="240"
+            height="240"
+          />
+          <label for="mfa-secret"
+            >Manual setup key (if you cannot scan the QR)</label
+          >
+          <input
+            id="mfa-secret"
+            readonly
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <p>
+            Keep this QR and setup key private. Save your authenticator’s backup
+            or recovery method before continuing.
+          </p>
+        </div>
+        <form id="mfa-form" hidden>
+          <label for="mfa-code">Six-digit authenticator code</label>
+          <input
+            id="mfa-code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            required
+            placeholder="123456"
+          />
+          <button type="submit">Verify authenticator and open admin</button>
+        </form>
+        <p>
+          The admin panel signs out after 15 minutes without activity and
+          requires authenticator verification again after eight hours. This does
+          not shorten ordinary app users’ sessions.
+        </p>
       </section>
       <div id="workspace" hidden>
         <div id="counts" class="counts"></div>

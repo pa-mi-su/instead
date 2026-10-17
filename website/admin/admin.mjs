@@ -1,4 +1,5 @@
 import { config } from './config.mjs';
+import { ADMIN_IDLE_MS, isIdle, hasRecentMfa } from './auth-security.mjs';
 const $ = id => document.getElementById(id);
 const base = config.url.replace(/\/$/, '');
 let session = null;
@@ -9,6 +10,9 @@ let authEpoch = 0;
 let refreshPromise = null;
 let cooldown = null;
 let busy = false;
+let mfaFactor = null;
+let unfinishedFactor = null;
+let idleTimer = null;
 const storageKey = 'instead:admin-session';
 function status(message, error = false) {
   $('status').textContent = message;
@@ -24,25 +28,36 @@ function clearSession() {
   $('workspace').hidden = true;
   $('login').hidden = false;
   $('signout').hidden = true;
+  $('mfa').hidden = true;
+  $('mfa-setup').hidden = true;
+  $('mfa-form').hidden = true;
+  $('mfa-qr').removeAttribute('src');
+  $('mfa-secret').value = '';
+  $('mfa-code').value = '';
+  mfaFactor = null;
+  unfinishedFactor = null;
+  clearTimeout(idleTimer);
 }
 function saveSession(data) {
   session = {
     access_token: data.access_token,
     refresh_token: data.refresh_token,
     expires_at: Date.now() + data.expires_in * 1000,
+    last_activity: session?.last_activity ?? Date.now(),
   };
   sessionStorage.setItem(storageKey, JSON.stringify(session));
+  armIdleTimer();
 }
-async function request(route, body, bearer) {
+async function request(route, body, bearer, method = 'POST') {
   const response = await fetch(base + route, {
-    method: 'POST',
+    method,
     cache: 'no-store',
     headers: {
       apikey: config.key,
       'Content-Type': 'application/json',
       ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
     },
-    body: JSON.stringify(body),
+    ...(method === 'GET' ? {} : { body: JSON.stringify(body) }),
   });
   const data = await response.json();
   if (!response.ok) {
@@ -51,13 +66,23 @@ async function request(route, body, bearer) {
       data.message ||
       data.error_description ||
       'Request failed. Please try again.';
-    if (bearer && [401, 403].includes(response.status)) clearSession();
+    if (
+      bearer === session?.access_token &&
+      [401, 403].includes(response.status)
+    )
+      clearSession();
     throw new Error(message);
   }
   return data;
 }
 async function token() {
   if (!session?.access_token) throw new Error('Sign in to continue.');
+  if (isIdle(session)) {
+    await signOutAdmin(
+      'Signed out after 15 minutes without activity. Sign in again.',
+    );
+    throw new Error('Your admin session timed out. Sign in again.');
+  }
   if (Date.now() > session.expires_at - 60000) {
     if (!refreshPromise) {
       const generation = authEpoch;
@@ -90,6 +115,164 @@ async function rpc(action, payload = {}) {
     await token(),
   );
 }
+function armIdleTimer() {
+  clearTimeout(idleTimer);
+  if (!session) return;
+  idleTimer = setTimeout(
+    () =>
+      signOutAdmin(
+        'Signed out after 15 minutes without activity. Sign in again.',
+      ),
+    Math.max(0, ADMIN_IDLE_MS - (Date.now() - session.last_activity)),
+  );
+}
+function recordActivity(event) {
+  if (!session || !event.isTrusted) return;
+  if (isIdle(session)) {
+    signOutAdmin('Your admin session timed out. Sign in again.');
+    return;
+  }
+  if (Date.now() - session.last_activity < 10000) return;
+  session.last_activity = Date.now();
+  sessionStorage.setItem(storageKey, JSON.stringify(session));
+  armIdleTimer();
+}
+async function signOutAdmin(message = 'Signed out.') {
+  const access = session?.access_token;
+  clearSession();
+  status(message);
+  if (access) {
+    try {
+      await request('/auth/v1/logout?scope=local', {}, access);
+    } catch {
+      /* Local session and private data are already cleared. */
+    }
+  }
+}
+async function beginAdmin() {
+  const generation = epoch;
+  const access = await token();
+  await request('/rest/v1/rpc/community_admin_mfa_state', {}, access);
+  const user = await request('/auth/v1/user', {}, access, 'GET');
+  if (generation !== epoch) return;
+  const factors = user.factors || [];
+  const verified = factors.find(
+    factor => factor.factor_type === 'totp' && factor.status === 'verified',
+  );
+  if (verified && hasRecentMfa(session.access_token)) {
+    await load();
+    return;
+  }
+  $('login').hidden = true;
+  $('workspace').hidden = true;
+  $('mfa').hidden = false;
+  $('signout').hidden = false;
+  mfaFactor = verified?.id ?? null;
+  unfinishedFactor =
+    factors.find(
+      factor =>
+        factor.factor_type === 'totp' &&
+        factor.status === 'unverified' &&
+        factor.friendly_name === 'INSTEAD Admin',
+    )?.id ?? null;
+  $('mfa-start').hidden = !!verified;
+  $('mfa-form').hidden = !verified;
+  $('mfa-title').textContent = verified
+    ? 'Enter your authenticator code'
+    : 'Set up your authenticator';
+  $('mfa-instructions').textContent = verified
+    ? 'Open your authenticator and enter the current six-digit code for INSTEAD Admin.'
+    : 'Choose Set up authenticator, scan the QR code in your authenticator app, then enter its six-digit code. You must complete this yourself; no one else needs your QR, setup key, or codes.';
+  $('mfa-start').textContent = unfinishedFactor
+    ? 'Replace unfinished authenticator setup'
+    : 'Set up authenticator';
+  status(
+    'Email verified. Authenticator verification is required before any admin data is available.',
+  );
+  if (verified) $('mfa-code').focus();
+}
+$('mfa-start').addEventListener('click', async () => {
+  const control = $('mfa-start');
+  control.disabled = true;
+  const generation = epoch;
+  try {
+    const access = await token();
+    if (unfinishedFactor)
+      await request(
+        '/auth/v1/factors/' + encodeURIComponent(unfinishedFactor),
+        {},
+        access,
+        'DELETE',
+      );
+    const factor = await request(
+      '/auth/v1/factors',
+      {
+        factor_type: 'totp',
+        friendly_name: 'INSTEAD Admin',
+        issuer: 'INSTEAD',
+      },
+      access,
+    );
+    if (generation !== epoch) return;
+    if (factor.type !== 'totp' || !factor.totp?.qr_code || !factor.totp?.secret)
+      throw new Error('Authenticator setup was unavailable. Please try again.');
+    mfaFactor = factor.id;
+    unfinishedFactor = factor.id;
+    $('mfa-qr').src =
+      'data:image/svg+xml;charset=utf-8,' +
+      encodeURIComponent(factor.totp.qr_code);
+    $('mfa-secret').value = factor.totp.secret;
+    $('mfa-setup').hidden = false;
+    $('mfa-form').hidden = false;
+    control.hidden = true;
+    $('mfa-code').focus();
+    status(
+      'Scan the setup QR privately, then enter the current six-digit code.',
+    );
+  } catch (error) {
+    status(error.message, true);
+  } finally {
+    control.disabled = false;
+  }
+});
+$('mfa-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const control = event.submitter;
+  control.disabled = true;
+  const generation = epoch;
+  try {
+    if (!mfaFactor) throw new Error('Set up your authenticator first.');
+    const access = await token();
+    const path = '/auth/v1/factors/' + encodeURIComponent(mfaFactor);
+    const challenge = await request(path + '/challenge', {}, access);
+    const verified = await request(
+      path + '/verify',
+      { challenge_id: challenge.id, code: $('mfa-code').value.trim() },
+      access,
+    );
+    if (generation !== epoch) return;
+    saveSession(verified);
+    session.last_activity = Date.now();
+    sessionStorage.setItem(storageKey, JSON.stringify(session));
+    armIdleTimer();
+    $('mfa-code').value = '';
+    $('mfa-secret').value = '';
+    $('mfa-qr').removeAttribute('src');
+    $('mfa-setup').hidden = true;
+    $('mfa').hidden = true;
+    await load();
+  } catch (error) {
+    status(error.message, true);
+  } finally {
+    control.disabled = false;
+  }
+});
+for (const event of ['pointerdown', 'pointermove', 'keydown', 'touchstart'])
+  document.addEventListener(event, recordActivity, { passive: true });
+document.addEventListener('visibilitychange', () => {
+  if (session && isIdle(session))
+    signOutAdmin('Your admin session timed out. Sign in again.');
+});
 function element(tag, text, className) {
   const el = document.createElement(tag);
   if (text !== undefined) el.textContent = text;
@@ -363,6 +546,7 @@ async function load() {
     },
   );
   if (generation !== epoch) return;
+  $('mfa').hidden = true;
   $('login').hidden = true;
   $('workspace').hidden = false;
   $('signout').hidden = false;
@@ -481,7 +665,7 @@ $('code-form').addEventListener('submit', async event => {
     });
     saveSession(data);
     $('code').value = '';
-    await load();
+    await beginAdmin();
   } catch (error) {
     clearSession();
     status(error.message, true);
@@ -489,18 +673,7 @@ $('code-form').addEventListener('submit', async event => {
     submit.disabled = false;
   }
 });
-$('signout').addEventListener('click', async () => {
-  const access = session?.access_token;
-  clearSession();
-  status('Signed out.');
-  if (access) {
-    try {
-      await request('/auth/v1/logout?scope=local', {}, access);
-    } catch {
-      /* Local state is already cleared. */
-    }
-  }
-});
+$('signout').addEventListener('click', () => signOutAdmin());
 for (const navButton of document.querySelectorAll('[data-view]'))
   navButton.addEventListener('click', () => {
     view = navButton.dataset.view;
@@ -528,11 +701,13 @@ if (!base || !config.key) {
 }
 try {
   session = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
-  if (session)
-    load().catch(error => {
+  if (session) {
+    armIdleTimer();
+    beginAdmin().catch(error => {
       clearSession();
       status(error.message, true);
     });
+  }
 } catch {
   clearSession();
 }

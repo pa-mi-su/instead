@@ -8,6 +8,9 @@ insert into auth.users(id,email,email_confirmed_at) values
 insert into public.community_admins(user_id,label) values
  ('60000000-0000-0000-0000-000000000001','Test moderator'),
  ('60000000-0000-0000-0000-000000000004','Unverified moderator');
+insert into auth.mfa_factors values('64000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','totp','verified');
+insert into auth.sessions values('65000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001');
+select set_config('request.jwt.claims',jsonb_build_object('aal','aal2','session_id','65000000-0000-0000-0000-000000000001','amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from now()))))::text,true);
 insert into public.community_recipes(id,product_id,user_id,title,ingredients,instructions,storage_notes,cautions,photo_paths) values
  ('61000000-0000-0000-0000-000000000001','natural-glass-cleaner','60000000-0000-0000-0000-000000000002','Window recipe','Test ingredients','Test instructions','Test storage','Test cautions',array['62000000-0000-0000-0000-000000000001/test.png']),
  ('61000000-0000-0000-0000-000000000002','natural-cough-comfort','60000000-0000-0000-0000-000000000002','Health recipe','Test ingredients','Test instructions','Test storage','Test cautions','{}');
@@ -27,6 +30,15 @@ do $$ begin if exists(select 1 from storage.objects where name='62000000-0000-00
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000004',true);
 select pg_temp.must_reject($q$select public.community_admin('state')$q$);
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000001',true);
+-- Owner membership alone must not unlock queues or pending photos.
+select set_config('request.jwt.claims','{"aal":"aal1"}',true);
+select public.community_admin_mfa_state();
+select pg_temp.must_reject($q$select public.community_admin('state')$q$);
+select pg_temp.must_reject($q$select public.community_admin('restrict','{"user_id":"60000000-0000-0000-0000-000000000002","suspended":true,"note":"Email-only bypass"}')$q$);
+do $$ begin if exists(select 1 from storage.objects where name='62000000-0000-0000-0000-000000000001/test.png') then raise exception 'Email-only admin saw pending photo'; end if; end $$;
+select set_config('request.jwt.claims',jsonb_build_object('aal','aal2','session_id','65000000-0000-0000-0000-000000000001','amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from now()-interval '9 hours'))))::text,true);
+select pg_temp.must_reject($q$select public.community_admin('state')$q$);
+select set_config('request.jwt.claims',jsonb_build_object('aal','aal2','session_id','65000000-0000-0000-0000-000000000001','amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from now()))))::text,true);
 do $$ begin
  if not public.community_is_admin() then raise exception 'Admin denied'; end if;
  if (public.community_admin('state')->>'pending_recipes')::int<>2 then raise exception 'Bad pending count'; end if;
@@ -90,6 +102,16 @@ delete from storage.objects where name='62000000-0000-0000-0000-000000000001/tes
 set local role authenticated;
 select pg_temp.must_reject($q$select public.community_admin('moderate','{"kind":"recipe","id":"61000000-0000-0000-0000-000000000001","decision":"approved","reviewed":true,"note":"Missing image"}')$q$);
 reset role;
+delete from auth.sessions where id='65000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select pg_temp.must_reject($q$select public.community_admin('state')$q$);
+reset role;
+insert into auth.sessions values('65000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001');
+update auth.mfa_factors set status='unverified';
+set local role authenticated;
+select pg_temp.must_reject($q$select public.community_admin('state')$q$);
+reset role;
+update auth.mfa_factors set status='verified';
 update public.community_admins set enabled=false where user_id='60000000-0000-0000-0000-000000000001';
 set local role authenticated;
 select pg_temp.must_reject($q$select public.community_admin('state')$q$);

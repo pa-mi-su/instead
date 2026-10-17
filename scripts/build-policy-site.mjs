@@ -162,7 +162,12 @@ if (adminKey && !adminKey.startsWith('sb_publishable_')) {
       'Admin website requires a publishable/anon key, never a privileged key.',
     );
 }
-for (const file of ['index.html', 'admin.css', 'admin.mjs']) {
+for (const file of [
+  'index.html',
+  'admin.css',
+  'admin.mjs',
+  'auth-security.mjs',
+]) {
   let content = await fs.readFile(
     new URL(`website/admin/${file}`, root),
     'utf8',
