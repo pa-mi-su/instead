@@ -108,9 +108,14 @@ export function BarcodeMatchScreen({
         <View style={styles.barcodeNotice}>
           <Text style={styles.barcodeNoticeTitle}>We couldn’t identify it</Text>
           <Text style={styles.barcodeNoticeBody}>
-            This barcode is not listed in the product database. Search by the
-            product name or choose a directory category below.
+            We couldn’t find this barcode in the product database, even after
+            checking common UPC/EAN equivalents. Search by the product name or
+            choose a directory category below.
           </Text>
+          <Pressable onPress={onScan} style={styles.barcodeTextButton}>
+            <ScanLine size={17} color={COLORS.ink} />
+            <Text style={styles.barcodeTextButtonLabel}>Scan again</Text>
+          </Pressable>
         </View>
       ) : null}
 

@@ -1,0 +1,136 @@
+diff --git a/node_modules/react-native-data-scanner/ios/DataScannerScanSession.swift b/node_modules/react-native-data-scanner/ios/DataScannerScanSession.swift
+index c9ef6c7..5d2427a 100644
+--- a/node_modules/react-native-data-scanner/ios/DataScannerScanSession.swift
++++ b/node_modules/react-native-data-scanner/ios/DataScannerScanSession.swift
+@@ -33,6 +33,22 @@ final class DataScannerScanSession: NSObject, DataScannerViewControllerDelegate,
+       isGuidanceEnabled: true,
+       isHighlightingEnabled: true
+     )
++    let viewfinderOverlay = BarcodeViewfinderOverlay()
++    viewfinderOverlay.translatesAutoresizingMaskIntoConstraints = false
++    scannerViewController.overlayContainerView.addSubview(viewfinderOverlay)
++    NSLayoutConstraint.activate([
++      viewfinderOverlay.leadingAnchor.constraint(equalTo: scannerViewController.overlayContainerView.leadingAnchor),
++      viewfinderOverlay.trailingAnchor.constraint(equalTo: scannerViewController.overlayContainerView.trailingAnchor),
++      viewfinderOverlay.topAnchor.constraint(equalTo: scannerViewController.overlayContainerView.topAnchor),
++      viewfinderOverlay.bottomAnchor.constraint(equalTo: scannerViewController.overlayContainerView.bottomAnchor),
++    ])
++    viewfinderOverlay.onLayout = { [weak scannerViewController, weak viewfinderOverlay] in
++      guard let scannerViewController, let viewfinderOverlay else { return }
++      scannerViewController.regionOfInterest = viewfinderOverlay.convert(
++        viewfinderOverlay.scanRect,
++        to: scannerViewController.view
++      )
++    }
+     navigationController = UINavigationController(rootViewController: scannerViewController)
+     self.promise = promise
+     self.onFinish = onFinish
+@@ -40,6 +56,7 @@ final class DataScannerScanSession: NSObject, DataScannerViewControllerDelegate,
+     super.init()
+ 
+     scannerViewController.delegate = self
++    scannerViewController.navigationItem.title = "Scan a product"
+     scannerViewController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+       barButtonSystemItem: .cancel,
+       target: self,
+@@ -142,3 +159,100 @@ final class DataScannerScanSession: NSObject, DataScannerViewControllerDelegate,
+     }
+   }
+ }
++
++@available(iOS 16.0, visionOS 1.0, *)
++private final class BarcodeViewfinderOverlay: UIView {
++  private let dimLayer = CAShapeLayer()
++  private let outlineLayer = CAShapeLayer()
++  private let cornersLayer = CAShapeLayer()
++  private let instructionLabel = UILabel()
++
++  private(set) var scanRect: CGRect = .zero
++  var onLayout: (() -> Void)?
++
++  override init(frame: CGRect) {
++    super.init(frame: frame)
++    isUserInteractionEnabled = false
++    backgroundColor = .clear
++
++    dimLayer.fillRule = .evenOdd
++    dimLayer.fillColor = UIColor.black.withAlphaComponent(0.38).cgColor
++    layer.addSublayer(dimLayer)
++
++    outlineLayer.fillColor = UIColor.clear.cgColor
++    outlineLayer.strokeColor = UIColor.white.withAlphaComponent(0.95).cgColor
++    outlineLayer.lineWidth = 2
++    layer.addSublayer(outlineLayer)
++
++    cornersLayer.fillColor = UIColor.clear.cgColor
++    cornersLayer.strokeColor = UIColor.systemOrange.cgColor
++    cornersLayer.lineWidth = 5
++    cornersLayer.lineCap = .round
++    layer.addSublayer(cornersLayer)
++
++    instructionLabel.text = "Center the barcode in the frame"
++    instructionLabel.textAlignment = .center
++    instructionLabel.textColor = .white
++    instructionLabel.font = .systemFont(ofSize: 15, weight: .semibold)
++    instructionLabel.shadowColor = UIColor.black.withAlphaComponent(0.8)
++    instructionLabel.shadowOffset = CGSize(width: 0, height: 1)
++    addSubview(instructionLabel)
++  }
++
++  required init?(coder: NSCoder) {
++    fatalError("init(coder:) has not been implemented")
++  }
++
++  override func layoutSubviews() {
++    super.layoutSubviews()
++
++    let width = min(bounds.width * 0.84, 310)
++    let height = min(width * 0.62, 192)
++    scanRect = CGRect(
++      x: (bounds.width - width) / 2,
++      y: (bounds.height - height) / 2,
++      width: width,
++      height: height
++    )
++    let aperture = UIBezierPath(roundedRect: scanRect, cornerRadius: 18)
++    let shade = UIBezierPath(rect: bounds)
++    shade.append(aperture)
++    dimLayer.frame = bounds
++    dimLayer.path = shade.cgPath
++
++    outlineLayer.frame = bounds
++    outlineLayer.path = aperture.cgPath
++
++    let cornerLength: CGFloat = 25
++    let corners = UIBezierPath()
++    corners.move(to: CGPoint(x: scanRect.minX, y: scanRect.minY + cornerLength))
++    corners.addLine(to: CGPoint(x: scanRect.minX, y: scanRect.minY + 18))
++    corners.addQuadCurve(to: CGPoint(x: scanRect.minX + 18, y: scanRect.minY), controlPoint: scanRect.origin)
++    corners.addLine(to: CGPoint(x: scanRect.minX + cornerLength, y: scanRect.minY))
++
++    corners.move(to: CGPoint(x: scanRect.maxX - cornerLength, y: scanRect.minY))
++    corners.addLine(to: CGPoint(x: scanRect.maxX - 18, y: scanRect.minY))
++    corners.addQuadCurve(to: CGPoint(x: scanRect.maxX, y: scanRect.minY + 18), controlPoint: CGPoint(x: scanRect.maxX, y: scanRect.minY))
++    corners.addLine(to: CGPoint(x: scanRect.maxX, y: scanRect.minY + cornerLength))
++
++    corners.move(to: CGPoint(x: scanRect.minX, y: scanRect.maxY - cornerLength))
++    corners.addLine(to: CGPoint(x: scanRect.minX, y: scanRect.maxY - 18))
++    corners.addQuadCurve(to: CGPoint(x: scanRect.minX + 18, y: scanRect.maxY), controlPoint: CGPoint(x: scanRect.minX, y: scanRect.maxY))
++    corners.addLine(to: CGPoint(x: scanRect.minX + cornerLength, y: scanRect.maxY))
++
++    corners.move(to: CGPoint(x: scanRect.maxX - cornerLength, y: scanRect.maxY))
++    corners.addLine(to: CGPoint(x: scanRect.maxX - 18, y: scanRect.maxY))
++    corners.addQuadCurve(to: CGPoint(x: scanRect.maxX, y: scanRect.maxY - 18), controlPoint: CGPoint(x: scanRect.maxX, y: scanRect.maxY))
++    corners.addLine(to: CGPoint(x: scanRect.maxX, y: scanRect.maxY - cornerLength))
++    cornersLayer.frame = bounds
++    cornersLayer.path = corners.cgPath
++
++    instructionLabel.frame = CGRect(
++      x: 12,
++      y: max(scanRect.minY - 46, 24),
++      width: bounds.width - 24,
++      height: 28
++    )
++    onLayout?()
++  }
++}

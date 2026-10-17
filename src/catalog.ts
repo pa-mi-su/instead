@@ -17,6 +17,8 @@ const topics: [string, Guide['category'], string][] = [
   ['Clogged drains', 'Home Maintenance', 'blocked sink drain clog plumbing'],
   ['Mouse deterrents', 'Pest Prevention', 'mice mouse repel rodent'],
   ['Spider deterrents', 'Pest Prevention', 'spiders spider repel pest'],
+  ['Roach control', 'Pest Prevention', 'roach roaches cockroach cockroaches'],
+  ['Ant control', 'Pest Prevention', 'ants ant trails kitchen sugar entry'],
 ];
 
 const dishCleanerRecipe: StarterRecipe = {
@@ -91,6 +93,191 @@ const toothpasteRecipe: StarterRecipe = {
     'Keep the jar closed and use a clean, dry scoop rather than dipping a wet toothbrush. Coconut oil softens or melts around 76°F (24°C), depending on the product; texture can change with room temperature. Cooling or stirring does not preserve or sanitize the paste. Vanilla extract can introduce water or alcohol. No safe shelf life has been established for this exact formula.',
   cautions:
     'Owner-supplied, untested formula for reference, not a dentist-approved daily brushing recommendation. It contains no fluoride and is not an equivalent replacement for fluoride toothpaste for cavity prevention. Abrasiveness depends on the powder grade, particle size, and finished formula and has not been measured here. Essential oils can irritate the mouth and be harmful if swallowed; do not swallow or give this mixture to children. Have a dentist review it before oral use, especially with sensitivity, exposed roots, or dental work. Stop if irritation occurs. No brushing dose is recommended for this untested formula.',
+};
+
+const bodySoapRecipe: StarterRecipe = {
+  id: 'builtin:bodySoapRecipe',
+  name: 'Honey & Oat Melt-and-Pour Soap',
+  ingredients: [
+    '1 lb (454 g) melt-and-pour soap base (goat’s milk, shea butter, or glycerin; follow the base manufacturer’s directions)',
+    '2 tablespoons finely ground oatmeal',
+    '1 tablespoon honey',
+    '10–15 drops skin-safe essential oil (optional; use only an oil approved for the intended use and follow its supplier’s maximum use level)',
+  ],
+  equipment: [
+    'Microwave-safe glass measuring cup or double boiler',
+    'Knife and cutting board',
+    'Spoon or spatula',
+    'Silicone soap mold',
+    'Small spray bottle with rubbing alcohol (optional)',
+  ],
+  instructions: [
+    'Cut the soap base into small, even cubes so it melts evenly.',
+    'Place the cubes in a microwave-safe glass measuring cup. Heat in short intervals, stirring between each, until melted. Do not boil. If using a double boiler, keep water out of the soap.',
+    'Let the melted base cool briefly while it remains pourable. Stir in the honey and finely ground oatmeal. Add essential oil only if it is labeled for skin use, and stay within its supplier’s maximum use level for soap.',
+    'Pour the mixture into a clean silicone mold. Avoid splashes and handle the hot container carefully.',
+    'If bubbles form on top, lightly mist the surface with rubbing alcohol immediately after pouring, if desired. Keep alcohol away from heat, sparks, and flame.',
+    'Leave the mold undisturbed until the bars are fully firm, following the soap-base manufacturer’s cooling directions. Unmold and use as directed for that base.',
+  ],
+  storage:
+    'Let bars cool and dry fully, then store them in a clean, dry place according to the soap-base manufacturer’s instructions. Label with the ingredients and preparation date. No shelf life has been established for this altered formula; discard if the bar changes unexpectedly in appearance or smell.',
+  cautions:
+    'Owner-supplied, untested formula for external use only. Add-ins may change the base’s texture, lather, or stability; the manufacturer’s directions take priority. Honey can trigger an allergic reaction, and oatmeal or essential oils can irritate skin. Essential oils are optional; do not use them on infants or young children without qualified advice, and stop use if irritation occurs. Avoid eyes, broken or irritated skin, and swallowing. Do not claim this soap treats skin conditions or acts as an antibacterial product. Rubbing alcohol is flammable; keep it away from heat and flame.',
+};
+
+const tallowSkinBalmRecipe: StarterRecipe = {
+  id: 'builtin:tallowSkinBalmRecipe',
+  name: 'Tallow & Olive or Jojoba Balm',
+  ingredients: [
+    '8 oz (227 g) beef tallow',
+    '2 oz (57 g) olive oil or jojoba oil',
+    '30–40 drops essential oil (optional; use only a skin-safe oil and follow the supplier’s maximum use level)',
+  ],
+  equipment: [
+    'Small saucepan and double boiler, or another suitable low-heat setup',
+    'Spoon or spatula',
+    'Clean, dry glass jars or metal tins',
+  ],
+  instructions: [
+    'Place the tallow and olive or jojoba oil in the top of a double boiler. Warm gently until the tallow is fully melted. Avoid overheating and keep water out of the mixture.',
+    'Remove from the heat and let the mixture cool until warm but still liquid.',
+    'If using essential oil, add only an oil labeled for skin use and stay within the supplier’s maximum use level. Stir thoroughly.',
+    'Pour into clean, completely dry jars or tins. Handle the warm mixture carefully.',
+    'Leave the containers undisturbed until the balm has fully solidified. Apply a small amount to a small area of intact skin first and stop if irritation occurs.',
+  ],
+  storage:
+    'Close the container after use. Use clean, dry hands or a clean, dry scoop, and keep water out of the balm. Store cool and away from direct sunlight. No safe shelf life has been established for this owner-supplied formula; discard if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula for external use only. It has not been evaluated for treating dry skin or any skin condition. Tallow, plant oils, and essential oils can cause irritation or allergic reactions; essential oil is optional. Do not use on broken, infected, or severely irritated skin, near the eyes, or on infants or young children without qualified advice. Stop use if a reaction occurs. Do not ingest. Warm oils can burn; take care while melting and pouring.',
+};
+
+const sunburnFirstAid: StarterRecipe = {
+  id: 'builtin:sunburnFirstAid',
+  name: 'Cool Compress & Aloe or Soy Moisturizer',
+  ingredients: [
+    'Cool, clean water or a clean, cool, damp cloth',
+    'A plain moisturizer containing aloe or soy for mild sunburn without blisters',
+    'Drinking water',
+  ],
+  equipment: ['Clean washcloth (optional)'],
+  instructions: [
+    'Move out of the sun and indoors. Use a cool shower or bath, or place a clean, cool, damp cloth on the affected skin. Pat gently dry.',
+    'For mild sunburn without blisters, apply a plain moisturizer containing aloe or soy while the skin is still slightly damp. Stop if it stings or causes irritation.',
+    'Drink water and protect the affected skin from further sun exposure while it heals. Do not pop blisters or peel skin.',
+    'Get medical advice promptly for fever, chills, dizziness, severe or painful blistering, signs of dehydration, or a severe or worsening reaction.',
+  ],
+  storage:
+    'No homemade mixture to store. Keep any moisturizer in its original, labeled container and follow its label directions.',
+  cautions:
+    'This is general first-aid information, not medical advice. The separate owner-supplied spray and balm in this category contain oils. NIH MedlinePlus advises against oil-based products on active sunburn; these are included as untested owner content, not recommended treatments. Seek medical care for severe symptoms or if you are unsure how serious the burn is.',
+};
+
+const bugBitePaste: StarterRecipe = {
+  id: 'builtin:bugBitePaste',
+  name: 'The Ultimate 3-Ingredient Bug Bite Paste',
+  ingredients: [
+    'Virgin coconut oil: 2 tablespoons (in its solid, soft room-temperature state)',
+    'Baking soda: 2 tablespoons — neutralizes the acidic bug venom and halts the itch instantly.',
+    'Lavender or tea tree essential oil: 5 drops — calms swelling and sanitizes the bite.',
+  ],
+  equipment: ['Small bowl or jar', 'Spoon'],
+  instructions: [
+    'Mix the baking soda into the soft coconut oil thoroughly using a spoon.',
+    'Stir in the lavender or tea tree essential oil until blended.',
+    'Dab a thick layer of the paste directly onto the bite. Let it sit on the skin to dry up the bite and pull out the sting.',
+  ],
+  storage:
+    'Store leftovers in a small jar in a medicine cabinet. No safe shelf life has been established for this formula.',
+  cautions:
+    'Owner-supplied, untested formula. The claims that this mixture neutralizes venom, stops itching instantly, calms swelling, or sanitizes a bite have not been independently established for this formula. Baking soda and essential oils can irritate skin or trigger an allergic reaction. Do not apply to broken skin or near eyes or mouth; stop if irritation occurs. This paste is not a substitute for medical care. Seek urgent help for trouble breathing, face or mouth swelling, faintness, or a severe widespread reaction. Essential oils can be toxic to pets; keep the paste away from them.',
+};
+
+const bugBiteTallowBalm: StarterRecipe = {
+  id: 'builtin:bugBiteTallowBalm',
+  name: 'Bug Bite Anti-Itch Balm',
+  ingredients: [
+    'Grass-fed beef tallow: 8 oz (approx. 1 cup) — deeply calms inflammation and stops the urge to scratch.',
+    'Olive oil or jojoba oil: 2 oz (approx. 4 tablespoons) — keeps the balm smooth and easy to apply.',
+    'Tea tree essential oil: 15 drops — a natural antiseptic that sanitizes the bite and reduces swelling.',
+    'Lavender essential oil: 15 drops — provides instant sting relief and stops histamine itching.',
+  ],
+  equipment: [
+    'Small pot or double boiler',
+    'Spoon or spatula',
+    'Clean glass jar or small metal tins',
+  ],
+  instructions: [
+    'Combine the tallow and olive or jojoba oil in a small pot over low heat. Remove from the burner as soon as everything is completely liquefied.',
+    'Let the mixture sit for about 5 minutes until it is warm but no longer piping hot. Stir in the tea tree and lavender essential oils.',
+    'Pour the liquid into a clean glass jar or small portable metal tins. Leave them undisturbed at room temperature until the balm cools and sets into a firm, creamy salve.',
+    'Dab a tiny bit directly onto mosquito, flea, or ant bites as soon as they start to itch.',
+  ],
+  storage:
+    'Keep covered in a clean, dry container. No safe shelf life has been established for this owner-supplied formula; discard if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula. Its claims to calm inflammation, act as an antiseptic, sanitize a bite, reduce swelling, provide instant relief, or stop histamine itching have not been independently established for this formula. Essential oils can irritate skin or cause allergic reactions. For external use only; avoid eyes, mouth, and broken skin. Stop if irritation occurs. Do not use for a severe allergic reaction or worsening symptoms. Seek urgent help for trouble breathing, face or mouth swelling, faintness, or a severe widespread reaction. Essential oils can be toxic to pets; keep the balm away from them.',
+};
+
+const aloeSunburnCare: StarterRecipe = {
+  id: 'builtin:aloeSunburnCare',
+  name: 'Plain Aloe Vera Moisturizer',
+  ingredients: [
+    'A plain, skin-labeled aloe vera gel or moisturizer, used as packaged (do not add fractionated coconut oil)',
+  ],
+  equipment: [],
+  instructions: [
+    'First move out of the sun and cool the skin with a cool shower or a clean, cool, damp cloth.',
+    'For mild sunburn without blisters, apply the aloe product according to its label while the skin is slightly damp. Use it as packaged; do not mix it with oils or transfer it to another bottle.',
+    'Stop using it if it stings or causes irritation. Keep the area protected from further sun exposure while it heals.',
+  ],
+  storage:
+    'Keep the product in its original container and follow the label’s storage and expiration directions. Do not prepare or store a homemade mixture.',
+  cautions:
+    'For mild sunburn only; this is not medical advice or a treatment for severe burns. Aloe products can still irritate or cause allergy; stop if a reaction occurs. Do not rely on this for blistering, fever, chills, dizziness, dehydration, or worsening symptoms; seek medical advice.',
+};
+
+const aloeCoconutSunburnSpray: StarterRecipe = {
+  id: 'builtin:aloeCoconutSunburnSpray',
+  name: '2-Ingredient “No-Tallow” Sunburn Spray',
+  ingredients: [
+    'Pure aloe vera juice: ½ cup',
+    'Liquid coconut oil (fractionated): 2 tablespoons',
+  ],
+  equipment: ['Spray bottle'],
+  instructions: [
+    'Pour both ingredients into a spray bottle and shake vigorously before use.',
+    'Spray directly onto scorched skin for instant, hands-free cooling relief.',
+  ],
+  storage:
+    'Keep the bottle in the refrigerator. No safe shelf life has been established for this mixture.',
+  cautions:
+    'Owner-supplied, untested formula. Its claim of instant cooling relief has not been independently established for this mixture. This spray contains fractionated coconut oil; NIH MedlinePlus advises against oil-based products on active sunburn. It is included as owner content for reference, not recommended treatment. Aloe and coconut products can irritate skin or cause allergic reactions; stop if a reaction occurs. Do not use this instead of medical care for severe symptoms, blistering, or a worsening burn.',
+};
+
+const sunburnTallowBalm: StarterRecipe = {
+  id: 'builtin:sunburnTallowBalm',
+  name: 'Sunburn Balm',
+  ingredients: [
+    'Grass-fed beef tallow: 8 oz (approx. 1 cup) — forms a rich lipid barrier to lock in healing moisture.',
+    'Organic jojoba oil or olive oil: 2 oz (approx. 4 tablespoons) — keeps the balm soft enough to glide easily over painful skin.',
+    'Lavender essential oil: 20 drops — widely praised for its natural ability to soothe stings, cool burns, and minimize peeling.',
+    'Peppermint essential oil: 5 drops — adds an immediate, refreshing cooling sensation to take the heat out of the skin.',
+  ],
+  equipment: [
+    'Small pot or double boiler',
+    'Spoon or spatula',
+    'Clean glass jar or shallow tin',
+  ],
+  instructions: [
+    'Combine the tallow and olive or jojoba oil in a small pot or double boiler. Melt on low heat just until completely liquefied, then immediately remove from the burner.',
+    'Let the liquid sit for 5 minutes so it is warm but no longer steaming hot. Stir in the lavender and peppermint essential oils.',
+    'Pour the liquid into a clean glass jar or shallow tin. Leave it undisturbed at room temperature for a couple of hours until it cools and hardens into a firm, silky salve.',
+    'Gently press your fingers into the balm. Your body heat will instantly liquefy it into an oil. Lightly pat — do not rub — onto your sunburned skin.',
+  ],
+  storage:
+    'Keep covered in a clean, dry container. No safe shelf life has been established for this owner-supplied formula; discard if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula. The claims to lock in healing moisture, soothe stings, cool burns, minimize peeling, or provide immediate cooling have not been independently established for this formula. This balm is oil-based; NIH MedlinePlus advises against oil-based products on active sunburn. It is included as owner content for reference, not recommended treatment. Lavender and peppermint oils can irritate skin or cause allergic reactions. Do not use instead of medical care for severe symptoms, blistering, or a worsening burn.',
 };
 
 const glassCleanerRecipe: StarterRecipe = {
@@ -351,6 +538,155 @@ const saltFreeWeedRecipe: StarterRecipe = {
     'Owner-supplied, untested contact-treatment formula. Salt-free does not mean harmless to soil, plants, people, pets, or the environment. Vinegar and dishwashing detergent can damage desirable foliage and affect nearby soil or organisms; avoid broad application and runoff. Non-selective: keep off lawns, garden plants, edible crops, and tree-root zones. It may damage stone, paving, metal, or finishes. Avoid eyes, skin contact, and breathing spray. Keep people and pets away during application and prevent contact with treated vegetation. Never mix with bleach or other cleaners.',
 };
 
+const peppermintMouseSpray: StarterRecipe = {
+  id: 'builtin:peppermintMouseSpray',
+  name: 'Peppermint Vinegar Mouse Spray',
+  ingredients: [
+    '1 cup distilled water',
+    '1 cup distilled white vinegar',
+    '30–40 drops 100% pure peppermint essential oil (not cooking extract)',
+    '1 teaspoon dish soap',
+  ],
+  equipment: ['Glass spray bottle', 'Measuring cups', 'Funnel'],
+  instructions: [
+    'Pour the water, vinegar, dish soap, and peppermint oil into the glass spray bottle. Shake vigorously before every use.',
+    'Do not spray this mixture on mouse droppings, urine, nests, or contaminated surfaces. Use the rodent-waste cleanup instructions in the cautions instead.',
+    'For the owner-suggested perimeter application, use only on compatible, non-food-contact surfaces near entry points. Test a small area first and avoid overspray.',
+    'The owner-suggested schedule is to reapply every 3 to 5 days, or when the mint scent fades. This timing and the spray’s effectiveness have not been established.',
+  ],
+  storage:
+    'Label the bottle with its contents and mixing date. Keep it closed, away from children, pets, food, heat, and sunlight. No safe shelf life has been established; prepare a fresh batch if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula; peppermint oil spray is not proven to repel or control mice, and this mixture is not a disinfectant. Do not use it to clean droppings, urine, nests, or other rodent waste. CDC advises wearing rubber or plastic gloves, wetting rodent waste with a household disinfectant labeled as a disinfectant or a bleach solution, letting it soak as directed, and wiping it up; never sweep or vacuum it. Keep peppermint oil and spray away from cats and dogs, children, food, and food-contact surfaces; essential oils may harm pets, and the user-supplied claim that diluted spray is generally safe for pets has not been verified. Vinegar may damage stone and some finishes. Do not mix with bleach or other cleaners.',
+};
+
+const mouseDeterrentSachet: StarterRecipe = {
+  id: 'builtin:mouseDeterrentSachet',
+  name: 'The “Sachet” Alternative for Tight Spaces',
+  ingredients: [
+    'A handful of whole cloves',
+    '2–3 cinnamon sticks',
+    'A few dry bay leaves',
+    '5 drops peppermint or eucalyptus essential oil, applied to the outside of each bag',
+  ],
+  equipment: [
+    'Small mesh or muslin bags',
+    'Steel wool',
+    'Caulk for securing steel wool',
+  ],
+  instructions: [
+    'Fill small mesh or muslin bags with the whole cloves, cinnamon sticks, and dry bay leaves.',
+    'Put 5 drops of peppermint or eucalyptus essential oil directly onto the outside of each bag. Place the sachets in drawer corners, closets, or an RV in storage, only where children and pets cannot reach them.',
+    'The submitted suggestion is to replace the sachets once a month; this schedule and their ability to deter mice have not been established.',
+    'For small entry holes, pack in steel wool and secure it with caulk so rodents cannot push it out. Use metal screen, hardware cloth, or another suitable durable repair for larger openings. Inspect repairs; this is not foolproof.',
+  ],
+  storage:
+    'Replace the sachet monthly as suggested, or sooner if damp, damaged, or no longer intact. Keep essential oils and sachets sealed away from children and pets. No effective duration has been established.',
+  cautions:
+    'Owner-supplied, untested deterrent; the effectiveness of this spice-and-oil sachet and monthly replacement schedule has not been established. Peppermint and eucalyptus essential oils can be toxic to cats and dogs; do not use the sachets where pets can reach, chew, or contact them. Steel wool alone is not a foolproof seal: CDC advises securing it with caulk, and using durable metal or hardware cloth for larger openings. Take care around electrical wiring, hot pipes, and gas lines; use an appropriate seal or a qualified professional. Keep spices and oils away from food and food-contact surfaces.',
+};
+
+const spiderDeterrentSpray: StarterRecipe = {
+  id: 'builtin:spiderDeterrentSpray',
+  name: 'Peppermint and Citrus Spider Spray',
+  ingredients: [
+    '1.5 cups distilled water',
+    '2 tablespoons witch hazel or rubbing alcohol',
+    '15 drops peppermint essential oil',
+    '15 drops lemon or lime essential oil',
+    '1 teaspoon liquid dish soap',
+  ],
+  equipment: [
+    '16 oz glass spray bottle',
+    'Measuring cups and spoons',
+    'Funnel',
+  ],
+  instructions: [
+    'Use a funnel to pour the witch hazel or rubbing alcohol into the glass bottle, then add the peppermint and citrus essential oils. Swirl gently to mix.',
+    'Add the 1.5 cups distilled water and the dish soap. Tighten the cap and shake vigorously.',
+    'Spray generously in areas where spiders may spin webs, such as dark corners, behind toilets, window sills, door frames, and the backs of closets. Spot-test first and keep spray off people, pets, food, and food-contact surfaces.',
+    'The submitted suggestion is to reapply every 7 days. This schedule and the spray’s effectiveness have not been established.',
+  ],
+  storage:
+    'Label the bottle with its contents and mixing date. Keep it closed and away from children, pets, food, heat, and sunlight. No safe shelf life has been established; prepare a fresh batch if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula. The claim that this creates an active barrier spiders will not cross, and the 7-day reapplication schedule, have not been established. Keep peppermint and citrus essential oils away from cats and dogs; essential oils may harm pets. If using rubbing alcohol, keep the mixture away from flames, sparks, heat, and hot surfaces, and use it with good ventilation. Avoid eyes, skin contact, breathing spray, and spraying food, food-contact surfaces, or delicate finishes. Spot-test surface compatibility and keep children and pets away until sprayed surfaces are dry. Follow the witch hazel product label; some witch hazel products contain alcohol.',
+};
+
+const roachControlRecipe: StarterRecipe = {
+  id: 'builtin:roachControlRecipe',
+  name: 'Chemical-Free Roach Reduction',
+  ingredients: [
+    'No pesticide or spray mixture',
+    'Food stored in tightly sealed containers',
+    'Caulk or another suitable material for sealing small gaps',
+  ],
+  equipment: [
+    'Vacuum cleaner with a hose or crevice attachment',
+    'Cleaning supplies for crumbs and grease',
+    'A sealable bag for vacuum contents',
+  ],
+  instructions: [
+    'Remove food sources: wipe crumbs and grease, wash dishes after meals, store food in tightly sealed containers, and empty kitchen waste regularly.',
+    'Reduce moisture and shelter: repair leaks, dry sinks and counters, clear clutter and cardboard, and seal small gaps around pipes, baseboards, and cabinets.',
+    'Vacuum visible roaches and egg cases from cracks and crevices. Immediately seal vacuum contents in a bag and put it in an outdoor bin. Clean the vacuum attachment and canister according to its manufacturer’s instructions.',
+    'Repeat cleaning, moisture control, and gap sealing consistently. For a persistent infestation, ask a licensed pest-management professional about an integrated approach focused on prevention and physical removal.',
+  ],
+  storage:
+    'Keep cleaning supplies and caulk in their original containers and follow their labels. No mixed product or pesticide is used in this method.',
+  cautions:
+    'This method avoids pesticides and chemical sprays. Vacuuming and sanitation physically remove roaches and egg cases; take care when handling vacuum contents and wash hands afterward. Consistent prevention can reduce cockroach activity, but a serious or established infestation may not be eliminated by nonchemical steps alone.',
+};
+
+const antControlRecipe: StarterRecipe = {
+  id: 'builtin:antControlRecipe',
+  name: 'Chemical-Free Ant Trail Cleanup and Prevention',
+  ingredients: [
+    'Warm water with a few drops of mild dish soap for wiping trails',
+    'Optional: equal parts white vinegar and water for wiping compatible surfaces',
+    'Caulk or another suitable material for sealing small entry gaps',
+  ],
+  equipment: [
+    'Small bowl or spray bottle for the chosen cleaning solution',
+    'Sponge or microfiber cloth',
+    'Sealed food-storage containers',
+  ],
+  instructions: [
+    'Remove what is attracting the ants: wipe up crumbs, grease, and spills; store food and pet food in sealed containers; rinse recycling; and empty the kitchen garbage regularly.',
+    'Wipe visible ant trails with soapy water. Alternatively, wipe compatible surfaces with a 50/50 white vinegar and water solution. Repeat as needed; this can temporarily disrupt trails but does not eliminate the colony.',
+    'Follow the ants to likely entry gaps around windows, doors, pipes, and baseboards, then seal suitable gaps. Trim branches touching the building and remove outdoor debris or food sources near entry points when practical.',
+    'Keep surfaces clean and dry and repeat these steps when ants return. This approach helps keep ants out of living areas; it does not promise to eradicate an outdoor colony or a persistent indoor nest.',
+  ],
+  storage:
+    'If you prepare a cleaning solution, label the container and make only what you need. Keep it away from children, pets, and food. Do not store it in a beverage container.',
+  cautions:
+    'Chemical-free trail cleanup and exclusion can reduce indoor ant activity, but results depend on the ant species, food sources, and entry points. Vinegar may damage natural stone and some finishes; spot-test first and avoid delicate surfaces. Never mix vinegar with bleach or other cleaning products. Keep solutions away from eyes, children, and pets.',
+};
+
+const drainClearingGuide: StarterRecipe = {
+  id: 'builtin:drainClearingGuide',
+  name: 'Chemical-Free Clog Clearing',
+  ingredients: [
+    'No chemical drain opener or homemade chemical mixture',
+    'Warm tap water for rinsing after the blockage is removed',
+  ],
+  equipment: [
+    'Cup plunger',
+    'Plastic hair-removal tool or hand drain snake',
+    'Bucket and gloves for catching or handling debris',
+  ],
+  instructions: [
+    'Remove the drain stopper or strainer and clear any hair or debris you can reach. Put the material in the trash rather than pushing it farther down the drain.',
+    'For a sink or tub clog, use a cup plunger. Add enough water to cover the plunger cup, seal the overflow opening and any second sink opening with a wet cloth, then plunge steadily. Lift the plunger to check whether water drains.',
+    'If the clog is likely hair or debris, use a plastic drain-cleaning tool or hand snake according to its instructions. Turn gently, pull debris out, and do not force the tool if it catches.',
+    'When water flows freely, rinse with warm tap water and reinstall the stopper or strainer. If the drain remains blocked, several drains back up together, or you smell sewage, stop and contact a plumber.',
+  ],
+  storage:
+    'Rinse reusable tools, allow them to dry, and store them away from children and pets. Dispose of removed hair and debris in household trash.',
+  cautions:
+    'Do not use a plunger or snake if chemical drain opener is still in the drain; splashes can cause serious injury. Follow the product label and contact a plumber if you are unsure. Do not pour boiling water into a drain; it can cause burns and may damage some fixtures or plumbing. Never mix drain products or combine household cleaners. Stop if you meet resistance, have damaged plumbing, or are not comfortable removing a stopper.',
+};
+
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
   title,
@@ -360,6 +696,14 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Two options for hand-washing dishes'
       : title === 'Glass cleaner'
       ? 'Two options for compatible window glass'
+      : title === 'Body soap'
+      ? 'Honey and oatmeal melt-and-pour soap'
+      : title === 'Skin care'
+      ? 'Tallow balm with olive or jojoba oil'
+      : title === 'Sunburn care'
+      ? 'Cooling first aid for mild sunburn'
+      : title === 'Bug bite care'
+      ? 'Owner-supplied coconut-oil and baking-soda paste'
       : title === 'Laundry care'
       ? 'Mineral laundry booster formula'
       : title === 'Surface cleaner'
@@ -370,6 +714,16 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Two cream deodorant formulas'
       : title === 'Weed killer'
       ? 'Two vinegar-based formulas with site restrictions'
+      : title === 'Mouse deterrents'
+      ? 'Peppermint perimeter spray and spice sachet'
+      : title === 'Spider deterrents'
+      ? 'Owner-supplied peppermint and citrus spray'
+      : title === 'Roach control'
+      ? 'Chemical-free prevention and physical removal'
+      : title === 'Ant control'
+      ? 'Wipe trails, remove food, and seal entry gaps'
+      : title === 'Clogged drains'
+      ? 'Plunge or remove hair and debris without drain chemicals'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -389,6 +743,19 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [dishCleanerRecipe, dishScrubRecipe]
       : title === 'Toothpaste'
       ? [toothpasteRecipe]
+      : title === 'Body soap'
+      ? [bodySoapRecipe]
+      : title === 'Skin care'
+      ? [tallowSkinBalmRecipe]
+      : title === 'Sunburn care'
+      ? [
+          sunburnFirstAid,
+          aloeSunburnCare,
+          aloeCoconutSunburnSpray,
+          sunburnTallowBalm,
+        ]
+      : title === 'Bug bite care'
+      ? [bugBitePaste, bugBiteTallowBalm]
       : title === 'Glass cleaner'
       ? [glassCleanerRecipe, vinegarGlassRecipe]
       : title === 'Laundry care'
@@ -401,23 +768,61 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [deodorantRecipe, tallowDeodorantRecipe]
       : title === 'Weed killer'
       ? [weedControlRecipe, saltFreeWeedRecipe]
+      : title === 'Mouse deterrents'
+      ? [peppermintMouseSpray, mouseDeterrentSachet]
+      : title === 'Spider deterrents'
+      ? [spiderDeterrentSpray]
+      : title === 'Roach control'
+      ? [roachControlRecipe]
+      : title === 'Ant control'
+      ? [antControlRecipe]
+      : title === 'Clogged drains'
+      ? [drainClearingGuide]
       : [],
   safetyNote:
     title === 'Toothpaste'
       ? 'Fluoride-free and untested. Review this formula with a dentist before oral use. Natural ingredients do not establish dental safety or cavity protection.'
+      : title === 'Sunburn care'
+      ? 'Sunburn is a burn injury. This entry covers mild self-care only; do not rely on it for a severe burn or other urgent symptoms.'
+      : title === 'Bug bite care'
+      ? 'Owner-supplied, untested bite paste. It is not medical advice and is not a substitute for care for a severe allergic reaction.'
+      : title === 'Mouse deterrents'
+      ? 'Owner-supplied peppermint spray and spice sachet are untested and are not proven rodent control methods. Never use the spray on rodent waste; follow the cleanup instructions in the recipe cautions. Keep essential oils away from pets.'
+      : title === 'Spider deterrents'
+      ? 'Owner-supplied peppermint and citrus spray; its effectiveness and the suggested weekly reapplication schedule have not been established. Keep essential oils away from pets and follow the recipe’s handling cautions.'
+      : title === 'Roach control'
+      ? 'This guide uses sanitation, sealing, and physical removal without pesticide or spray mixtures. These steps can reduce activity, but may not eliminate an established infestation.'
+      : title === 'Ant control'
+      ? 'This guide uses cleaning and exclusion without pesticide bait or traps. It can help keep ants out of living areas but does not promise to eliminate a colony.'
+      : title === 'Clogged drains'
+      ? 'This guide uses physical drain-clearing tools rather than corrosive drain products or untested chemical mixtures. Stop and seek plumbing help when the clog does not clear safely.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
   evidenceNote:
     title === 'Dish cleaner'
       ? 'Owner-supplied recipes. These exact methods have not been independently tested for effectiveness or compatibility; shelf life has not been established for the mixed cleaner.'
+      : title === 'Sunburn care'
+      ? 'General first-aid steps based on public dermatology and NIH MedlinePlus guidance. This is not individualized medical advice.'
+      : title === 'Bug bite care'
+      ? 'This owner-supplied formula and its benefit claims have not been independently evaluated. Publication or votes do not establish safety or effectiveness.'
+      : title === 'Mouse deterrents'
+      ? 'Peppermint oil products exempt from EPA registration have not been evaluated by EPA for effectiveness. Physical exclusion and safe sanitation are better established parts of rodent control; steel wool should be secured and inspected.'
+      : title === 'Spider deterrents'
+      ? 'The submitted spray, its claimed barrier effect, and its weekly reapplication interval have not been independently evaluated. Public spider-management guidance emphasizes removing spiders, egg cases, and webs and sealing gaps around windows and doors.'
+      : title === 'Roach control'
+      ? 'University of Minnesota Extension recommends limiting food and water, and says vacuuming can remove roaches and egg cases when combined with other measures. This chemical-free approach may reduce activity; no eradication guarantee is made.'
+      : title === 'Ant control'
+      ? 'UC IPM recommends removing food sources, wiping ant trails with soapy water, and sealing entry points. University of Minnesota Extension says vinegar and water may temporarily disrupt ant trails; neither source supports a guaranteed colony-elimination claim for these steps.'
+      : title === 'Clogged drains'
+      ? 'The U.S. EPA lists a plunger or plumber’s snake as alternatives to chemical drain cleaner. This guide focuses on physical removal; effectiveness depends on the clog and plumbing.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
 
 // Keep supplied recipes visible with prominent, topic-specific safety context.
 export const productCatalog: Guide[] = draftCatalog.map(guide => {
-  if (guide.category === 'Personal Care')
+  if (guide.category === 'Personal Care' || guide.category === 'Skin Care')
     return {
       ...guide,
       reviewNotice:
