@@ -25,7 +25,7 @@
     "web": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
     "web:test": "npm --prefix web test",
-    "safety:test": "node --test scripts/test-delete-account.mjs scripts/test-native-audit.mjs scripts/test-metro-assets.mjs scripts/test-admin-auth.mjs",
+    "safety:test": "node --test scripts/test-delete-account.mjs scripts/test-native-audit.mjs scripts/test-metro-assets.mjs scripts/test-admin-auth.mjs scripts/test-mobile-build.mjs",
     "release:check": "node scripts/check-release-readiness.mjs",
     "website:build": "node --env-file-if-exists=.env scripts/build-policy-site.mjs"
   },
