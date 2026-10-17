@@ -4,6 +4,7 @@ import {
   normalizeBarcode,
   parseProductLookup,
 } from '../src/lib/barcodeLookup';
+import { productCatalog } from '../src/catalog';
 
 describe('barcodeLookup', () => {
   it('accepts standard UPC and EAN lengths and rejects other scans', () => {
@@ -45,6 +46,12 @@ describe('barcodeLookup', () => {
     [{ product_name: 'Mystery household product' }, null],
   ])('classifies only a recognized product category', (product, expected) => {
     expect(classifyProduct(product)).toBe(expected);
+  });
+
+  it('maps every catalog guide title back to its own guide', () => {
+    for (const guide of productCatalog) {
+      expect(classifyProduct({ product_name: guide.title })).toBe(guide.id);
+    }
   });
 
   it('parses the small product result and leaves unclear products unmatched', () => {
