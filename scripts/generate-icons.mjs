@@ -14,7 +14,7 @@ const sourceArtwork = await readFile(sourceArtworkPath);
 const foregroundArtwork = await readFile(
   path.join(root, 'assets', 'branding', 'instead-mark.svg'),
 );
-const iconBackground = '#FFD95B';
+const iconBackground = '#A8BFAE';
 
 async function writeSquare(size, output) {
   await mkdir(path.dirname(output), { recursive: true });

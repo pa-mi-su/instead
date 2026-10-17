@@ -6,7 +6,7 @@ export function BrandLogo() {
   return (
     <View style={styles.brandLogo}>
       <Svg style={styles.brandMark} viewBox="0 0 1024 1024">
-        <Rect x="0" y="0" width="1024" height="1024" rx="180" fill="#FFD95B" />
+        <Rect x="0" y="0" width="1024" height="1024" rx="180" fill="#A8BFAE" />
         <Circle cx="512" cy="512" r="352" fill="#FFFDF7" />
         <Circle cx="512" cy="512" r="302" fill="#183B32" />
         <Path
