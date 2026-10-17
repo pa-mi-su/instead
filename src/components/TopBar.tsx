@@ -1,6 +1,7 @@
 import { Bookmark } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import { BrandLogo } from './BrandLogo';
 import type { ViewName } from '../navigation/types';
 import { COLORS, styles } from '../styles';
 
@@ -29,7 +30,7 @@ export function TopBar({
         accessibilityRole="button"
         accessibilityLabel="Go to home"
       >
-        <Text style={styles.wordmark}>INSTEAD</Text>
+        <BrandLogo />
       </Pressable>
       <Pressable
         onPress={onInfo}

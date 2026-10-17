@@ -7,7 +7,6 @@ import {
   View,
 } from 'react-native';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
-import { useRef } from 'react';
 import { categories } from '../categories';
 import { GuideCard } from '../components/GuideCard';
 import { COLORS, styles } from '../styles';
@@ -21,7 +20,6 @@ export function HomeScreen({
   onCategory,
   onOpen,
   onScan,
-  onBrowse,
   isLoadingLive,
   bottomInset,
 }: {
@@ -32,12 +30,9 @@ export function HomeScreen({
   onCategory: (value: (typeof categories)[number]) => void;
   onOpen: (id: string) => void;
   onScan: () => void;
-  onBrowse: () => void;
   isLoadingLive: boolean;
   bottomInset: number;
 }) {
-  const searchInput = useRef<TextInput>(null);
-
   return (
     <ScrollView
       contentContainerStyle={[
@@ -80,23 +75,7 @@ export function HomeScreen({
             <Text style={styles.choiceTitle}>Scan a product</Text>
             <Text style={styles.choiceCaption}>Find a related alternative</Text>
           </View>
-          <ArrowRight size={18} color={COLORS.ink} />
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            onBrowse();
-            searchInput.current?.focus();
-          }}
-          style={({ pressed }) => [
-            styles.browseChoice,
-            pressed && styles.pressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Browse and search alternatives"
-        >
-          <Search size={19} color={COLORS.ink} />
-          <Text style={styles.browseChoiceText}>Browse alternatives</Text>
-          <ArrowRight size={17} color={COLORS.ink} />
+          <ArrowRight size={18} color={COLORS.white} />
         </Pressable>
       </View>
 
@@ -108,7 +87,6 @@ export function HomeScreen({
       <View style={styles.searchWrap}>
         <Search size={21} color={COLORS.ink} />
         <TextInput
-          ref={searchInput}
           value={query}
           onChangeText={onQuery}
           placeholder="Try “toothpaste” or “weed killer”"

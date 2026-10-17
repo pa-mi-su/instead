@@ -1,6 +1,7 @@
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { ScrollView, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
+import { BrandLogo } from '../components/BrandLogo';
 import { ProductCommunity as ProductComments } from '../components/ProductCommunity';
 import { DetailSection } from '../components/DetailSection';
 import { COLORS, styles } from '../styles';
@@ -37,7 +38,7 @@ export function GuideDetailScreen({
           <ArrowLeft size={22} color={COLORS.ink} />
         </Pressable>
         <View style={styles.detailWordmarkWrap}>
-          <Text style={styles.detailWordmark}>INSTEAD</Text>
+          <BrandLogo />
         </View>
         <Pressable
           onPress={onSave}

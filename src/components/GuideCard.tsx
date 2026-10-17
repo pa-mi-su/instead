@@ -29,7 +29,7 @@ export function GuideCard({
         <Text style={styles.cardPrompt}>{guide.prompt}</Text>
       </View>
       <View style={styles.cardArrow}>
-        <ArrowRight size={21} color={COLORS.ink} />
+        <ArrowRight size={19} color={COLORS.white} />
       </View>
     </Pressable>
   );
