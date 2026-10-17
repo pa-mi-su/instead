@@ -584,6 +584,33 @@ const mouseDeterrentSachet: StarterRecipe = {
     'Owner-supplied, untested deterrent; the effectiveness of this spice-and-oil sachet and monthly replacement schedule has not been established. Peppermint and eucalyptus essential oils can be toxic to cats and dogs; do not use the sachets where pets can reach, chew, or contact them. Steel wool alone is not a foolproof seal: CDC advises securing it with caulk, and using durable metal or hardware cloth for larger openings. Take care around electrical wiring, hot pipes, and gas lines; use an appropriate seal or a qualified professional. Keep spices and oils away from food and food-contact surfaces.',
 };
 
+const spiderDeterrentSpray: StarterRecipe = {
+  id: 'builtin:spiderDeterrentSpray',
+  name: 'Peppermint and Citrus Spider Spray',
+  ingredients: [
+    '1.5 cups distilled water',
+    '2 tablespoons witch hazel or rubbing alcohol',
+    '15 drops peppermint essential oil',
+    '15 drops lemon or lime essential oil',
+    '1 teaspoon liquid dish soap',
+  ],
+  equipment: [
+    '16 oz glass spray bottle',
+    'Measuring cups and spoons',
+    'Funnel',
+  ],
+  instructions: [
+    'Use a funnel to pour the witch hazel or rubbing alcohol into the glass bottle, then add the peppermint and citrus essential oils. Swirl gently to mix.',
+    'Add the 1.5 cups distilled water and the dish soap. Tighten the cap and shake vigorously.',
+    'Spray generously in areas where spiders may spin webs, such as dark corners, behind toilets, window sills, door frames, and the backs of closets. Spot-test first and keep spray off people, pets, food, and food-contact surfaces.',
+    'The submitted suggestion is to reapply every 7 days. This schedule and the spray’s effectiveness have not been established.',
+  ],
+  storage:
+    'Label the bottle with its contents and mixing date. Keep it closed and away from children, pets, food, heat, and sunlight. No safe shelf life has been established; prepare a fresh batch if its appearance or smell changes.',
+  cautions:
+    'Owner-supplied, untested formula. The claim that this creates an active barrier spiders will not cross, and the 7-day reapplication schedule, have not been established. Keep peppermint and citrus essential oils away from cats and dogs; essential oils may harm pets. If using rubbing alcohol, keep the mixture away from flames, sparks, heat, and hot surfaces, and use it with good ventilation. Avoid eyes, skin contact, breathing spray, and spraying food, food-contact surfaces, or delicate finishes. Spot-test surface compatibility and keep children and pets away until sprayed surfaces are dry. Follow the witch hazel product label; some witch hazel products contain alcohol.',
+};
+
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
   id: `natural-${title.toLowerCase().replace(/ /g, '-')}`,
   title,
@@ -613,6 +640,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Two vinegar-based formulas with site restrictions'
       : title === 'Mouse deterrents'
       ? 'Peppermint perimeter spray and spice sachet'
+      : title === 'Spider deterrents'
+      ? 'Owner-supplied peppermint and citrus spray'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -659,6 +688,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [weedControlRecipe, saltFreeWeedRecipe]
       : title === 'Mouse deterrents'
       ? [peppermintMouseSpray, mouseDeterrentSachet]
+      : title === 'Spider deterrents'
+      ? [spiderDeterrentSpray]
       : [],
   safetyNote:
     title === 'Toothpaste'
@@ -669,6 +700,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Owner-supplied, untested bite paste. It is not medical advice and is not a substitute for care for a severe allergic reaction.'
       : title === 'Mouse deterrents'
       ? 'Owner-supplied peppermint spray and spice sachet are untested and are not proven rodent control methods. Never use the spray on rodent waste; follow the cleanup instructions in the recipe cautions. Keep essential oils away from pets.'
+      : title === 'Spider deterrents'
+      ? 'Owner-supplied peppermint and citrus spray; its effectiveness and the suggested weekly reapplication schedule have not been established. Keep essential oils away from pets and follow the recipe’s handling cautions.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
   professionalHelp: [],
   evidence: 'Limited',
@@ -681,6 +714,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'This owner-supplied formula and its benefit claims have not been independently evaluated. Publication or votes do not establish safety or effectiveness.'
       : title === 'Mouse deterrents'
       ? 'Peppermint oil products exempt from EPA registration have not been evaluated by EPA for effectiveness. Physical exclusion and safe sanitation are better established parts of rodent control; steel wool should be secured and inspected.'
+      : title === 'Spider deterrents'
+      ? 'The submitted spray, its claimed barrier effect, and its weekly reapplication interval have not been independently evaluated. Public spider-management guidance emphasizes removing spiders, egg cases, and webs and sealing gaps around windows and doors.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));
