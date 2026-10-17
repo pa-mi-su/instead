@@ -1,7 +1,7 @@
 import { CommunityAccountControls } from './CommunityAccountControls';
 import { communityRules } from '../disclaimer';
-import { ProductRecipes } from './ProductRecipes';
 import { useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   Linking,
   Pressable,
@@ -15,8 +15,17 @@ import { COMMENT_LIMIT, reportReasons } from '../lib/community';
 import { supabase } from '../lib/supabase';
 import { COLORS, styles } from '../styles';
 
-export function ProductComments({ productId }: { productId: string }) {
-  const c = useCommunity(supabase, productId);
+export function ProductComments({
+  productId,
+  recipeId,
+  renderRecipes,
+}: {
+  productId: string;
+  recipeId?: string;
+  renderRecipes?: (community: ReturnType<typeof useCommunity>) => ReactNode;
+}) {
+  const [sort, setSort] = useState<'helpful' | 'newest'>('helpful');
+  const c = useCommunity(supabase, productId, recipeId, sort);
   const emailInput = useRef<TextInput>(null);
   const codeInput = useRef<TextInput>(null);
   const [focusedField, setFocusedField] = useState<'email' | 'code' | null>(
@@ -42,16 +51,7 @@ export function ProductComments({ productId }: { productId: string }) {
   );
   return (
     <View style={styles.optionList}>
-      <ProductRecipes
-        key={`${productId}:${c.session?.user.id ?? 'guest'}:${c.blocks
-          .map(b => b.id)
-          .join(',')}`}
-        productId={productId}
-        userId={c.session?.user.id}
-        canContribute={c.canContribute}
-        canManage={c.canManage}
-        onBlock={id => c.block('recipe', id)}
-      />
+      {!recipeId && renderRecipes?.(c)}
       <Text style={styles.optionDetail}>{communityRules}</Text>
       {!c.configured && <Text>Community comments are not configured yet.</Text>}
       {!!c.error && <Text accessibilityRole="alert">{c.error}</Text>}
@@ -199,7 +199,7 @@ export function ProductComments({ productId }: { productId: string }) {
               required to contribute.
             </Text>
           )}
-          {c.canContribute && (
+          {c.canContribute && recipeId && (
             <>
               <TextInput
                 accessibilityLabel="Your comment or ingredient swap"
@@ -218,77 +218,89 @@ export function ProductComments({ productId }: { productId: string }) {
           )}
         </View>
       )}
-      <Text style={styles.optionName}>
-        Community suggestions · Most upvoted first
-      </Text>
-      {button(
-        'Refresh comments',
-        c.retry,
-        !c.configured || c.busy || c.loading,
-      )}
-      {c.loading && <Text>Loading comments…</Text>}
-      {c.loaded && !c.comments.length && (
-        <Text>No comments yet. Share the first suggestion.</Text>
-      )}
-      {c.comments.map(comment => (
-        <View key={comment.id} style={styles.optionCard}>
-          <Text style={styles.optionLabel}>
-            Community member ·{' '}
-            {comment.moderation_status === 'pending'
-              ? 'AWAITING REVIEW · ONLY YOU'
-              : comment.moderation_status === 'rejected'
-              ? 'NOT PUBLISHED · ONLY YOU'
-              : 'MODERATED · NOT VERIFIED SAFE'}
-            {comment.mine ? ' · YOU' : ''}
-          </Text>
-          <Text style={styles.optionDetail}>{comment.body}</Text>
-          {comment.mine ? (
-            <Text style={styles.optionDetail}>
-              {comment.votes} {comment.votes === 1 ? 'vote' : 'votes'} · Your
-              comment
-            </Text>
-          ) : (
-            button(
-              `${comment.upvoted ? '▲ Upvoted' : '△ Upvote'} · ${
-                comment.votes
-              }`,
-              () => c.vote(comment),
-              c.busy || !c.canContribute,
-              comment.upvoted,
-            )
+      {!!recipeId && (
+        <>
+          <Text style={styles.optionName}>Recipe comments</Text>
+          {button(
+            'Most helpful',
+            () => setSort('helpful'),
+            false,
+            sort === 'helpful',
           )}
-          {c.canManage &&
-            comment.moderation_status === 'approved' &&
-            button(
-              comment.reported ? 'Reported' : 'Report',
-              () => setReportId(reportId === comment.id ? null : comment.id),
-              c.busy || comment.reported,
-            )}
-          {reportId === comment.id && !comment.reported && (
-            <View>
-              {reportReasons.map(reason => (
-                <View key={reason}>
-                  {button(reason, () => c.report(comment, reason))}
+          {button('Newest', () => setSort('newest'), false, sort === 'newest')}
+          {button(
+            'Refresh comments',
+            c.retry,
+            !c.configured || c.busy || c.loading,
+          )}
+          {c.loading && <Text>Loading comments…</Text>}
+          {c.loaded && !c.comments.length && (
+            <Text>No comments yet. Share the first suggestion.</Text>
+          )}
+          {c.comments.map(comment => (
+            <View key={comment.id} style={styles.optionCard}>
+              <Text style={styles.optionLabel}>
+                Community member ·{' '}
+                {comment.moderation_status === 'pending'
+                  ? 'AWAITING REVIEW · ONLY YOU'
+                  : comment.moderation_status === 'rejected'
+                  ? 'NOT PUBLISHED · ONLY YOU'
+                  : 'MODERATED · NOT VERIFIED SAFE'}
+                {comment.mine ? ' · YOU' : ''}
+              </Text>
+              <Text style={styles.optionDetail}>{comment.body}</Text>
+              {comment.mine ? (
+                <Text style={styles.optionDetail}>
+                  {comment.votes} {comment.votes === 1 ? 'vote' : 'votes'} ·
+                  Your comment
+                </Text>
+              ) : (
+                button(
+                  `${comment.upvoted ? '▲ Upvoted' : '△ Upvote'} · ${
+                    comment.votes
+                  }`,
+                  () => c.vote(comment),
+                  c.busy || !c.canContribute,
+                  comment.upvoted,
+                )
+              )}
+              {c.canManage &&
+                comment.moderation_status === 'approved' &&
+                button(
+                  comment.reported ? 'Reported' : 'Report',
+                  () =>
+                    setReportId(reportId === comment.id ? null : comment.id),
+                  c.busy || comment.reported,
+                )}
+              {reportId === comment.id && !comment.reported && (
+                <View>
+                  {reportReasons.map(reason => (
+                    <View key={reason}>
+                      {button(reason, () => c.report(comment, reason))}
+                    </View>
+                  ))}
+                  {button('Cancel report', () => setReportId(null))}
                 </View>
-              ))}
-              {button('Cancel report', () => setReportId(null))}
+              )}
+              {!comment.mine &&
+                c.canManage &&
+                button('Block contributor', () =>
+                  c.block('comment', comment.id),
+                )}
+              {comment.mine &&
+                button('Delete my comment', () => setDeleteId(comment.id))}
+              {deleteId === comment.id && (
+                <View>
+                  <Text>Delete this comment and its votes?</Text>
+                  {button('Confirm delete', () => c.remove(comment))}
+                  {button('Cancel', () => setDeleteId(null))}
+                </View>
+              )}
             </View>
-          )}
-          {!comment.mine &&
-            c.canManage &&
-            button('Block contributor', () => c.block('comment', comment.id))}
-          {comment.mine &&
-            button('Delete my comment', () => setDeleteId(comment.id))}
-          {deleteId === comment.id && (
-            <View>
-              <Text>Delete this comment and its votes?</Text>
-              {button('Confirm delete', () => c.remove(comment))}
-              {button('Cancel', () => setDeleteId(null))}
-            </View>
-          )}
-        </View>
-      ))}
-      {c.hasMore && button('Load more comments', c.loadMore)}
+          ))}
+          {c.hasMore && button('Load more comments', c.loadMore)}
+        </>
+      )}
     </View>
   );
 }

@@ -23,6 +23,7 @@ export type BetterOption = {
 };
 
 export type StarterRecipe = {
+  id: string;
   name: string;
   ingredients: string[];
   equipment: string[];

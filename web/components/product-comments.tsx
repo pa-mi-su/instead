@@ -1,18 +1,19 @@
 "use client";
 import { CommunityAccountControls } from "./community-account-controls";
 import { communityRules } from "../../src/disclaimer";
-import { ProductRecipes } from "./product-recipes";
+import type { ReactNode } from "react";
 import { useState } from 'react';
 import { useCommunity } from '../../src/hooks/useCommunity';
 import { COMMENT_LIMIT, reportReasons } from '../../src/lib/community';
 import { communityClient } from '../lib/community-client';
 
-export function ProductComments({ productId }: { productId: string }) {
-  const c = useCommunity(communityClient, productId);
+export function ProductComments({ productId, recipeId, renderRecipes }: { productId: string; recipeId?: string; renderRecipes?: (community: ReturnType<typeof useCommunity>) => ReactNode }) {
+  const [sort, setSort] = useState<'helpful' | 'newest'>('helpful');
+  const c = useCommunity(communityClient, productId, recipeId, sort);
   const [reportId, setReportId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   return <div className="product-comments">
-    <ProductRecipes key={`${productId}:${c.session?.user.id ?? "guest"}:${c.blocks.map(b => b.id).join(",")}`} productId={productId} userId={c.session?.user.id} canContribute={c.canContribute} canManage={c.canManage} onBlock={id => c.block("recipe", id)} />
+    {!recipeId && renderRecipes?.(c)}
     <p>{communityRules}</p>
     {!c.configured && <p>Community comments are not configured yet.</p>}
     {c.error && <p role="alert">{c.error} <button type="button" disabled={c.busy} onClick={c.retry}>Retry loading</button></p>}
@@ -21,11 +22,11 @@ export function ProductComments({ productId }: { productId: string }) {
       <h3>Sign in to comment or vote</h3><p>No password needed. Your email stays private. Your comments and approved recipes are public. No profile is required.</p>
       <p>By continuing, you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
       {!c.sentEmail ? <form onSubmit={e => { e.preventDefault(); c.sendCode(); }}>
-        <label htmlFor="community-email">Email address</label><input placeholder="you@example.com" id="community-email" type="email" autoComplete="email" maxLength={254} required value={c.email} onChange={e => c.setEmail(e.target.value)} />
+        <label htmlFor={`community-email-${recipeId ?? productId}`}>Email address</label><input placeholder="you@example.com" id={`community-email-${recipeId ?? productId}`} type="email" autoComplete="email" maxLength={254} required value={c.email} onChange={e => c.setEmail(e.target.value)} />
         <button disabled={c.busy || !c.email.trim()}>Send sign-in code</button>
       </form> : <form onSubmit={e => { e.preventDefault(); c.verifyCode(); }}>
-        <p>Enter the code sent to {c.sentEmail}.</p><label htmlFor="community-code">Email code</label>
-        <input autoFocus placeholder="8-digit code" id="community-code" inputMode="numeric" autoComplete="one-time-code" maxLength={10} required value={c.code} onChange={e => c.setCode(e.target.value.replace(/\D/g, ''))} />
+        <p>Enter the code sent to {c.sentEmail}.</p><label htmlFor={`community-code-${recipeId ?? productId}`}>Email code</label>
+        <input autoFocus placeholder="8-digit code" id={`community-code-${recipeId ?? productId}`} inputMode="numeric" autoComplete="one-time-code" maxLength={10} required value={c.code} onChange={e => c.setCode(e.target.value.replace(/\D/g, ''))} />
         <button disabled={c.busy || !c.code.trim()}>Verify code</button>
         <button type="button" disabled={c.busy || c.resendSeconds > 0} onClick={c.sendCode}>{c.resendSeconds ? `Resend in ${c.resendSeconds}s` : 'Resend code'}</button>
         <button type="button" disabled={c.busy} onClick={c.changeEmail}>Use a different email</button>
@@ -34,16 +35,18 @@ export function ProductComments({ productId }: { productId: string }) {
     {c.session && <section aria-label="Your community account">
       <p>Signed in · Your email is private.</p><button type="button" disabled={c.busy} onClick={c.signOut}>Sign out</button><CommunityAccountControls community={c} />
       {!c.canContribute && <p>A verified, active account and current community agreement are required to contribute.</p>}
-      {c.canContribute && <>
+      {c.canContribute && recipeId && <>
         <form onSubmit={e => { e.preventDefault(); c.post(); }}>
-          <label htmlFor="product-comment">Your comment or ingredient swap</label>
-          <textarea id="product-comment" maxLength={COMMENT_LIMIT} placeholder="I use this ingredient instead of…" value={c.draft} onChange={e => c.setDraft(e.target.value)} />
+          <label htmlFor={`product-comment-${recipeId ?? productId}`}>Your comment or ingredient swap</label>
+          <textarea id={`product-comment-${recipeId ?? productId}`} maxLength={COMMENT_LIMIT} placeholder="I use this ingredient instead of…" value={c.draft} onChange={e => c.setDraft(e.target.value)} />
           <small>{c.draft.length}/{COMMENT_LIMIT}</small>
           <button disabled={c.busy || !c.draft.trim()}>Post comment</button>
         </form>
       </>}
     </section>}
-    <h3>Community suggestions · Most upvoted first</h3>
+    {!!recipeId && <><h3>Recipe comments</h3>
+    <button type="button" aria-pressed={sort === 'helpful'} onClick={() => setSort('helpful')}>Most helpful</button>
+    <button type="button" aria-pressed={sort === 'newest'} onClick={() => setSort('newest')}>Newest</button>
     <button type="button" disabled={!c.configured || c.busy || c.loading} onClick={c.retry}>Refresh comments</button>
     {c.loading && <p role="status">Loading comments…</p>}
     {c.loaded && !c.comments.length && <p>No comments yet. Share the first suggestion.</p>}
@@ -57,6 +60,6 @@ export function ProductComments({ productId }: { productId: string }) {
       {comment.mine && <button type="button" disabled={c.busy} onClick={() => setDeleteId(comment.id)}>Delete my comment</button>}
       {deleteId === comment.id && <div><p>Delete this comment and its votes?</p><button type="button" disabled={c.busy} onClick={() => c.remove(comment)}>Confirm delete</button><button type="button" onClick={() => setDeleteId(null)}>Cancel</button></div>}
     </div>)}</div>
-    {c.hasMore && <button type="button" disabled={c.busy} onClick={c.loadMore}>Load more comments</button>}
+    {c.hasMore && <button type="button" disabled={c.busy} onClick={c.loadMore}>Load more comments</button>}</>}
   </div>;
 }

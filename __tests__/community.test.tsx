@@ -22,7 +22,7 @@ function mockClient(session: CommunitySession | null = null) {
     }),
   };
   const rpc = jest.fn(async (name: string, _args: Record<string, unknown>) => ({
-    data: (name === 'community_list'
+    data: (name === 'community_list' || name === 'recipe_comments_list'
       ? []
       : name === 'community_account_state'
       ? [
@@ -224,4 +224,34 @@ test('blocking addresses content without exposing another account id and refresh
   expect(hook.result.current.notice).toMatch(/blocked/);
   await act(() => hook.result.current.requestDeletion());
   expect(m.rpc).toHaveBeenCalledWith('community_request_deletion', {});
+});
+
+test('recipe discussions read and post only to the selected recipe', async () => {
+  const m = mockClient(member);
+  const hook = await renderHook(() =>
+    useCommunity(
+      m.client,
+      'natural-glass-cleaner',
+      'builtin:glassCleanerRecipe',
+      'newest',
+    ),
+  );
+  await waitFor(() => expect(hook.result.current.canContribute).toBe(true));
+  expect(m.rpc).toHaveBeenCalledWith('recipe_comments_list', {
+    p_product: 'natural-glass-cleaner',
+    p_recipe: 'builtin:glassCleanerRecipe',
+    p_offset: 0,
+    p_sort: 'newest',
+  });
+  await act(() => hook.result.current.setDraft('I use a lint-free cloth.'));
+  await act(() => hook.result.current.post());
+  expect(m.rpc).toHaveBeenCalledWith('recipe_comment_post', {
+    p_product: 'natural-glass-cleaner',
+    p_recipe: 'builtin:glassCleanerRecipe',
+    p_body: 'I use a lint-free cloth.',
+  });
+  expect(m.rpc.mock.calls.some(([name]) => name === 'community_post')).toBe(
+    false,
+  );
+  await hook.unmount();
 });

@@ -13,6 +13,8 @@ import type {
 export function useCommunity(
   client: CommunityClient | null,
   productId: string,
+  recipeId?: string,
+  sort: 'helpful' | 'newest' = 'helpful',
 ) {
   const [session, setSession] = useState<CommunitySession | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -55,8 +57,15 @@ export function useCommunity(
     try {
       const rows = await communityRpc<CommunityComment[]>(
         client,
-        'community_list',
-        { p_product: productId, p_offset: 0 },
+        recipeId ? 'recipe_comments_list' : 'community_list',
+        recipeId
+          ? {
+              p_product: productId,
+              p_recipe: recipeId,
+              p_offset: 0,
+              p_sort: sort,
+            }
+          : { p_product: productId, p_offset: 0 },
       );
       if (version === generation.current) {
         setComments(rows);
@@ -66,7 +75,7 @@ export function useCommunity(
     } finally {
       if (version === generation.current) setLoading(false);
     }
-  }, [client, productId]);
+  }, [client, productId, recipeId, sort]);
   useEffect(() => {
     if (!client) {
       setAuthReady(true);
@@ -249,10 +258,15 @@ export function useCommunity(
   function post() {
     return run(async () => {
       if (!canContribute || !draft.trim()) return;
-      await communityRpc(client, 'community_post', {
-        p_product: productId,
-        p_body: draft.trim(),
-      });
+      await communityRpc(
+        client,
+        recipeId ? 'recipe_comment_post' : 'community_post',
+        {
+          p_product: productId,
+          p_body: draft.trim(),
+          ...(recipeId ? { p_recipe: recipeId } : {}),
+        },
+      );
       setDraft('');
       setNotice(
         'Comment submitted for review. Only you can see it until approval.',
@@ -307,8 +321,15 @@ export function useCommunity(
     return run(async () => {
       const rows = await communityRpc<CommunityComment[]>(
         client,
-        'community_list',
-        { p_product: productId, p_offset: comments.length },
+        recipeId ? 'recipe_comments_list' : 'community_list',
+        recipeId
+          ? {
+              p_product: productId,
+              p_recipe: recipeId,
+              p_offset: comments.length,
+              p_sort: sort,
+            }
+          : { p_product: productId, p_offset: comments.length },
       );
       setComments(current => [
         ...current,
@@ -322,6 +343,7 @@ export function useCommunity(
     session,
     authReady,
     comments,
+    publicCount: comments[0]?.public_count ?? 0,
     account: accountUserId === userId ? account : null,
     accountReady: accountUserId === userId && !!account,
     canManage,

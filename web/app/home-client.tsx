@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { categories } from "../../src/categories";
 import type { Guide } from "../../src/types";
 import { universalSafetyNotices } from "../../src/safetyNotices";
-import { ProductComments } from "../components/product-comments";
+import { RecipeComments } from "../components/recipe-comments";
+import { ProductCommunity as ProductComments } from "../components/product-community";
 import { SiteFooter } from "../components/site-chrome";
 
 const SAVED_KEY = "instead:web:saved-guides";
@@ -402,15 +403,15 @@ function GuideDetail({
           <h2>{guide.answer}</h2>
         </section>
 
-        <aside className="safety-card" aria-label="Universal safety">
-          <small>UNIVERSAL SAFETY</small>
-          {universalSafetyNotices.map(notice => (
-            <div key={notice.title}>
-              <h3>{notice.title}</h3><p>{notice.body}</p>
-            </div>
-          ))}
+        <aside className="safety-card" aria-label="Safety warnings">
+          <small>SAFETY · READ BEFORE USE</small>
+          <p>Natural does not mean safe. Read each recipe’s cautions. Honey: never under 12 months. Essential oils can harm pets.</p>
+          <details key={guide.id}><summary>Read all safety warnings</summary>
+            {universalSafetyNotices.map(notice => <div key={notice.title}><h3>{notice.title}</h3><p>{notice.body}</p></div>)}
+            {guide.reviewNotice && <><h3>Content review</h3><p>{guide.reviewNotice}</p></>}
+            <p>{guide.safetyNote}</p><p>{guide.evidenceNote}</p>
+          </details>
         </aside>
-        {guide.reviewNotice && <aside className="safety-card"><small>CONTENT REVIEW</small><p>{guide.reviewNotice}</p></aside>}
         {guide.recipes?.length ? (
           <DetailSection number="01" title="RECIPES">
             <div className="option-list">
@@ -425,19 +426,13 @@ function GuideDetail({
                   <ol>{recipe.instructions.map(step => <li key={step}>{step}</li>)}</ol>
                   <h4>Storage</h4><p>{recipe.storage}</p>
                   <h4>Cautions</h4><p>{recipe.cautions}</p>
+                  <RecipeComments productId={guide.id} recipeId={recipe.id} title={recipe.name} />
                 </div>
               ))}
             </div>
           </DetailSection>
         ) : null}
-        <DetailSection number={guide.recipes?.length ? "02" : "01"} title="BEFORE YOU TRY ANYTHING">
-          <div className="safety-card">
-            <small>USE AT YOUR OWN RISK</small>
-            <p>{guide.safetyNote}</p>
-            <p>{guide.evidenceNote}</p>
-          </div>
-        </DetailSection>
-        <DetailSection number={guide.recipes?.length ? "03" : "02"} title="COMMUNITY SUGGESTIONS">
+        <DetailSection number={guide.recipes?.length ? "02" : "01"} title="COMMUNITY RECIPES & ACCOUNT">
           <ProductComments key={guide.id} productId={guide.id} />
         </DetailSection>
         <p className="disclaimer">

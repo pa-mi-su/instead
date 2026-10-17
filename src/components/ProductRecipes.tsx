@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RecipeComments } from './RecipeComments';
 import {
   Image,
   Pressable,
@@ -130,6 +131,13 @@ export function ProductRecipes({
         ))}
         {!!recipe.moderation_note && (
           <Text>Review note: {recipe.moderation_note}</Text>
+        )}
+        {recipe.status === 'approved' && (
+          <RecipeComments
+            productId={productId}
+            recipeId={recipe.id}
+            title={recipe.title}
+          />
         )}
         {recipe.status === 'approved' && (
           <>
