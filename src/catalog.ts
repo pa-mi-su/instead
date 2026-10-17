@@ -167,7 +167,7 @@ const sunburnFirstAid: StarterRecipe = {
   storage:
     'No homemade mixture to store. Keep any moisturizer in its original, labeled container and follow its label directions.',
   cautions:
-    'This is general first-aid information, not a homemade sunburn treatment or medical advice. The submitted tallow-and-oil balm is omitted: oil-based products are not recommended on active sunburn by NIH MedlinePlus, and essential oils can irritate injured skin. Do not apply tallow, olive or jojoba oil, peppermint oil, or lavender oil to sunburned skin. Seek medical care for severe symptoms or if you are unsure how serious the burn is.',
+    'This is general first-aid information, not medical advice. The separate owner-supplied spray in this category contains fractionated coconut oil. NIH MedlinePlus advises against oil-based products on active sunburn; that spray is included as untested owner content, not recommended treatment. Seek medical care for severe symptoms or if you are unsure how serious the burn is.',
 };
 
 const bugBitePaste: StarterRecipe = {
@@ -231,7 +231,25 @@ const aloeSunburnCare: StarterRecipe = {
   storage:
     'Keep the product in its original container and follow the label’s storage and expiration directions. Do not prepare or store a homemade mixture.',
   cautions:
-    'For mild sunburn only; this is not medical advice or a treatment for severe burns. The submitted fractionated coconut oil is omitted because NIH MedlinePlus advises against oil-based products on active sunburn. Aloe products can still irritate or cause allergy; stop if a reaction occurs. Do not rely on this for blistering, fever, chills, dizziness, dehydration, or worsening symptoms; seek medical advice.',
+    'For mild sunburn only; this is not medical advice or a treatment for severe burns. Aloe products can still irritate or cause allergy; stop if a reaction occurs. Do not rely on this for blistering, fever, chills, dizziness, dehydration, or worsening symptoms; seek medical advice.',
+};
+
+const aloeCoconutSunburnSpray: StarterRecipe = {
+  id: 'builtin:aloeCoconutSunburnSpray',
+  name: '2-Ingredient “No-Tallow” Sunburn Spray',
+  ingredients: [
+    'Pure aloe vera juice: ½ cup',
+    'Liquid coconut oil (fractionated): 2 tablespoons',
+  ],
+  equipment: ['Spray bottle'],
+  instructions: [
+    'Pour both ingredients into a spray bottle and shake vigorously before use.',
+    'Spray directly onto scorched skin for instant, hands-free cooling relief.',
+  ],
+  storage:
+    'Keep the bottle in the refrigerator. No safe shelf life has been established for this mixture.',
+  cautions:
+    'Owner-supplied, untested formula. Its claim of instant cooling relief has not been independently established for this mixture. This spray contains fractionated coconut oil; NIH MedlinePlus advises against oil-based products on active sunburn. It is included as owner content for reference, not recommended treatment. Aloe and coconut products can irritate skin or cause allergic reactions; stop if a reaction occurs. Do not use this instead of medical care for severe symptoms, blistering, or a worsening burn.',
 };
 
 const glassCleanerRecipe: StarterRecipe = {
@@ -543,7 +561,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Skin care'
       ? [tallowSkinBalmRecipe]
       : title === 'Sunburn care'
-      ? [sunburnFirstAid, aloeSunburnCare]
+      ? [sunburnFirstAid, aloeSunburnCare, aloeCoconutSunburnSpray]
       : title === 'Bug bite care'
       ? [bugBitePaste, bugBiteTallowBalm]
       : title === 'Glass cleaner'
