@@ -1,6 +1,6 @@
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { ScrollView, Text, View } from 'react-native';
-import { useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { BrandLogo } from '../components/BrandLogo';
 import { ProductCommunity } from '../components/ProductCommunity';
@@ -12,6 +12,22 @@ import { RecipeVoteButtons } from '../components/RecipeVoteButtons';
 import { RecipePhotoGallery } from '../components/RecipePhotoGallery';
 import { useCommunity } from '../hooks/useCommunity';
 import { supabase } from '../lib/supabase';
+import { rankRecipes } from '../lib/recipeRanking';
+
+type RecipeRating = {
+  score: number;
+  upvotes: number;
+  downvotes: number;
+  my_vote: number;
+};
+
+const emptyRating: RecipeRating = {
+  score: 0,
+  upvotes: 0,
+  downvotes: 0,
+  my_vote: 0,
+};
+const noRecipes: NonNullable<Guide['recipes']> = [];
 
 export function GuideDetailScreen({
   guide,
@@ -28,6 +44,75 @@ export function GuideDetailScreen({
 }) {
   const scrollRef = useRef<ScrollView>(null);
   const communityY = useRef(0);
+  const [recipeRatings, setRecipeRatings] = useState<
+    Record<string, RecipeRating>
+  >({});
+  const recipes = guide.recipes ?? noRecipes;
+  useEffect(() => {
+    let active = true;
+    setRecipeRatings({});
+    const client = supabase;
+    if (!client) return;
+    Promise.all(
+      recipes.map(async recipe => {
+        const { data, error } = await client.rpc('builtin_recipe_rating', {
+          p_recipe: recipe.id,
+          p_product: guide.id,
+        });
+        if (error) return [recipe.id, emptyRating] as const;
+        const row = Array.isArray(data) ? data[0] : data;
+        return [
+          recipe.id,
+          row
+            ? {
+                score: Number(row.score) || 0,
+                upvotes: Number(row.upvotes) || 0,
+                downvotes: Number(row.downvotes) || 0,
+                my_vote: Number(row.my_vote) || 0,
+              }
+            : emptyRating,
+        ] as const;
+      }),
+    ).then(entries => {
+      if (active) setRecipeRatings(Object.fromEntries(entries));
+    });
+    return () => {
+      active = false;
+    };
+  }, [guide.id, recipes]);
+  const rankedRecipes = useMemo(
+    () => rankRecipes(recipes, recipeRatings),
+    [recipes, recipeRatings],
+  );
+  async function voteRecipe(recipeId: string, value: -1 | 1) {
+    const client = supabase;
+    if (!client) throw new Error('Voting is unavailable right now.');
+    const current = recipeRatings[recipeId] ?? emptyRating;
+    const nextVote = current.my_vote === value ? 0 : value;
+    const { error } = await client.rpc('builtin_recipe_vote', {
+      p_recipe: recipeId,
+      p_product: guide.id,
+      p_value: nextVote,
+    });
+    if (error) throw error;
+    const upvotes =
+      current.upvotes -
+      (current.my_vote === 1 ? 1 : 0) +
+      (nextVote === 1 ? 1 : 0);
+    const downvotes =
+      current.downvotes -
+      (current.my_vote === -1 ? 1 : 0) +
+      (nextVote === -1 ? 1 : 0);
+    setRecipeRatings(previous => ({
+      ...previous,
+      [recipeId]: {
+        upvotes,
+        downvotes,
+        score: upvotes - downvotes,
+        my_vote: nextVote,
+      },
+    }));
+  }
   const community = useCommunity(
     supabase,
     guide.id,
@@ -110,7 +195,7 @@ export function GuideDetailScreen({
         {guide.recipes?.length ? (
           <DetailSection number="01" title="RECIPES">
             <View style={styles.optionList}>
-              {guide.recipes.map(recipe => (
+              {rankedRecipes.map(recipe => (
                 <View key={recipe.name} style={styles.optionCard}>
                   <Text style={styles.optionName}>{recipe.name}</Text>
                   {recipe.photos?.length ? (
@@ -158,6 +243,8 @@ export function GuideDetailScreen({
                     signedIn={verified}
                     canVote={community.canContribute}
                     onSignIn={requestSignIn}
+                    onVote={value => voteRecipe(recipe.id, value)}
+                    rating={recipeRatings[recipe.id] ?? emptyRating}
                   />
                 </View>
               ))}
