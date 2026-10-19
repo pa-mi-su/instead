@@ -100,9 +100,9 @@ export function GuideDetailScreen({
               {guide.recipes.map(recipe => (
                 <View key={recipe.name} style={styles.optionCard}>
                   <Text style={styles.optionName}>{recipe.name}</Text>
-                  {recipe.photo ? (
+                  {recipe.photos?.length ? (
                     <RecipePhotoGallery
-                      photos={[recipe.photo]}
+                      photos={recipe.photos}
                       title={recipe.name}
                     />
                   ) : null}

@@ -27,7 +27,7 @@ export type BetterOption = {
 export type StarterRecipe = {
   id: string;
   name: string;
-  photo?: ImageSourcePropType;
+  photos?: ImageSourcePropType[];
   ingredients: string[];
   equipment: string[];
   instructions: string[];

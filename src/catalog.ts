@@ -621,7 +621,10 @@ const spiderDeterrentSpray: StarterRecipe = {
 const roachControlRecipe: StarterRecipe = {
   id: 'builtin:roachControlRecipe',
   name: 'DIY Banana-and-Soda Bottle Trap',
-  photo: require('../assets/photos/roach-bottle-trap.png'),
+  photos: [
+    require('../assets/photos/roach-bottle-trap.png'),
+    require('../assets/photos/roach-bottle-trap-cockroaches.png'),
+  ],
   ingredients: [
     'One clean plastic bottle; the reel does not specify a size',
     'A few pieces of ripe banana; the amount is not specified in the reel',
@@ -645,6 +648,10 @@ const roachControlRecipe: StarterRecipe = {
 const mosquitoTrapRecipe: StarterRecipe = {
   id: 'builtin:mosquitoTrapRecipe',
   name: 'DIY Yeast-and-Soap Mosquito Bucket Trap',
+  photos: [
+    require('../assets/photos/mosquito-bucket.png'),
+    require('../assets/photos/mosquito-bucket-catch.png'),
+  ],
   ingredients: [
     '1 quart warm water',
     '2 tablespoons brown sugar',

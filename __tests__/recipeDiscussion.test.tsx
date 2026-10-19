@@ -50,6 +50,24 @@ test('recipes without optional photos render no photo gallery', async () => {
   expect(screen.queryByLabelText('Soap photos')).toBeNull();
 });
 
+test('roach and mosquito recipes keep their photos in the supplied order', () => {
+  const roachPhotos = productCatalog.find(
+    guide => guide.title === 'Roach control',
+  )!.recipes?.[0]?.photos;
+  const mosquitoPhotos = productCatalog.find(
+    guide => guide.title === 'Mosquito control',
+  )!.recipes?.[0]?.photos;
+
+  expect(roachPhotos).toEqual([
+    require('../assets/photos/roach-bottle-trap.png'),
+    require('../assets/photos/roach-bottle-trap-cockroaches.png'),
+  ]);
+  expect(mosquitoPhotos).toEqual([
+    require('../assets/photos/mosquito-bucket.png'),
+    require('../assets/photos/mosquito-bucket-catch.png'),
+  ]);
+});
+
 test('warnings start compact, keep essential cautions visible, and expand on request', async () => {
   const guide = productCatalog.find(item => item.id === 'natural-toothpaste')!;
   const screen = await render(<ExpandableSafety guide={guide} />);
