@@ -1,6 +1,6 @@
 // Shared policy text for offline mobile reading and the website.
-export const POLICY_VERSION = '2026-10-16.3';
-export const POLICY_DATE = 'October 16, 2026';
+export const POLICY_VERSION = '2026-10-19.1';
+export const POLICY_DATE = 'October 19, 2026';
 export const policyDocuments = {
   terms: [
     {
@@ -14,7 +14,7 @@ export const policyDocuments = {
     {
       title: '2. What INSTEAD provides',
       paragraphs: [
-        'INSTEAD is a reference tool. INSTEAD publishes practical, educational guides about alternatives for everyday products and tasks. Verified-email accounts can submit comments, recipes with optional photos, and votes. Community comments, recipes, and photos are held for moderation before publication. Moderation is not proof of safety, efficacy, or professional approval. We do not offer paid subscriptions or purchases.',
+        'INSTEAD is a reference tool. INSTEAD publishes practical, educational guides about alternatives for everyday products and tasks. Verified-email accounts can submit recipes with optional photos and vote on recipes. Recipe submissions and photos are held for moderation before publication. Moderation is not proof of safety, efficacy, or professional approval. We do not offer paid subscriptions or purchases. The app no longer accepts or displays community comments; comment records submitted in earlier versions remain subject to the Privacy Policy.',
       ],
     },
     {
@@ -45,8 +45,8 @@ export const policyDocuments = {
     {
       title: 'Community participation',
       paragraphs: [
-        'Keep your sign-in codes private. No public profile is required; do not impersonate others. Do not post spam, abuse, private information, or dangerous instructions. Do not create multiple accounts to manipulate votes. Email verification does not verify identity or expertise, and upvotes do not establish safety or effectiveness.',
-        'You retain ownership of your comments, recipes, and photos and permit INSTEAD to store, display, and moderate them as part of the Services. Only submit content and photos you have permission to share. Comments, recipe submissions, and photos require approval before publication. Do not request or provide individualized diagnosis, dosing, treatment, advice to stop prescribed care, unsupported cure claims, or dangerous ingredient substitutions. You may block contributors without creating a public profile. You can delete your comments or withdraw your recipes; moderators may hide or remove content. Use the Report control to flag concerns. Signed-in users can request account deletion in any topic’s account controls; support is also available. Requests hide public contributions and disable contributions while permanent deletion is processed.',
+        'Keep your sign-in codes private. No public profile is required; do not impersonate others. Do not submit spam, abuse, private information, or dangerous instructions. Do not create multiple accounts to manipulate votes. Email verification does not verify identity or expertise, and votes do not establish safety or effectiveness.',
+        'You retain ownership of recipes and photos you submit and permit INSTEAD to store, display, and moderate them as part of the Services. Only submit content and photos you have permission to share. Recipe submissions and photos require approval before publication. Do not request or provide individualized diagnosis, dosing, treatment, advice to stop prescribed care, unsupported cure claims, or dangerous ingredient substitutions. You may block contributors without creating a public profile. You can withdraw your recipes; moderators may hide or remove content. Use the Report control to flag concerns. Signed-in users can request account deletion in any topic’s account controls; support is also available. Requests hide public contributions and disable contributions while permanent deletion is processed.',
       ],
     },
     {
@@ -109,7 +109,7 @@ export const policyDocuments = {
     {
       title: '2. Information you provide',
       paragraphs: [
-        'Browsing needs no account. Community participation uses email-code sign-in. If you sign in, Supabase processes your email address to send a one-time code and maintain your account. We store comments, recipe submissions, optional photos, votes, and reports you submit. Pending recipes and photos are visible only to their submitter and administrators. We do not ask for a password, legal name, or payment information. Do not put private information in comments, recipes, or photos.',
+        'Browsing needs no account. Community participation uses email-code sign-in. If you sign in, Supabase processes your email address to send a one-time code and maintain your account. We store recipe submissions, optional photos, votes, and reports. Comments submitted in earlier app versions are retained until removed through account deletion or moderation; new comments are no longer accepted or displayed. Pending recipes and photos are visible only to their submitter and administrators. We do not ask for a password, legal name, or payment information. Do not include private information in recipe submissions or photos.',
         'If you contact support, we receive the information you choose to send, such as your email address, message, device type, or screenshots. Do not include sensitive personal information that is not needed to answer your request.',
       ],
     },
@@ -129,7 +129,7 @@ export const policyDocuments = {
       title: '4. How information is used',
       paragraphs: [
         'Information is used only as reasonably necessary to:',
-        'deliver guides and operate email sign-in, comments, votes, and moderation;',
+        'deliver guides and operate email sign-in, recipe votes, and moderation;',
         'operate, secure, troubleshoot, and improve the Services;',
         'respond to support, privacy, accessibility, or safety reports;',
         'comply with law and protect users, INSTEAD, and others.',
@@ -146,7 +146,7 @@ export const policyDocuments = {
       title: '6. Retention and deletion',
       paragraphs: [
         'Saved guides and cached content remain locally until you remove them, clear the app or browser storage, or uninstall the app. Support messages may be kept while a request is handled and as reasonably necessary for security, recordkeeping, or legal obligations. Infrastructure logs are retained only as reasonably necessary for service operation, security, and provider requirements.',
-        'You can delete your own comments and remove your votes in the product discussion. Account, comment, recipe, vote, and report records otherwise remain until deleted or removed through moderation. You can withdraw your recipes; they disappear from the directory, and the app attempts to remove their photo files. Withdrawn text and failed photo cleanups remain available to administrators until purged. Blocked-contributor records are private to the blocking account and include a short content excerpt for identifying the block; removing the block removes that record. To request account deletion, use the signed-in account controls in a topic or contact support from your account email. Requests hide your public content and disable contributions while permanent deletion is attempted. If automatic deletion fails, the request remains pending for retry or support assistance. Deleting an account removes its community comments, recipes, votes, and reports. Stored recipe photos are removed before the account is deleted. Failed cleanup keeps the deletion request pending. See the Support page for help. Clearing local storage does not delete server records.',
+        'Account, recipe, vote, and report records remain until deleted or removed through moderation. Comments submitted in earlier app versions are no longer displayed and remain until removed through account deletion or moderation; contact support from the account email to request removal of historical comments. You can withdraw your recipes; they disappear from the directory, and the app attempts to remove their photo files. Withdrawn text and failed photo cleanups remain available to administrators until purged. Blocked-contributor records are private to the blocking account and include a short content excerpt for identifying the block; removing the block removes that record. To request account deletion, use the signed-in account controls in a topic or contact support from your account email. Requests hide your public content and disable contributions while permanent deletion is attempted. If automatic deletion fails, the request remains pending for retry or support assistance. Deleting an account removes its community comments, recipes, votes, and reports. Stored recipe photos are removed before the account is deleted. Failed cleanup keeps the deletion request pending. See the Support page for help. Clearing local storage does not delete server records.',
       ],
     },
     {

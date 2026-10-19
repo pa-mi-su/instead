@@ -40,4 +40,4 @@ export function hasCurrentAcknowledgement(value: string | null) {
 }
 
 export const communityRules =
-  'Share general experiences only. No individualized medical advice, cure claims, advice to stop prescribed treatment, unsafe substitutions, harassment, spam, or private information. Submit only text and photos you have rights to share. All submissions require moderation; votes are preferences, not safety evidence.';
+  'Submit recipes and photos you have rights to share. No individualized medical advice, cure claims, advice to stop prescribed treatment, unsafe substitutions, harassment, spam, or private information. Recipe submissions require moderation; votes are preferences, not safety evidence.';

@@ -1,13 +1,14 @@
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { ScrollView, Text, View } from 'react-native';
+import { useRef } from 'react';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { BrandLogo } from '../components/BrandLogo';
-import { ProductCommunity as ProductComments } from '../components/ProductCommunity';
+import { ProductCommunity } from '../components/ProductCommunity';
 import { DetailSection } from '../components/DetailSection';
 import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';
 import { ExpandableSafety } from '../components/ExpandableSafety';
-import { RecipeComments } from '../components/RecipeComments';
+import { RecipeVoteButtons } from '../components/RecipeVoteButtons';
 
 export function GuideDetailScreen({
   guide,
@@ -22,6 +23,10 @@ export function GuideDetailScreen({
   onSave: () => void;
   bottomInset: number;
 }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const communityY = useRef(0);
+  const requestSignIn = () =>
+    scrollRef.current?.scrollTo({ y: communityY.current, animated: true });
   return (
     <View style={styles.detailShell}>
       <View style={styles.detailTopBar}>
@@ -63,6 +68,7 @@ export function GuideDetailScreen({
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.detailContent,
           { paddingBottom: Math.max(bottomInset + 34, 50) },
@@ -125,10 +131,11 @@ export function GuideDetailScreen({
                     CAUTIONS
                   </Text>
                   <Text style={styles.optionDetail}>{recipe.cautions}</Text>
-                  <RecipeComments
+                  <RecipeVoteButtons
                     productId={guide.id}
                     recipeId={recipe.id}
                     title={recipe.name}
+                    onSignIn={requestSignIn}
                   />
                 </View>
               ))}
@@ -137,10 +144,17 @@ export function GuideDetailScreen({
         ) : null}
 
         <DetailSection
+          onLayout={event => {
+            communityY.current = event.nativeEvent.layout.y;
+          }}
           number={guide.recipes?.length ? '02' : '01'}
           title="COMMUNITY RECIPES & ACCOUNT"
         >
-          <ProductComments key={guide.id} productId={guide.id} />
+          <ProductCommunity
+            key={guide.id}
+            productId={guide.id}
+            onSignInRequest={requestSignIn}
+          />
         </DetailSection>
         <Text style={styles.disclaimer}>
           Educational information only. Use qualified professional help when a
