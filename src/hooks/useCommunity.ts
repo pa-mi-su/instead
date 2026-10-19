@@ -15,6 +15,7 @@ export function useCommunity(
   productId: string,
   recipeId?: string,
   sort: 'helpful' | 'newest' = 'helpful',
+  includeComments = true,
 ) {
   const [session, setSession] = useState<CommunitySession | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -53,6 +54,13 @@ export function useCommunity(
   }, [client, userId]);
   const refresh = useCallback(async () => {
     const version = ++generation.current;
+    if (!includeComments) {
+      setComments([]);
+      setHasMore(false);
+      setLoaded(true);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const rows = await communityRpc<CommunityComment[]>(
@@ -75,7 +83,7 @@ export function useCommunity(
     } finally {
       if (version === generation.current) setLoading(false);
     }
-  }, [client, productId, recipeId, sort]);
+  }, [client, includeComments, productId, recipeId, sort]);
   useEffect(() => {
     if (!client) {
       setAuthReady(true);
@@ -183,7 +191,7 @@ export function useCommunity(
       });
       await Promise.all([loadAccount(), refresh()]);
       setNotice(
-        'Contributor blocked. Their comments and recipes are hidden for your account.',
+        'Contributor blocked. Their recipes are hidden for your account.',
       );
     });
   }

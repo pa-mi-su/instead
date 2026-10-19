@@ -1,10 +1,17 @@
-import { ProductComments } from './ProductComments';
+import { ProductCommunityAccess } from './ProductCommunityAccess';
 import { ProductRecipes } from './ProductRecipes';
-export function ProductCommunity({ productId }: { productId: string }) {
+export function ProductCommunity({
+  productId,
+  onSignInRequest,
+}: {
+  productId: string;
+  onSignInRequest: () => void;
+}) {
   return (
-    <ProductComments
+    <ProductCommunityAccess
       productId={productId}
-      renderRecipes={c => (
+      onSignInRequest={onSignInRequest}
+      renderRecipes={(c, signIn) => (
         <ProductRecipes
           key={`${productId}:${c.session?.user.id ?? 'guest'}:${c.blocks
             .map(b => b.id)
@@ -14,6 +21,7 @@ export function ProductCommunity({ productId }: { productId: string }) {
           canContribute={c.canContribute}
           canManage={c.canManage}
           onBlock={id => c.block('recipe', id)}
+          onSignInRequest={signIn}
         />
       )}
     />

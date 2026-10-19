@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RecipeComments } from './RecipeComments';
+import { RecipeVoteButtons } from './RecipeVoteButtons';
 import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -17,12 +17,14 @@ export function ProductRecipes({
   canContribute,
   canManage,
   onBlock,
+  onSignInRequest,
 }: {
   productId: string;
   userId?: string;
   canContribute: boolean;
   canManage: boolean;
   onBlock: (id: string) => unknown;
+  onSignInRequest: () => void;
 }) {
   const r = useRecipes(supabase, productId, userId);
   const [open, setOpen] = useState(false);
@@ -131,29 +133,25 @@ export function ProductRecipes({
           <Text>Review note: {recipe.moderation_note}</Text>
         )}
         {recipe.status === 'approved' && (
-          <RecipeComments
-            productId={productId}
-            recipeId={recipe.id}
-            title={recipe.title}
-          />
-        )}
-        {recipe.status === 'approved' && (
           <>
-            <Text>
-              Score: {recipe.score} · {recipe.upvotes} upvotes ·{' '}
-              {recipe.downvotes} downvotes
-            </Text>
-            {button(
-              '▲ Upvote',
-              () => r.vote(recipe, 1),
-              r.busy || !canContribute || recipe.mine,
-              recipe.my_vote === 1,
-            )}
-            {button(
-              '▼ Downvote',
-              () => r.vote(recipe, -1),
-              r.busy || !canContribute || recipe.mine,
-              recipe.my_vote === -1,
+            {!recipe.mine ? (
+              <RecipeVoteButtons
+                productId={productId}
+                recipeId={recipe.id}
+                title={recipe.title}
+                signedIn={Boolean(userId)}
+                canVote={canContribute}
+                onSignIn={onSignInRequest}
+                onVote={value => r.vote(recipe, value)}
+                rating={{
+                  score: recipe.score,
+                  upvotes: recipe.upvotes,
+                  downvotes: recipe.downvotes,
+                  my_vote: recipe.my_vote,
+                }}
+              />
+            ) : (
+              <Text>Community score: {recipe.score}</Text>
             )}
             {canManage &&
               button(
