@@ -89,6 +89,10 @@ const categoryMatches: [RegExp, string][] = [
     'natural-roach-control',
   ],
   [
+    /\bmosquito(?:es)?(?:\s+(?:control|prevention|repellent|trap))?\b/,
+    'natural-mosquito-control',
+  ],
+  [
     /\b(ants?)(?:\s+(?:control|prevention|repellent))?\b/,
     'natural-ant-control',
   ],

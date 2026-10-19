@@ -1,5 +1,6 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import { RecipeVoteButtons } from '../src/components/RecipeVoteButtons';
+import { RecipePhotoGallery } from '../src/components/RecipePhotoGallery';
 import { ExpandableSafety } from '../src/components/ExpandableSafety';
 import { productCatalog } from '../src/catalog';
 
@@ -29,6 +30,42 @@ test('recipe votes ask signed-out users to sign in and can be dismissed', async 
   expect(screen.getByText('Sign in to vote')).toBeTruthy();
   await fireEvent.press(screen.getByText('Maybe later'));
   expect(screen.queryByText('Sign in to vote')).toBeNull();
+});
+
+test('recipe photos open in an enlarged viewer and can be dismissed', async () => {
+  const screen = await render(
+    <RecipePhotoGallery
+      photos={['https://example.com/photo.jpg']}
+      title="Soap"
+    />,
+  );
+  await fireEvent.press(screen.getByLabelText('Expand Soap photo 1'));
+  expect(screen.getByLabelText('Soap, enlarged photo')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('Close enlarged photo'));
+  expect(screen.queryByLabelText('Soap, enlarged photo')).toBeNull();
+});
+
+test('recipes without optional photos render no photo gallery', async () => {
+  const screen = await render(<RecipePhotoGallery photos={[]} title="Soap" />);
+  expect(screen.queryByLabelText('Soap photos')).toBeNull();
+});
+
+test('roach and mosquito recipes keep their photos in the supplied order', () => {
+  const roachPhotos = productCatalog.find(
+    guide => guide.title === 'Roach control',
+  )!.recipes?.[0]?.photos;
+  const mosquitoPhotos = productCatalog.find(
+    guide => guide.title === 'Mosquito control',
+  )!.recipes?.[0]?.photos;
+
+  expect(roachPhotos).toEqual([
+    require('../assets/photos/roach-bottle-trap.png'),
+    require('../assets/photos/roach-bottle-trap-cockroaches.png'),
+  ]);
+  expect(mosquitoPhotos).toEqual([
+    require('../assets/photos/mosquito-bucket.png'),
+    require('../assets/photos/mosquito-bucket-catch.png'),
+  ]);
 });
 
 test('warnings start compact, keep essential cautions visible, and expand on request', async () => {

@@ -18,6 +18,11 @@ const topics: [string, Guide['category'], string][] = [
   ['Mouse deterrents', 'Pest Prevention', 'mice mouse repel rodent'],
   ['Spider deterrents', 'Pest Prevention', 'spiders spider repel pest'],
   ['Roach control', 'Pest Prevention', 'roach roaches cockroach cockroaches'],
+  [
+    'Mosquito control',
+    'Pest Prevention',
+    'mosquitoes mosquito trap yard garden',
+  ],
   ['Ant control', 'Pest Prevention', 'ants ant trails kitchen sugar entry'],
 ];
 
@@ -615,27 +620,55 @@ const spiderDeterrentSpray: StarterRecipe = {
 
 const roachControlRecipe: StarterRecipe = {
   id: 'builtin:roachControlRecipe',
-  name: 'Chemical-Free Roach Reduction',
+  name: 'DIY Banana-and-Soda Bottle Trap',
+  photos: [
+    require('../assets/photos/roach-bottle-trap.png'),
+    require('../assets/photos/roach-bottle-trap-cockroaches.png'),
+  ],
   ingredients: [
-    'No pesticide or spray mixture',
-    'Food stored in tightly sealed containers',
-    'Caulk or another suitable material for sealing small gaps',
+    'One clean plastic bottle; the reel does not specify a size',
+    'A few pieces of ripe banana; the amount is not specified in the reel',
+    'A splash of soda; the type and amount are not specified in the reel',
   ],
   equipment: [
-    'Vacuum cleaner with a hose or crevice attachment',
-    'Cleaning supplies for crumbs and grease',
-    'A sealable bag for vacuum contents',
+    'Scissors for cutting the bottle (the reel does not show a cutting tool)',
   ],
   instructions: [
-    'Remove food sources: wipe crumbs and grease, wash dishes after meals, store food in tightly sealed containers, and empty kitchen waste regularly.',
-    'Reduce moisture and shelter: repair leaks, dry sinks and counters, clear clutter and cardboard, and seal small gaps around pipes, baseboards, and cabinets.',
-    'Vacuum visible roaches and egg cases from cracks and crevices. Immediately seal vacuum contents in a bag and put it in an outdoor bin. Clean the vacuum attachment and canister according to its manufacturer’s instructions.',
-    'Repeat cleaning, moisture control, and gap sealing consistently. For a persistent infestation, ask a licensed pest-management professional about an integrated approach focused on prevention and physical removal.',
+    'Cut the upper section off a clean plastic bottle. Turn the cut-off top upside down and fit it into the lower section to make a funnel, as shown in the reel. Take care with the cut edge.',
+    'Put a few ripe-banana pieces in the bottom and add a splash of soda. The reel does not provide exact quantities or identify the soda.',
+    'Place the assembled bottle near roach activity, such as under a sink. The reel suggests leaving it overnight, but this does not establish that the method works reliably.',
+    'Check the trap frequently and handle it carefully. Do not assume captured roaches are alive or can be safely released.',
   ],
   storage:
-    'Keep cleaning supplies and caulk in their original containers and follow their labels. No mixed product or pesticide is used in this method.',
+    'Prepare the trap when needed and discard the contents promptly and securely. Do not reuse the bottle for food or drinks.',
   cautions:
-    'This method avoids pesticides and chemical sprays. Vacuuming and sanitation physically remove roaches and egg cases; take care when handling vacuum contents and wash hands afterward. Consistent prevention can reduce cockroach activity, but a serious or established infestation may not be eliminated by nonchemical steps alone.',
+    'This is a homemade capture trap, not a poison treatment, but it cannot be described as non-lethal: roaches may drown in the soda or otherwise be harmed while trapped. Do not use it if you require a live-catch method. Keep the sugary bait away from children and pets, use care around sharp cut plastic, and clean up spills promptly. The video does not provide quantities or evidence of effectiveness. Reduce food, water, and hiding places and seal entry gaps; a bottle trap alone should not be relied on to control an infestation.',
+};
+
+const mosquitoTrapRecipe: StarterRecipe = {
+  id: 'builtin:mosquitoTrapRecipe',
+  name: 'DIY Yeast-and-Soap Mosquito Bucket Trap',
+  photos: [
+    require('../assets/photos/mosquito-bucket.png'),
+    require('../assets/photos/mosquito-bucket-catch.png'),
+  ],
+  ingredients: [
+    '1 quart warm water',
+    '2 tablespoons brown sugar',
+    '1 tablespoon active dry yeast',
+    '1 tablespoon liquid dish soap',
+  ],
+  equipment: ['Bucket or large container', 'Measuring cup and spoons', 'Spoon'],
+  instructions: [
+    'Pour the warm water into the bucket and stir in the brown sugar until dissolved.',
+    'Add the active dry yeast and stir gently. The reel presents the yeast and sugar as a carbon-dioxide lure; that does not establish that the trap will work reliably.',
+    'Pour the dish soap onto the surface. The reel says to leave it on top rather than stir it in.',
+    'Place the open bucket in a shaded outdoor spot away from people and pets. Check it daily; empty and scrub it after use, and do not leave standing water unattended.',
+  ],
+  storage:
+    'Mix only what you will use that day. Empty and scrub the bucket daily; do not store or leave the mixture standing.',
+  cautions:
+    'This is an untested DIY trap, not a proven way to reduce mosquitoes or prevent bites or disease. Open standing water can become a mosquito breeding site if the trap does not work as intended. The soapy water can harm insects that land on it, so keep it away from pollinator activity, children, and pets. Do not rely on it instead of removing standing water, using screens, or following public-health bite-prevention advice.',
 };
 
 const antControlRecipe: StarterRecipe = {
@@ -719,7 +752,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Spider deterrents'
       ? 'Owner-supplied peppermint and citrus spray'
       : title === 'Roach control'
-      ? 'Chemical-free prevention and physical removal'
+      ? 'A DIY banana-and-soda bottle capture trap'
       : title === 'Ant control'
       ? 'Wipe trails, remove food, and seal entry gaps'
       : title === 'Clogged drains'
@@ -774,6 +807,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [spiderDeterrentSpray]
       : title === 'Roach control'
       ? [roachControlRecipe]
+      : title === 'Mosquito control'
+      ? [mosquitoTrapRecipe]
       : title === 'Ant control'
       ? [antControlRecipe]
       : title === 'Clogged drains'
@@ -792,6 +827,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Owner-supplied peppermint and citrus spray; its effectiveness and the suggested weekly reapplication schedule have not been established. Keep essential oils away from pets and follow the recipe’s handling cautions.'
       : title === 'Roach control'
       ? 'This guide uses sanitation, sealing, and physical removal without pesticide or spray mixtures. These steps can reduce activity, but may not eliminate an established infestation.'
+      : title === 'Mosquito control'
+      ? 'The yeast-and-soap bucket trap is an untested DIY method. It can attract or harm insects and must not be left as standing water; follow public-health guidance for mosquito prevention.'
       : title === 'Ant control'
       ? 'This guide uses cleaning and exclusion without pesticide bait or traps. It can help keep ants out of living areas but does not promise to eliminate a colony.'
       : title === 'Clogged drains'
@@ -812,6 +849,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'The submitted spray, its claimed barrier effect, and its weekly reapplication interval have not been independently evaluated. Public spider-management guidance emphasizes removing spiders, egg cases, and webs and sealing gaps around windows and doors.'
       : title === 'Roach control'
       ? 'University of Minnesota Extension recommends limiting food and water, and says vacuuming can remove roaches and egg cases when combined with other measures. This chemical-free approach may reduce activity; no eradication guarantee is made.'
+      : title === 'Mosquito control'
+      ? 'The video’s claims for this yeast-and-soap trap have not been independently established. CDC guidance emphasizes removing or covering standing water; for water that cannot be removed, use an EPA-registered larvicide such as Bti according to its label. Bti targets larvae, not biting adult mosquitoes.'
       : title === 'Ant control'
       ? 'UC IPM recommends removing food sources, wiping ant trails with soapy water, and sealing entry points. University of Minnesota Extension says vinegar and water may temporarily disrupt ant trails; neither source supports a guaranteed colony-elimination claim for these steps.'
       : title === 'Clogged drains'

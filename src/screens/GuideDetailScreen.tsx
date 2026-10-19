@@ -9,6 +9,7 @@ import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';
 import { ExpandableSafety } from '../components/ExpandableSafety';
 import { RecipeVoteButtons } from '../components/RecipeVoteButtons';
+import { RecipePhotoGallery } from '../components/RecipePhotoGallery';
 
 export function GuideDetailScreen({
   guide,
@@ -99,6 +100,12 @@ export function GuideDetailScreen({
               {guide.recipes.map(recipe => (
                 <View key={recipe.name} style={styles.optionCard}>
                   <Text style={styles.optionName}>{recipe.name}</Text>
+                  {recipe.photos?.length ? (
+                    <RecipePhotoGallery
+                      photos={recipe.photos}
+                      title={recipe.name}
+                    />
+                  ) : null}
                   <Text style={[styles.optionLabel, styles.recipeHeading]}>
                     INGREDIENTS
                   </Text>
