@@ -6,7 +6,8 @@ create or replace function public.community_policy_version() returns text
 language sql immutable set search_path='' as $$ select '2026-10-19.1'::text $$;
 
 insert into public.community_products(id) values
- ('natural-roach-control'), ('natural-ant-control')
+ ('natural-roach-control'), ('natural-ant-control'), ('natural-mosquito-control'),
+ ('natural-cough-comfort'), ('natural-clogged-drains')
 on conflict (id) do nothing;
 
 insert into public.community_builtin_recipes(id,product_id,title) values
@@ -36,7 +37,11 @@ insert into public.community_builtin_recipes(id,product_id,title) values
  ('builtin:spiderDeterrentSpray','natural-spider-deterrents','Peppermint and Citrus Spider Spray'),
  ('builtin:roachControlRecipe','natural-roach-control','Chemical-Free Roach Reduction'),
  ('builtin:antControlRecipe','natural-ant-control','Chemical-Free Ant Trail Cleanup and Prevention'),
- ('builtin:drainClearingGuide','natural-clogged-drains','Chemical-Free Clog Clearing')
+ ('builtin:mosquitoTrapRecipe','natural-mosquito-control','DIY Yeast-and-Soap Mosquito Bucket Trap'),
+ ('builtin:honeyLemonGingerCoughSyrup','natural-cough-comfort','Honey, Lemon, and Ginger Cough Syrup'),
+ ('builtin:appleCiderVinegarHoneyDrink','natural-cough-comfort','Apple Cider Vinegar and Honey Drink'),
+ ('builtin:drainClearingGuide','natural-clogged-drains','Chemical-Free Clog Clearing'),
+ ('builtin:bakingSodaVinegarDrainRecipe','natural-clogged-drains','Baking Soda and Vinegar Drain Flush')
 on conflict(id) do update set product_id=excluded.product_id,title=excluded.title;
 
 create table if not exists public.builtin_recipe_votes (

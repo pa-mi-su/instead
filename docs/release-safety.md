@@ -17,7 +17,7 @@ User comments, recipe submissions, and photos are held for moderation before pub
 
 ## Backend deployment
 
-Apply in order: community.sql (once), recipes.sql (once), directory-topics.sql (repeatable), community-safeguards.sql (repeatable). Do not re-run the one-time scripts on an existing project. New safeguards hold old comments and previously approved recipes without review records; no content is deleted by the migration.
+Apply in order: community.sql (once), recipes.sql (once), directory-topics.sql (repeatable), community-safeguards.sql (repeatable), recipe-comments.sql (repeatable), and recipe-voting.sql (repeatable). Apply `recipe-voting.sql` again after adding built-in recipes so every displayed recipe is registered for vote writes. Do not re-run the one-time scripts on an existing project. New safeguards hold old comments and previously approved recipes without review records; no content is deleted by the migration.
 
 Deploy `supabase/functions/delete-account/index.ts` as `delete-account`. Keep platform JWT verification enabled when compatible with the project's signing keys; the handler independently verifies the bearer token against Supabase Auth on every call. It accepts no target account ID and requires a recorded self-deletion request. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY remain Edge Function secrets supplied by Supabase, never app variables. If asymmetric JWTs require an alternative platform configuration, retain authoritative Auth validation; do not turn this into an anonymous deletion handler.
 

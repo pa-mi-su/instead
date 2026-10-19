@@ -22,6 +22,14 @@ select pg_temp.expect_error($q$select * from public.recipe_comments_list('natura
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','81000000-0000-0000-0000-000000000001',true);
+select pg_temp.check_true(exists(select 1 from public.community_builtin_recipes
+ where id='builtin:mosquitoTrapRecipe' and product_id='natural-mosquito-control'), 'Mosquito recipe is registered for voting');
+select pg_temp.check_true(exists(select 1 from public.community_builtin_recipes
+ where id='builtin:honeyLemonGingerCoughSyrup' and product_id='natural-cough-comfort'), 'Cough syrup is registered for voting');
+select pg_temp.check_true(exists(select 1 from public.community_builtin_recipes
+ where id='builtin:appleCiderVinegarHoneyDrink' and product_id='natural-cough-comfort'), 'Vinegar cough drink is registered for voting');
+select pg_temp.check_true(exists(select 1 from public.community_builtin_recipes
+ where id='builtin:bakingSodaVinegarDrainRecipe' and product_id='natural-clogged-drains'), 'Drain recipe is registered for voting');
 select pg_temp.expect_error($q$select public.community_post('natural-glass-cleaner','A new comment')$q$,'permission denied');
 select pg_temp.expect_error($q$select public.recipe_comment_post('natural-glass-cleaner','builtin:glassCleanerRecipe','A new comment')$q$,'permission denied');
 select pg_temp.expect_error($q$select public.community_vote('00000000-0000-0000-0000-000000000001',true)$q$,'permission denied');
@@ -29,6 +37,8 @@ select pg_temp.expect_error($q$select public.builtin_recipe_vote('natural-glass-
 select public.community_accept_policy('2026-10-19.1');
 select pg_temp.expect_error($q$select public.builtin_recipe_vote('natural-toothpaste','builtin:glassCleanerRecipe',1::smallint)$q$,'unavailable');
 select public.builtin_recipe_vote('natural-glass-cleaner','builtin:glassCleanerRecipe',1::smallint);
+select public.builtin_recipe_vote('natural-mosquito-control','builtin:mosquitoTrapRecipe',1::smallint);
+select pg_temp.check_true((select my_vote=1 from public.builtin_recipe_rating('natural-mosquito-control','builtin:mosquitoTrapRecipe')), 'Newly added built-in recipe accepts a vote');
 select public.builtin_recipe_vote('natural-glass-cleaner','builtin:glassCleanerRecipe',1::smallint);
 select pg_temp.check_true((select score=1 and upvotes=1 and downvotes=0 and my_vote=1
  from public.builtin_recipe_rating('natural-glass-cleaner','builtin:glassCleanerRecipe')),'Duplicate upvote is idempotent');
