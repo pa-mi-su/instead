@@ -1,48 +1,34 @@
 import { fireEvent, render } from '@testing-library/react-native';
-import { RecipeComments } from '../src/components/RecipeComments';
+import { RecipeVoteButtons } from '../src/components/RecipeVoteButtons';
 import { ExpandableSafety } from '../src/components/ExpandableSafety';
 import { productCatalog } from '../src/catalog';
 
-jest.mock('../src/hooks/useCommunity', () => ({
-  useCommunity: jest.fn(() => ({
-    comments: [
-      {
-        id: 'approved',
-        body: 'A helpful ingredient swap',
-        votes: 4,
-        moderation_status: 'approved',
-      },
-      {
-        id: 'private',
-        body: 'Pending private suggestion',
-        votes: 0,
-        moderation_status: 'pending',
-      },
-    ],
-    publicCount: 1,
-    loading: false,
-    retry: jest.fn(),
-  })),
-}));
-jest.mock('../src/components/ProductComments', () => ({
-  ProductComments: () => null,
-}));
 jest.mock('../src/lib/supabase', () => ({ supabase: null }));
+jest.mock('react-native/Libraries/Modal/Modal', () => ({
+  __esModule: true,
+  default: ({ visible, children }: { visible: boolean; children: unknown }) =>
+    visible ? children : null,
+}));
+jest.mock('lucide-react-native', () => ({
+  ThumbsDown: () => null,
+  ThumbsUp: () => null,
+}));
 
-test('recipe preview shows only the top published comment and opens a separate discussion', async () => {
+test('recipe votes ask signed-out users to sign in and can be dismissed', async () => {
   const screen = await render(
-    <RecipeComments
+    <RecipeVoteButtons
       productId="natural-glass-cleaner"
       recipeId="builtin:glassCleanerRecipe"
       title="Glass cleaner"
+      signedIn={false}
+      canVote={false}
+      onSignIn={jest.fn()}
     />,
   );
-  expect(screen.getByText('A helpful ingredient swap')).toBeTruthy();
-  expect(screen.queryByText('Pending private suggestion')).toBeNull();
-  await fireEvent.press(screen.getByText('View all 1 comment'));
-  expect(screen.getByText('Back to recipe')).toBeTruthy();
-  await fireEvent.press(screen.getByText('Back to recipe'));
-  expect(screen.queryByText('Back to recipe')).toBeNull();
+  await fireEvent.press(screen.getByLabelText('Vote this recipe up'));
+  expect(screen.getByText('Sign in to vote')).toBeTruthy();
+  await fireEvent.press(screen.getByText('Maybe later'));
+  expect(screen.queryByText('Sign in to vote')).toBeNull();
 });
 
 test('warnings start compact, keep essential cautions visible, and expand on request', async () => {

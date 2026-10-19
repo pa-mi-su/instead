@@ -2,7 +2,7 @@ begin;
 insert into auth.users(id,email,email_confirmed_at) values('71000000-0000-0000-0000-000000000001','recipe-comment-test@example.com',now());
 select set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
 set local role authenticated;
-select public.community_accept_policy('2026-10-16.2');
+select public.community_accept_policy('2026-10-19.1');
 select public.recipe_comment_post('natural-glass-cleaner','builtin:glassCleanerRecipe','Only on the alcohol recipe');
 select public.recipe_comment_post('natural-glass-cleaner','builtin:vinegarGlassRecipe','Only on the vinegar recipe');
 do $$ begin
