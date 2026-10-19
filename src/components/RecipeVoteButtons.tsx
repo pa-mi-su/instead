@@ -251,12 +251,12 @@ export function RecipeVoteButtons({
           <View style={local.dialog}>
             <Text style={local.eyebrow}>HELP THE COMMUNITY</Text>
             <Text style={local.dialogTitle}>
-              {signedIn ? 'Finish signing in to vote' : 'Sign in to vote'}
+              {signedIn ? 'One more step to vote' : 'Sign in to vote'}
             </Text>
             <Text style={local.dialogBody}>
-              Your up or down vote helps people compare {title}. Votes are
-              personal ratings; they do not show that a recipe is safe or
-              effective.
+              {signedIn
+                ? 'Your account is signed in. Review the community agreement and account status below before voting.'
+                : `Your up or down vote helps people compare ${title}. Votes are personal ratings; they do not show that a recipe is safe or effective.`}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -266,7 +266,9 @@ export function RecipeVoteButtons({
               }}
               style={({ pressed }) => [local.primary, pressed && local.pressed]}
             >
-              <Text style={local.primaryText}>Continue to sign in</Text>
+              <Text style={local.primaryText}>
+                {signedIn ? 'Review account setup' : 'Continue to sign in'}
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"

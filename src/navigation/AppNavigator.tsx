@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   PanResponder,
   Platform,
   StatusBar,
@@ -85,6 +86,21 @@ export function AppNavigator() {
 
   const goBackRef = useRef(goBack);
   goBackRef.current = goBack;
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        if (history.current.length === 0) return false;
+        goBackRef.current();
+        return true;
+      },
+    );
+
+    return () => subscription.remove();
+  }, []);
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -171,7 +187,7 @@ export function AppNavigator() {
   return (
     <View
       style={[styles.app, { paddingTop: Math.max(insets.top, 12) }]}
-      {...panResponder.panHandlers}
+      {...(Platform.OS === 'ios' ? panResponder.panHandlers : {})}
     >
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.paper} />
       {acknowledgement.status === 'loading' ? (

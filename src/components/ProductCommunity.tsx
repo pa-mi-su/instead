@@ -1,15 +1,18 @@
 import { ProductCommunityAccess } from './ProductCommunityAccess';
 import { ProductRecipes } from './ProductRecipes';
+import type { useCommunity } from '../hooks/useCommunity';
 export function ProductCommunity({
   productId,
+  community,
   onSignInRequest,
 }: {
   productId: string;
+  community: ReturnType<typeof useCommunity>;
   onSignInRequest: () => void;
 }) {
   return (
     <ProductCommunityAccess
-      productId={productId}
+      community={community}
       onSignInRequest={onSignInRequest}
       renderRecipes={(c, signIn) => (
         <ProductRecipes
