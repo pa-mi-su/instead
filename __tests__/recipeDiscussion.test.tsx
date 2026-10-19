@@ -69,6 +69,22 @@ test('verified eligible users can vote without seeing the sign-in prompt', async
   expect(screen.queryByText('Sign in to vote')).toBeNull();
 });
 
+test('recipe votes show the database error instead of hiding it', async () => {
+  const screen = await render(
+    <RecipeVoteButtons
+      productId="natural-glass-cleaner"
+      recipeId="community:glassCleanerRecipe"
+      title="Glass cleaner"
+      signedIn
+      canVote
+      onSignIn={jest.fn()}
+      onVote={() => Promise.reject({ message: 'Recipe is unavailable.' })}
+    />,
+  );
+  await fireEvent.press(screen.getByLabelText('Vote this recipe up'));
+  expect(await screen.findByText('Recipe is unavailable.')).toBeTruthy();
+});
+
 test('recipe photos open in an enlarged viewer and can be dismissed', async () => {
   const screen = await render(
     <RecipePhotoGallery

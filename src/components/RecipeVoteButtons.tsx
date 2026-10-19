@@ -155,9 +155,14 @@ export function RecipeVoteButtons({
         });
       }
     } catch (issue) {
-      setError(
-        issue instanceof Error ? issue.message : 'Could not save your vote.',
-      );
+      const message =
+        issue &&
+        typeof issue === 'object' &&
+        'message' in issue &&
+        typeof issue.message === 'string'
+          ? issue.message
+          : 'Could not save your vote.';
+      setError(message);
     } finally {
       setBusy(false);
     }

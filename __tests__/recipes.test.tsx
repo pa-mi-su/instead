@@ -1,4 +1,6 @@
 import { act, renderHook } from '@testing-library/react-native';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { useRecipes } from '../src/hooks/useRecipes';
 import { productCatalog } from '../src/catalog';
 import {
@@ -41,6 +43,20 @@ test('clogged-drain guide contains only the baking soda and vinegar recipe with 
       recipe?.cautions ?? '',
     ].join(' '),
   ).not.toMatch(/https?:\/\//i);
+});
+
+test('every built-in recipe is registered for voting in the Supabase SQL', () => {
+  const sql = readFileSync(
+    join(__dirname, '../supabase/recipe-voting.sql'),
+    'utf8',
+  );
+  for (const guide of productCatalog) {
+    for (const recipe of guide.recipes ?? []) {
+      if (recipe.id.startsWith('builtin:')) {
+        expect(sql).toContain(`('${recipe.id}','${guide.id}'`);
+      }
+    }
+  }
 });
 
 test('cough guide includes ginger syrup and clearly blocks unsafe infant use', () => {
