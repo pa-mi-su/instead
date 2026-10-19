@@ -1,3 +1,5 @@
+import type { ImageSourcePropType } from 'react-native';
+
 export type GuideCategory =
   | 'Personal Care'
   | 'Cleaning'
@@ -25,6 +27,7 @@ export type BetterOption = {
 export type StarterRecipe = {
   id: string;
   name: string;
+  photo?: ImageSourcePropType;
   ingredients: string[];
   equipment: string[];
   instructions: string[];

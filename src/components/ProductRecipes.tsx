@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { RecipeVoteButtons } from './RecipeVoteButtons';
 import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import { RecipePhotoGallery } from './RecipePhotoGallery';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { decode } from 'base64-arraybuffer';
 import { useRecipes } from '../hooks/useRecipes';
@@ -106,14 +107,9 @@ export function ProductRecipes({
           {recipe.mine ? ' · YOUR SUBMISSION' : ''}
         </Text>
         <Text style={styles.optionName}>{recipe.title}</Text>
-        {recipe.photos?.map((uri, i) => (
-          <Image
-            key={uri}
-            source={{ uri }}
-            style={local.photo}
-            accessibilityLabel={`${recipe.title}, photo ${i + 1}`}
-          />
-        ))}
+        {recipe.photos?.length ? (
+          <RecipePhotoGallery photos={recipe.photos} title={recipe.title} />
+        ) : null}
         {recipe.photoError && (
           <Text>Some photos could not load. Refresh recipes to retry.</Text>
         )}
