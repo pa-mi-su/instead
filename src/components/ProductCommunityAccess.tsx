@@ -3,23 +3,21 @@ import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Linking, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
-import { useCommunity } from '../hooks/useCommunity';
-import { supabase } from '../lib/supabase';
+import type { useCommunity } from '../hooks/useCommunity';
 import { COLORS, styles } from '../styles';
 
 export function ProductCommunityAccess({
-  productId,
+  community: c,
   renderRecipes,
   onSignInRequest,
 }: {
-  productId: string;
+  community: ReturnType<typeof useCommunity>;
   renderRecipes?: (
     community: ReturnType<typeof useCommunity>,
     onSignInRequest: () => void,
   ) => ReactNode;
   onSignInRequest: () => void;
 }) {
-  const c = useCommunity(supabase, productId, undefined, 'helpful', false);
   const emailInput = useRef<TextInput>(null);
   const codeInput = useRef<TextInput>(null);
   const [focusedField, setFocusedField] = useState<'email' | 'code' | null>(
