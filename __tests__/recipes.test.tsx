@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react-native';
 import { useRecipes } from '../src/hooks/useRecipes';
+import { productCatalog } from '../src/catalog';
 import {
   emptyRecipe,
   validatePhoto,
@@ -15,6 +16,68 @@ const draft: RecipeDraft = {
   cautions: 'Review ingredient compatibility',
   source: '',
 };
+
+test('clogged-drain guide contains only the baking soda and vinegar recipe with boiling-water cautions', () => {
+  const guide = productCatalog.find(item => item.title === 'Clogged drains');
+  const recipes = guide?.recipes ?? [];
+  const recipe = recipes[0];
+
+  expect(recipes).toHaveLength(1);
+  expect(recipe).toBeDefined();
+  expect(recipe?.name).toContain('Baking Soda and Vinegar');
+  expect(recipe?.ingredients).toContain('1 cup baking soda');
+  expect(recipe?.ingredients).toContain('1 cup white vinegar');
+  expect(recipe?.instructions.join(' ')).toContain('5 to 10 minutes');
+  expect(recipe?.instructions.join(' ')).toMatch(/initial.*boiling/i);
+  expect(recipe?.instructions.join(' ')).toMatch(/second pot of boiling/i);
+  expect(recipe?.cautions).toMatch(/at your own risk/i);
+  expect(recipe?.cautions).toMatch(/severe scalds/i);
+  expect(
+    [
+      ...(recipe?.ingredients ?? []),
+      ...(recipe?.equipment ?? []),
+      ...(recipe?.instructions ?? []),
+      recipe?.storage ?? '',
+      recipe?.cautions ?? '',
+    ].join(' '),
+  ).not.toMatch(/https?:\/\//i);
+});
+
+test('cough guide includes ginger syrup and clearly blocks unsafe infant use', () => {
+  const guide = productCatalog.find(item => item.title === 'Cough comfort');
+  const recipes = guide?.recipes ?? [];
+  const recipe = guide?.recipes?.find(item =>
+    item.name.includes('Honey, Lemon, and Ginger'),
+  );
+  const vinegarDrink = recipes.find(item =>
+    item.name.includes('Apple Cider Vinegar and Honey'),
+  );
+
+  expect(recipe).toBeDefined();
+  expect(recipes).toHaveLength(2);
+  expect(recipe?.ingredients).toContain(
+    '1 cup raw, local honey (pasteurized honey is preferred for cough use)',
+  );
+  expect(recipe?.instructions.join(' ')).toMatch(/refrigerate/i);
+  expect(recipe?.instructions.join(' ')).toMatch(/adults \(12\+\)/i);
+  expect(recipe?.instructions.join(' ')).toMatch(/every 4 hours/i);
+  expect(recipe?.instructions.join(' ')).toMatch(/children \(1–5\)/i);
+  expect(recipe?.cautions).toMatch(/under 12 months/i);
+  expect(recipe?.cautions).toMatch(/not been established/i);
+  expect(guide?.safetyNote).toMatch(/pediatric clinician/i);
+  expect(vinegarDrink?.ingredients).toContain(
+    '2 tablespoons high-quality apple cider vinegar',
+  );
+  expect(vinegarDrink?.instructions.join(' ')).toMatch(/1 cup total/i);
+  expect(vinegarDrink?.instructions.join(' ')).toMatch(/every 3 to 4 hours/i);
+  expect(vinegarDrink?.cautions).toMatch(/under 12 months/i);
+  expect(vinegarDrink?.storage).toMatch(/1 week/i);
+  expect(vinegarDrink?.storage).toMatch(/2 months/i);
+  expect(vinegarDrink?.storage).toMatch(/No tested shelf life/i);
+  expect(vinegarDrink?.cautions).toMatch(/bloody mucus/i);
+  expect(vinegarDrink?.cautions).toMatch(/green\/yellow phlegm/i);
+});
+
 function mock() {
   const rpc = jest.fn(
     async (_name: string, _args: Record<string, unknown>) => ({

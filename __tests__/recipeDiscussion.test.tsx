@@ -32,6 +32,43 @@ test('recipe votes ask signed-out users to sign in and can be dismissed', async 
   expect(screen.queryByText('Sign in to vote')).toBeNull();
 });
 
+test('signed-in voters are sent to account setup instead of sign-in again', async () => {
+  const onSignIn = jest.fn();
+  const screen = await render(
+    <RecipeVoteButtons
+      productId="natural-glass-cleaner"
+      recipeId="builtin:glassCleanerRecipe"
+      title="Glass cleaner"
+      signedIn
+      canVote={false}
+      onSignIn={onSignIn}
+    />,
+  );
+  await fireEvent.press(screen.getByLabelText('Vote this recipe up'));
+  expect(screen.getByText('One more step to vote')).toBeTruthy();
+  expect(screen.queryByText('Sign in to vote')).toBeNull();
+  await fireEvent.press(screen.getByText('Review account setup'));
+  expect(onSignIn).toHaveBeenCalledTimes(1);
+});
+
+test('verified eligible users can vote without seeing the sign-in prompt', async () => {
+  const onVote = jest.fn();
+  const screen = await render(
+    <RecipeVoteButtons
+      productId="natural-glass-cleaner"
+      recipeId="community:glassCleanerRecipe"
+      title="Glass cleaner"
+      signedIn
+      canVote
+      onSignIn={jest.fn()}
+      onVote={onVote}
+    />,
+  );
+  await fireEvent.press(screen.getByLabelText('Vote this recipe up'));
+  expect(onVote).toHaveBeenCalledWith(1);
+  expect(screen.queryByText('Sign in to vote')).toBeNull();
+});
+
 test('recipe photos open in an enlarged viewer and can be dismissed', async () => {
   const screen = await render(
     <RecipePhotoGallery

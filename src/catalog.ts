@@ -696,28 +696,74 @@ const antControlRecipe: StarterRecipe = {
     'Chemical-free trail cleanup and exclusion can reduce indoor ant activity, but results depend on the ant species, food sources, and entry points. Vinegar may damage natural stone and some finishes; spot-test first and avoid delicate surfaces. Never mix vinegar with bleach or other cleaning products. Keep solutions away from eyes, children, and pets.',
 };
 
-const drainClearingGuide: StarterRecipe = {
-  id: 'builtin:drainClearingGuide',
-  name: 'Chemical-Free Clog Clearing',
+const honeyLemonGingerCoughSyrup: StarterRecipe = {
+  id: 'builtin:honeyLemonGingerCoughSyrup',
+  name: 'Honey, Lemon, and Ginger Cough Syrup',
   ingredients: [
-    'No chemical drain opener or homemade chemical mixture',
-    'Warm tap water for rinsing after the blockage is removed',
+    '1 cup raw, local honey (pasteurized honey is preferred for cough use)',
+    '1/2 cup fresh lemon juice, plus the zest of 2 lemons',
+    '1/4 cup peeled and sliced fresh ginger, or 1/2 teaspoon ground ginger',
+    '1 cup water',
   ],
   equipment: [
-    'Cup plunger',
-    'Plastic hair-removal tool or hand drain snake',
-    'Bucket and gloves for catching or handling debris',
+    'Small saucepan',
+    'Fine strainer, if using sliced ginger',
+    'Clean jar with a tight-fitting lid',
   ],
   instructions: [
-    'Remove the drain stopper or strainer and clear any hair or debris you can reach. Put the material in the trash rather than pushing it farther down the drain.',
-    'For a sink or tub clog, use a cup plunger. Add enough water to cover the plunger cup, seal the overflow opening and any second sink opening with a wet cloth, then plunge steadily. Lift the plunger to check whether water drains.',
-    'If the clog is likely hair or debris, use a plastic drain-cleaning tool or hand snake according to its instructions. Turn gently, pull debris out, and do not force the tool if it catches.',
-    'When water flows freely, rinse with warm tap water and reinstall the stopper or strainer. If the drain remains blocked, several drains back up together, or you smell sewage, stop and contact a plumber.',
+    'Combine the water, lemon zest, and sliced ginger in a small saucepan. Bring to a boil and simmer for about 5 minutes.',
+    'Strain out the zest and sliced ginger. Let the liquid cool until warm, not hot.',
+    'Warm the honey gently on low heat; do not boil it. Stir in the strained ginger-lemon liquid and fresh lemon juice until well combined. If using ground ginger, stir it in with the honey.',
+    'Pour the mixture into a clean glass jar with a tight-fitting lid and refrigerate. This homemade mixture may soothe a cough, but it does not treat its cause.',
+    'Submitted dosage guidance (not established for this diluted syrup): Adults (12+) — 1 to 2 tablespoons every 4 hours as needed; children (5–12) — 1 to 2 teaspoons every 2 hours as needed; children (1–5) — 1/2 to 1 teaspoon every 2 hours as needed. The age ranges overlap at age 5. Ask a pediatric clinician before giving this syrup to a child; the supplied amounts are not verified for this recipe.',
   ],
   storage:
-    'Rinse reusable tools, allow them to dry, and store them away from children and pets. Dispose of removed hair and debris in household trash.',
+    'Keep refrigerated in a clean, tightly covered jar. No tested shelf life has been established for this homemade mixture; make a small batch and discard it if its appearance or smell changes.',
   cautions:
-    'Do not use a plunger or snake if chemical drain opener is still in the drain; splashes can cause serious injury. Follow the product label and contact a plumber if you are unsure. Do not pour boiling water into a drain; it can cause burns and may damage some fixtures or plumbing. Never mix drain products or combine household cleaners. Stop if you meet resistance, have damaged plumbing, or are not comfortable removing a stopper.',
+    'Never give honey to a child under 12 months because of infant botulism risk. The dosage above is included as submitted, not as verified medical dosing; the child age ranges overlap at age 5, and the amounts have not been established for this diluted syrup. Pediatric guidance gives age-based amounts of honey itself, not this recipe, so ask a pediatric clinician before giving this syrup to a child. Honey may soothe cough but does not treat the cause. Seek medical care for trouble breathing, bloody mucus, a fever of 104°F (40°C) or higher, fever lasting more than 5 days, or symptoms lasting more than 3 weeks. The submitted warning also says to seek care for a cough lasting more than 1 week, high fever, green/yellow phlegm, or breathing difficulty; green/yellow phlegm alone does not indicate a bacterial infection.',
+};
+
+const appleCiderVinegarHoneyDrink: StarterRecipe = {
+  id: 'builtin:appleCiderVinegarHoneyDrink',
+  name: 'Apple Cider Vinegar and Honey Drink',
+  ingredients: [
+    '2 tablespoons high-quality apple cider vinegar',
+    '1/4 teaspoon ground ginger',
+    '1 tablespoon raw honey (pasteurized honey is preferred for cough use)',
+    '2 tablespoons water',
+  ],
+  equipment: ['Measuring spoons', 'Cup or small jar for mixing'],
+  instructions: [
+    'Stir the apple cider vinegar, ginger, honey, and 2 tablespoons of water together until combined.',
+    'Add more water to dilute the drink to 1 cup total, then sip slowly. Do not drink the vinegar undiluted.',
+    'Submitted dosage guidance (not medically established): take 1 tablespoon every 3 to 4 hours as needed. This amount and interval have not been verified for this drink and should not be used as a child’s dose.',
+    'Prepare it fresh when needed rather than storing a batch.',
+  ],
+  storage:
+    'The submitted note says to refrigerate and discard after 1 week; it also mentions claims of up to 2 months depending on the lemon-to-honey ratio. This recipe contains no lemon, and neither storage period has been established for this mixture. Prepare one serving fresh and use it right away; no tested shelf life has been established for leftovers.',
+  cautions:
+    'This drink and its cough-relief claims have not been established. Never give honey to a child under 12 months because of infant botulism risk. The submitted 1-tablespoon amount every 3 to 4 hours is included for completeness but has not been verified; do not use it as a child’s dose. Vinegar is acidic and may irritate the throat or worsen reflux; stop if it causes discomfort and rinse the mouth with plain water after drinking. The submitted warning says to seek medical care if the cough lasts longer than 1 week, there is a high fever, green/yellow phlegm, or breathing difficulty. CDC guidance says trouble breathing, bloody mucus, fever of 104°F (40°C) or higher, fever lasting more than 5 days, or symptoms lasting more than 3 weeks warrant care; green/yellow mucus alone does not indicate a bacterial infection. Do not use this in place of medical care.',
+};
+
+const bakingSodaVinegarDrainRecipe: StarterRecipe = {
+  id: 'builtin:bakingSodaVinegarDrainRecipe',
+  name: 'Baking Soda and Vinegar Drain Flush',
+  ingredients: [
+    '1 cup baking soda',
+    '1 cup white vinegar',
+    '1 pot of boiling or very hot water for the initial and final flush',
+  ],
+  equipment: ['Drain stopper or loose-fitting cover'],
+  instructions: [
+    'Initial hot-water flush: carefully pour a pot of boiling or very hot water down the drain to warm and loosen residue. Pour slowly to avoid splashes.',
+    'Pour 1 cup of baking soda into the drain, followed slowly by 1 cup of white vinegar.',
+    'Let the mixture fizz for 5 to 10 minutes. Cover the opening loosely with a stopper; do not seal it tightly.',
+    'Final hot-water flush: carefully pour a second pot of boiling or very hot water down the drain. The fizz may loosen light residue, but it may not clear a clog. If water still drains slowly or backs up, stop and contact a plumber.',
+  ],
+  storage:
+    'Mix only what you need immediately before use. Do not store a prepared mixture.',
+  cautions:
+    'Use boiling water at your own risk and with extreme caution: it can cause severe scalds, and the heat may damage some pipes, seals, finishes, or fixtures. Check that your plumbing and fixture can tolerate boiling water before using it; if you are unsure, use very hot (not boiling) water or contact a plumber. Pour slowly, keep your face and hands clear, and keep children and pets away. This household mixture is not a proven fix for a serious clog. Never use it after a chemical drain opener or mix it with another cleaner. Stop if multiple drains back up, sewage odors appear, or the clog does not clear safely.',
 };
 
 const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
@@ -735,6 +781,8 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? 'Tallow balm with olive or jojoba oil'
       : title === 'Sunburn care'
       ? 'Cooling first aid for mild sunburn'
+      : title === 'Cough comfort'
+      ? 'Honey, lemon, and ginger syrup for cough comfort'
       : title === 'Bug bite care'
       ? 'Owner-supplied coconut-oil and baking-soda paste'
       : title === 'Laundry care'
@@ -756,7 +804,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Ant control'
       ? 'Wipe trails, remove food, and seal entry gaps'
       : title === 'Clogged drains'
-      ? 'Plunge or remove hair and debris without drain chemicals'
+      ? 'Baking soda and vinegar for a minor drain clog'
       : 'Explore natural alternatives',
   icon: '✳',
   answer: 'A simpler alternative starts here.',
@@ -811,14 +859,18 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       ? [mosquitoTrapRecipe]
       : title === 'Ant control'
       ? [antControlRecipe]
+      : title === 'Cough comfort'
+      ? [honeyLemonGingerCoughSyrup, appleCiderVinegarHoneyDrink]
       : title === 'Clogged drains'
-      ? [drainClearingGuide]
+      ? [bakingSodaVinegarDrainRecipe]
       : [],
   safetyNote:
     title === 'Toothpaste'
       ? 'Fluoride-free and untested. Review this formula with a dentist before oral use. Natural ingredients do not establish dental safety or cavity protection.'
       : title === 'Sunburn care'
       ? 'Sunburn is a burn injury. This entry covers mild self-care only; do not rely on it for a severe burn or other urgent symptoms.'
+      : title === 'Cough comfort'
+      ? 'Honey may soothe a cough but does not treat its cause. Never give honey to a child under 12 months. The dose for either homemade mixture has not been established; ask a pediatric clinician before giving one to a child.'
       : title === 'Bug bite care'
       ? 'Owner-supplied, untested bite paste. It is not medical advice and is not a substitute for care for a severe allergic reaction.'
       : title === 'Mouse deterrents'
@@ -832,15 +884,22 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Ant control'
       ? 'This guide uses cleaning and exclusion without pesticide bait or traps. It can help keep ants out of living areas but does not promise to eliminate a colony.'
       : title === 'Clogged drains'
-      ? 'This guide uses physical drain-clearing tools rather than corrosive drain products or untested chemical mixtures. Stop and seek plumbing help when the clog does not clear safely.'
+      ? 'This baking-soda/vinegar method may not clear a clog. Boiling water can cause severe burns and may damage plumbing; review the recipe cautions and use very hot water instead if you are unsure your plumbing can tolerate boiling water.'
       : 'Use at your own risk. Natural does not automatically mean safe or effective. Follow product-specific cautions and do not mix cleaning products.',
-  professionalHelp: [],
+  professionalHelp:
+    title === 'Cough comfort'
+      ? [
+          'Seek care for trouble breathing, bloody mucus, fever of 104°F (40°C) or higher, fever lasting more than 5 days, or symptoms lasting more than 3 weeks.',
+        ]
+      : [],
   evidence: 'Limited',
   evidenceNote:
     title === 'Dish cleaner'
       ? 'Owner-supplied recipes. These exact methods have not been independently tested for effectiveness or compatibility; shelf life has not been established for the mixed cleaner.'
       : title === 'Sunburn care'
       ? 'General first-aid steps based on public dermatology and NIH MedlinePlus guidance. This is not individualized medical advice.'
+      : title === 'Cough comfort'
+      ? 'Honey may provide short-term cough relief for adults and children at least 1 year old, but pediatric guidance specifies age-based amounts of honey itself. These diluted homemade mixtures and the submitted dosing schedules have not been evaluated; evidence for apple cider vinegar as a cough remedy is limited.'
       : title === 'Bug bite care'
       ? 'This owner-supplied formula and its benefit claims have not been independently evaluated. Publication or votes do not establish safety or effectiveness.'
       : title === 'Mouse deterrents'
@@ -854,7 +913,7 @@ const draftCatalog: Guide[] = topics.map(([title, category, keywords]) => ({
       : title === 'Ant control'
       ? 'UC IPM recommends removing food sources, wiping ant trails with soapy water, and sealing entry points. University of Minnesota Extension says vinegar and water may temporarily disrupt ant trails; neither source supports a guaranteed colony-elimination claim for these steps.'
       : title === 'Clogged drains'
-      ? 'The U.S. EPA lists a plunger or plumber’s snake as alternatives to chemical drain cleaner. This guide focuses on physical removal; effectiveness depends on the clog and plumbing.'
+      ? 'The U.S. EPA lists a plunger or plumber’s snake as alternatives to chemical drain cleaner. The baking-soda/vinegar flush has not been established as a reliable way to clear clogs; effectiveness depends on the clog and plumbing.'
       : 'Community votes do not establish safety or effectiveness.',
   updatedAt: '',
 }));

@@ -10,6 +10,8 @@ import type { Guide } from '../types';
 import { ExpandableSafety } from '../components/ExpandableSafety';
 import { RecipeVoteButtons } from '../components/RecipeVoteButtons';
 import { RecipePhotoGallery } from '../components/RecipePhotoGallery';
+import { useCommunity } from '../hooks/useCommunity';
+import { supabase } from '../lib/supabase';
 
 export function GuideDetailScreen({
   guide,
@@ -26,6 +28,17 @@ export function GuideDetailScreen({
 }) {
   const scrollRef = useRef<ScrollView>(null);
   const communityY = useRef(0);
+  const community = useCommunity(
+    supabase,
+    guide.id,
+    undefined,
+    'helpful',
+    false,
+  );
+  const verified = Boolean(
+    community.session?.user.email_confirmed_at &&
+      !community.session.user.is_anonymous,
+  );
   const requestSignIn = () =>
     scrollRef.current?.scrollTo({ y: communityY.current, animated: true });
   return (
@@ -142,6 +155,8 @@ export function GuideDetailScreen({
                     productId={guide.id}
                     recipeId={recipe.id}
                     title={recipe.name}
+                    signedIn={verified}
+                    canVote={community.canContribute}
                     onSignIn={requestSignIn}
                   />
                 </View>
@@ -160,6 +175,7 @@ export function GuideDetailScreen({
           <ProductCommunity
             key={guide.id}
             productId={guide.id}
+            community={community}
             onSignInRequest={requestSignIn}
           />
         </DetailSection>
