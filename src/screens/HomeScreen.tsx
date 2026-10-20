@@ -6,6 +6,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useScrollRestoration } from '../hooks/useScrollRestoration';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { categories } from '../categories';
 import { GuideCard } from '../components/GuideCard';
@@ -22,6 +23,8 @@ export function HomeScreen({
   onScan,
   isLoadingLive,
   bottomInset,
+  scrollOffset,
+  onScrollOffsetChange,
 }: {
   guides: Guide[];
   query: string;
@@ -32,9 +35,17 @@ export function HomeScreen({
   onScan: () => void;
   isLoadingLive: boolean;
   bottomInset: number;
+  scrollOffset: number;
+  onScrollOffsetChange: (offset: number) => void;
 }) {
+  const scroll = useScrollRestoration(scrollOffset, onScrollOffsetChange);
   return (
     <ScrollView
+      ref={scroll.scrollRef}
+      onLayout={scroll.onLayout}
+      onContentSizeChange={scroll.onContentSizeChange}
+      onScroll={scroll.onScroll}
+      scrollEventThrottle={16}
       contentContainerStyle={[
         styles.scrollContent,
         { paddingBottom: Math.max(bottomInset + 30, 46) },

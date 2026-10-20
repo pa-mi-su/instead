@@ -7,6 +7,7 @@ Sign in with the existing authorized owner’s email and its eight-digit Supabas
 ## Operations
 
 - Recipes / Comments → Awaiting review: read the full submission, load and inspect every photo, and write a specific review reason. Confirm the review checkbox to approve. Health and personal-care approvals additionally require actual reviewer qualifications and evidence sources; text fields do not verify professional credentials.
+- Built-in recipes: edit the shipped app recipes or add one to an existing topic. Saving publishes the text in the app after its next catalog refresh. The editor keeps recipe IDs stable for ratings and comments, records every change and reason, and archives recipes without deleting their history. The editor changes text only; packaged photos remain as shipped. New admin recipes do not include photos.
 - Approved / Rejected / All submissions: inspect previously reviewed content and unpublish when necessary.
 - Open reports: reports are grouped by reason with counts and latest timestamps. Marking reports reviewed acknowledges only the loaded report snapshot; later reports remain open. Reports alone never delete content.
 - Remove to Trash: immediately hides the content from new directory reads. It retains the submission for recovery, rather than permanently deleting data. Already issued photo links may persist for up to five minutes. Owners can still remove their own files where the existing withdrawal rules permit it.
@@ -19,12 +20,12 @@ Queues, accounts, and the activity log use 20-record pagination. Signed photo UR
 
 ## Setup and verification
 
-1. Apply the repeatable supabase/admin-panel.sql after community-safeguards.sql. It grants no admin membership by itself.
+1. Ensure supabase/directory-topics.sql, supabase/recipe-comments.sql, and supabase/recipe-voting.sql are installed after community-safeguards.sql. Apply supabase/admin-panel.sql, then supabase/builtin-recipe-admin.sql. The final migration adds the protected editor and public recipe-catalog read RPC. None of these migrations grants admin membership.
 2. As the Supabase project owner, grant exactly the confirmed verified account a community_admins row. Do not grant based on a client-supplied email, JWT metadata, or public signup. There is no client role-management endpoint. Keep owner email and Auth UUID out of public source.
 3. Build with npm run website:build, using the same public SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY. The builder rejects service-role and unknown key types. Upload website/dist to the dedicated website bucket; invalidate /admin and /admin/* on CloudFront.
 4. Verify that anonymous and ordinary verified users cannot access the admin RPC or pending photos; verify the authorized owner can sign in. Never include a service-role key in the static site.
 
-Run `python3 scripts/test-community-db.py` with PostgreSQL installed (or set INSTEAD_PG_BIN). It creates and tears down its own disposable cluster and runs the complete community, recipe, safeguard, and admin suites; it cannot target a hosted database. Database assertions include supabase/admin-panel.test.sql. They cover repeatable installation, non-admin/unverified/anonymous denials, private photo access, approval requirements, restrictions, audit logging, Trash restoration, report snapshots, author withdrawals, missing photos, and access revocation. Browser checks use local synthetic fixtures; no real submissions are approved or removed during development.
+Run `python3 scripts/test-community-db.py` with PostgreSQL installed (or set INSTEAD_PG_BIN). It creates and tears down its own disposable cluster and runs the complete community, recipe, safeguard, voting, and admin suites; it cannot target a hosted database. Built-in recipe tests cover editor authorization, content validation, live catalog updates, archive/restore, and audit history. Browser checks use local synthetic fixtures; no real submissions are approved or removed during development.
 
 Deployment confirmed October 16, 2026: the owner explicitly approved the final access grant, and the live transaction enabled only the existing verified owner account. No personal email or Auth identifier is stored in this source document. Anonymous live admin RPC requests are denied. PR #9 passed its required Quality and Android check. The owner should complete the first live email-code sign-in to verify their browser session.
 

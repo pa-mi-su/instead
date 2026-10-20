@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { subscribeToForeground } from './appForeground';
 import { communityError, communityRpc } from '../lib/community';
 import type { ReportReason } from '../lib/community';
 import {
@@ -102,6 +103,11 @@ export function useRecipes(
       pending.current++;
       clearInterval(timer);
     };
+  }, [refresh]);
+  useEffect(() => {
+    return subscribeToForeground(() => {
+      refresh().catch(issue => setError(communityError(issue)));
+    });
   }, [refresh]);
   async function run(task: () => Promise<void>) {
     if (lock.current) return;

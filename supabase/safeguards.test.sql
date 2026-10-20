@@ -28,12 +28,21 @@ do $$ begin
  if exists(select 1 from public.recipe_list('natural-glass-cleaner')) then raise exception 'Pending recipe leaked'; end if;
 end $$;
 reset role;
-do $$ declare cid uuid; rid uuid; begin
+do $$ declare cid uuid; rid uuid; newer uuid; first_id uuid; begin
  select id into cid from public.community_comments where user_id='30000000-0000-0000-0000-000000000001';
  select id into rid from public.community_recipes where user_id='30000000-0000-0000-0000-000000000001';
  perform pg_temp.must_reject(format('update public.community_comments set moderation_status=%L where id=%L','approved',cid));
  perform public.community_moderate('comment',cid,'approved','Checked non-medical, compatible cleaning experience','Local test moderator');
  perform public.community_moderate('recipe',rid,'approved','Checked non-medical cleaning method','Local test moderator');
+ insert into public.community_recipes(product_id,user_id,title,ingredients,instructions,storage_notes,cautions)
+ values('natural-glass-cleaner','30000000-0000-0000-0000-000000000001','Newer zero-vote recipe','Exact ingredients','Safe steps','Store dry','Check surface compatibility') returning id into newer;
+ perform public.community_moderate('recipe',newer,'approved','Reviewed a second non-medical cleaning method','Local test moderator');
+ update public.community_recipes set created_at=now()+interval '1 second' where id=newer;
+ if (select count(*) from public.recipe_list('natural-glass-cleaner'))<>2
+  or exists(select 1 from public.recipe_list('natural-glass-cleaner') where score<>0)
+ then raise exception 'Approved recipes with zero votes must remain in the public list at score zero'; end if;
+ select id into first_id from public.recipe_list('natural-glass-cleaner') limit 1;
+ if first_id<>newer then raise exception 'Zero-vote recipes must rank by recency when their scores tie'; end if;
  insert into public.community_photo_folders(user_id,folder_id) values('30000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001');
  insert into storage.objects(bucket_id,name) values('recipe-photos','50000000-0000-0000-0000-000000000001/safety.jpg');
  update public.community_recipes set photo_paths=array['50000000-0000-0000-0000-000000000001/safety.jpg'] where id=rid;

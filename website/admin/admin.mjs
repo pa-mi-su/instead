@@ -13,6 +13,10 @@ let busy = false;
 let mfaFactor = null;
 let unfinishedFactor = null;
 let idleTimer = null;
+let builtinSeeds = null;
+let builtinItems = [];
+let builtinEditingId = null;
+let builtinSearch = '';
 const storageKey = 'instead:admin-session';
 function status(message, error = false) {
   $('status').textContent = message;
@@ -111,6 +115,13 @@ async function token() {
 async function rpc(action, payload = {}) {
   return request(
     '/rest/v1/rpc/community_admin',
+    { p_action: action, p_payload: payload },
+    await token(),
+  );
+}
+async function builtinRpc(action, payload = {}) {
+  return request(
+    '/rest/v1/rpc/community_builtin_admin',
     { p_action: action, p_payload: payload },
     await token(),
   );
@@ -311,12 +322,22 @@ function details(parent, title, value) {
   if (!value) return;
   parent.append(element('h3', title), element('p', value, 'text'));
 }
-async function mutate(action, payload, note) {
+async function mutate(action, payload, note, options = {}) {
   const generation = epoch;
   await rpc(action, { ...payload, note });
   if (generation !== epoch) return;
-  status('Saved. The queue reflects the current server state.');
-  await load();
+  options.afterSuccess?.();
+  try {
+    await load();
+  } catch (error) {
+    if (!options.successMessage) throw error;
+    status(
+      `${options.successMessage} The admin list could not refresh: ${error.message}`,
+      true,
+    );
+    return;
+  }
+  if (options.successMessage) status(options.successMessage);
 }
 function restrictButton(user, suspended, reason) {
   return button(
@@ -325,7 +346,7 @@ function restrictButton(user, suspended, reason) {
       if (!reason.value.trim()) throw new Error('Enter a reason first.');
       const message = suspended
         ? 'Restore this account’s ability to contribute?'
-        : 'Restrict this account? Its contributions will be hidden and new contributions blocked. Email verification alone will not remove the restriction.';
+        : 'Restrict this account in INSTEAD? Its contributions will be hidden and new submissions and votes blocked. This does not disable email sign-in.';
       if (window.confirm(message))
         await mutate(
           'restrict',
@@ -433,16 +454,46 @@ function renderContent(item) {
     card.append(reports);
   }
   const review = element('div', undefined, 'review');
+  const requiresQualifiedReview =
+    view === 'recipe' &&
+    [
+      'natural-toothpaste',
+      'natural-shampoo',
+      'natural-body-soap',
+      'natural-deodorant',
+      'natural-skin-care',
+      'natural-sunburn-care',
+      'natural-bug-bite-care',
+      'natural-cough-comfort',
+    ].includes(item.product_id);
+  if (requiresQualifiedReview)
+    review.append(
+      element(
+        'p',
+        'Required for approval: enter the reviewer’s genuine qualifications and the evidence sources used. The recipe will stay pending until both are provided.',
+        'notice',
+      ),
+    );
   const reason = field(review, 'Review reason / action note', true);
   const qualifications = field(
     review,
-    'Reviewer qualifications (required for health / personal care)',
+    requiresQualifiedReview
+      ? 'Reviewer qualifications — REQUIRED FOR APPROVAL'
+      : 'Reviewer qualifications (when applicable)',
   );
   const sources = field(
     review,
-    'Evidence sources (required for health / personal care)',
+    requiresQualifiedReview
+      ? 'Evidence sources — REQUIRED FOR APPROVAL'
+      : 'Evidence sources (when applicable)',
     true,
   );
+  if (requiresQualifiedReview) {
+    qualifications.required = true;
+    qualifications.setAttribute('aria-required', 'true');
+    sources.required = true;
+    sources.setAttribute('aria-required', 'true');
+  }
   const check = element('label', undefined, 'check');
   const checkbox = element('input');
   checkbox.type = 'checkbox';
@@ -464,8 +515,23 @@ function renderContent(item) {
   else {
     if (item.status !== 'withdrawn') {
       actions.append(
-        button('Approve', () =>
-          mutate(
+        button('Approve', async () => {
+          if (!checkbox.checked)
+            throw new Error(
+              'Confirm that you reviewed the full recipe and every photo.',
+            );
+          if (reason.value.trim().length < 3)
+            throw new Error('Enter a review reason before approving.');
+          if (
+            requiresQualifiedReview &&
+            (qualifications.value.trim().length < 3 ||
+              sources.value.trim().length < 3)
+          )
+            throw new Error(
+              'Health and personal-care recipes need reviewer qualifications and evidence sources before approval.',
+            );
+
+          await mutate(
             'moderate',
             {
               ...target,
@@ -475,8 +541,16 @@ function renderContent(item) {
               sources: sources.value,
             },
             reason.value,
-          ),
-        ),
+            {
+              afterSuccess: () => {
+                $('filter').value = 'approved';
+                offset = 0;
+              },
+              successMessage:
+                'Recipe approved. It is now in Approved history; use Remove to Trash to unpublish it.',
+            },
+          );
+        }),
       );
       actions.append(
         button(
@@ -535,19 +609,327 @@ function renderContent(item) {
   card.append(review);
   return card;
 }
+async function loadBuiltinSeeds() {
+  if (builtinSeeds) return builtinSeeds;
+  const response = await fetch('/admin/builtin-recipes.json', {
+    cache: 'no-store',
+  });
+  if (!response.ok)
+    throw new Error('Built-in recipe inventory is unavailable.');
+  const data = await response.json();
+  if (!Array.isArray(data))
+    throw new Error('Built-in recipe inventory is invalid.');
+  builtinSeeds = data;
+  return builtinSeeds;
+}
+function renderBuiltinEditor(item, products) {
+  const editor = element('div', undefined, 'builtin-editor');
+  const title = field(editor, 'Recipe name');
+  title.maxLength = 120;
+  title.value = item.recipe?.name ?? item.title ?? '';
+  let productId = item.product_id ?? products[0]?.id ?? '';
+  if (item.isNew) {
+    const productLabel = element('label', 'App topic');
+    const productSelect = element('select');
+    for (const product of products) {
+      const option = element('option', `${product.title} · ${product.id}`);
+      option.value = product.id;
+      productSelect.append(option);
+    }
+    productSelect.value = productId;
+    productSelect.addEventListener('change', () => {
+      productId = productSelect.value;
+    });
+    editor.prepend(productSelect);
+    editor.prepend(productLabel);
+    productLabel.htmlFor = productSelect.id = `product-${crypto.randomUUID()}`;
+  } else {
+    editor.append(
+      element('p', `${item.product_title} · ${item.product_id}`, 'meta'),
+    );
+  }
+  const listField = (label, values, maximum) => {
+    const input = field(editor, label, true);
+    input.maxLength = maximum;
+    input.value = (values ?? []).join('\n');
+    input.placeholder = 'Enter one item per line';
+    return input;
+  };
+  const ingredients = listField(
+    'Ingredients and quantities · one per line',
+    item.recipe?.ingredients,
+    12000,
+  );
+  const equipment = listField(
+    'Equipment · one per line (optional)',
+    item.recipe?.equipment,
+    6000,
+  );
+  const instructions = listField(
+    'Instructions · one step per line',
+    item.recipe?.instructions,
+    16000,
+  );
+  const storage = field(editor, 'Storage and shelf life', true);
+  storage.maxLength = 4000;
+  storage.value = item.recipe?.storage ?? '';
+  const cautions = field(editor, 'Cautions', true);
+  cautions.maxLength = 4000;
+  cautions.value = item.recipe?.cautions ?? '';
+  const reason = field(
+    editor,
+    'Reason for creating or editing this recipe',
+    true,
+  );
+  reason.maxLength = 2000;
+  const actions = element('div', undefined, 'actions');
+  actions.append(
+    button('Save and publish in app', async () => {
+      const recipe = {
+        name: title.value.trim(),
+        ingredients: ingredients.value
+          .split('\n')
+          .map(value => value.trim())
+          .filter(Boolean),
+        equipment: equipment.value
+          .split('\n')
+          .map(value => value.trim())
+          .filter(Boolean),
+        instructions: instructions.value
+          .split('\n')
+          .map(value => value.trim())
+          .filter(Boolean),
+        storage: storage.value.trim(),
+        cautions: cautions.value.trim(),
+      };
+      if (
+        !recipe.name ||
+        !recipe.ingredients.length ||
+        !recipe.instructions.length
+      )
+        throw new Error(
+          'Add a name, ingredients, and at least one instruction.',
+        );
+      if (recipe.storage.length < 3 || recipe.cautions.length < 3)
+        throw new Error('Storage guidance and cautions are required.');
+      if (reason.value.trim().length < 3)
+        throw new Error('Enter a reason for this recipe change.');
+      const result = await builtinRpc('save', {
+        id: item.id,
+        product_id: productId,
+        recipe,
+        note: reason.value.trim(),
+      });
+      builtinEditingId = null;
+      const successMessage =
+        result.action === 'created'
+          ? 'Built-in recipe created and published. It will appear in the app after its next catalog refresh.'
+          : 'Built-in recipe saved and published. It will appear in the app after its next catalog refresh.';
+      try {
+        await load();
+        status(successMessage);
+      } catch (error) {
+        status(`${successMessage} The list could not refresh: ${error.message}`, true);
+      }
+    }),
+  );
+  actions.append(
+    button('Cancel', () => {
+      builtinEditingId = null;
+      builtinItems = builtinItems.filter(row => !row.isNew);
+      renderBuiltinItems();
+    }),
+  );
+  editor.append(
+    element(
+      'p',
+      'Saving publishes this built-in recipe to the app. Review the full wording, storage guidance, and cautions before saving.',
+      'notice',
+    ),
+    actions,
+  );
+  return editor;
+}
+function renderBuiltinItems() {
+  const container = $('items');
+  container.replaceChildren();
+  const filtered = builtinItems.filter(item =>
+    `${item.title} ${item.product_title} ${item.product_id}`
+      .toLowerCase()
+      .includes(builtinSearch.trim().toLowerCase()),
+  );
+  if (!filtered.length) {
+    container.append(element('p', 'No built-in recipes match this search.'));
+    return;
+  }
+  const products = [
+    ...new Map(
+      builtinSeeds.map(item => [
+        item.product_id,
+        { id: item.product_id, title: item.product_title },
+      ]),
+    ).values(),
+  ];
+  for (const item of filtered) {
+    const card = element('article', undefined, 'card');
+    card.append(element('h2', item.title));
+    card.append(
+      element(
+        'p',
+        `${item.product_title} · ${item.product_id} · ${
+          item.is_active ? 'Published' : 'Archived'
+        }${item.admin_created ? ' · Admin-created' : ''}`,
+        'meta',
+      ),
+    );
+    if (item.recipe?.ingredients?.length)
+      card.append(
+        element(
+          'p',
+          `${item.recipe.ingredients.length} ingredients · ${item.recipe.instructions.length} steps`,
+          'text',
+        ),
+      );
+    const actions = element('div', undefined, 'actions');
+    actions.append(
+      button(
+        item.id === builtinEditingId ? 'Close editor' : 'Edit recipe',
+        () => {
+          builtinEditingId = item.id === builtinEditingId ? null : item.id;
+          renderBuiltinItems();
+        },
+      ),
+    );
+    if (!item.isNew)
+      actions.append(
+        button(
+          item.is_active ? 'Archive from app' : 'Restore to app',
+          async () => {
+            if (
+              item.is_active &&
+              !window.confirm(
+                'Archive this recipe from the app? It stays in the admin inventory and can be restored later.',
+              )
+            )
+              return;
+            const note = window.prompt(
+              item.is_active
+                ? 'Reason for archiving this recipe:'
+                : 'Reason for restoring this recipe:',
+            );
+            if (!note || note.trim().length < 3)
+              throw new Error('Enter a reason of at least 3 characters.');
+            await builtinRpc('set_active', {
+              id: item.id,
+              active: !item.is_active,
+              note: note.trim(),
+            });
+            const successMessage =
+              item.is_active
+                ? 'Recipe archived from the app.'
+                : 'Recipe restored to the app.';
+            try {
+              await load();
+              status(successMessage);
+            } catch (error) {
+              status(`${successMessage} The list could not refresh: ${error.message}`, true);
+            }
+          },
+          item.is_active,
+        ),
+      );
+    card.append(actions);
+    if (item.id === builtinEditingId)
+      card.append(renderBuiltinEditor(item, products));
+    container.append(card);
+  }
+}
+function renderBuiltinTools() {
+  const tools = $('builtin-tools');
+  tools.replaceChildren();
+  const search = element('input');
+  search.type = 'search';
+  search.maxLength = 100;
+  search.placeholder = 'Search built-in recipes or topics';
+  search.setAttribute('aria-label', 'Search built-in recipes or topics');
+  search.value = builtinSearch;
+  search.addEventListener('input', () => {
+    builtinSearch = search.value;
+    renderBuiltinItems();
+  });
+  tools.append(search);
+  tools.append(
+    button('Add a built-in recipe', () => {
+      const firstProduct = builtinSeeds[0];
+      builtinSearch = '';
+      search.value = '';
+      const id = `admin:${crypto.randomUUID()}`;
+      builtinItems.unshift({
+        id,
+        product_id: firstProduct.product_id,
+        product_title: firstProduct.product_title,
+        title: 'New recipe',
+        recipe: {
+          name: '',
+          ingredients: [],
+          equipment: [],
+          instructions: [],
+          storage: '',
+          cautions: '',
+        },
+        is_active: true,
+        isNew: true,
+        admin_created: true,
+      });
+      builtinEditingId = id;
+      renderBuiltinItems();
+    }),
+  );
+}
 async function load() {
   const generation = ++epoch;
   status('Loading admin data…');
   const summary = await rpc('state');
-  const data = await rpc(
-    ['recipe', 'comment'].includes(view) ? 'queue' : view,
-    {
+  let data;
+  if (view === 'builtin') {
+    const seeds = await loadBuiltinSeeds();
+    const managed = await builtinRpc('list');
+    const rows = managed.items ?? [];
+    const byId = new Map(rows.map(item => [item.id, item]));
+    const seedIds = new Set(seeds.map(item => item.id));
+    builtinItems = seeds.map(seed => {
+      const row = byId.get(seed.id);
+      const recipe = row?.recipe_content ?? seed.recipe;
+      return {
+        ...seed,
+        ...(row ?? {}),
+        recipe,
+        title: recipe?.name ?? row?.title ?? seed.title,
+        product_title: seed.product_title,
+        is_active: row?.is_active ?? true,
+        isNew: false,
+      };
+    });
+    for (const row of rows) {
+      if (seedIds.has(row.id) || !row.recipe_content) continue;
+      const seed = seeds.find(item => item.product_id === row.product_id);
+      builtinItems.push({
+        ...row,
+        recipe: row.recipe_content,
+        title: row.recipe_content.name ?? row.title,
+        product_title: seed?.product_title ?? row.product_id,
+        isNew: false,
+      });
+    }
+    data = { items: builtinItems };
+  } else {
+    data = await rpc(['recipe', 'comment'].includes(view) ? 'queue' : view, {
       kind: view,
       filter: $('filter').value,
       search: $('search').value,
       offset,
-    },
-  );
+    });
+  }
   if (generation !== epoch) return;
   $('mfa').hidden = true;
   $('login').hidden = true;
@@ -568,10 +950,16 @@ async function load() {
     $('counts').append(count);
   }
   const isContent = ['recipe', 'comment'].includes(view);
+  const isBuiltin = view === 'builtin';
   $('filters').hidden = !isContent;
-  $('pagination').hidden = false;
+  $('builtin-tools').hidden = !isBuiltin;
+  $('pagination').hidden = isBuiltin;
   $('items').replaceChildren();
-  for (const item of data.items) {
+  if (isBuiltin) {
+    renderBuiltinTools();
+    renderBuiltinItems();
+  }
+  for (const item of isBuiltin ? [] : data.items) {
     if (isContent) $('items').append(renderContent(item));
     else if (view === 'accounts') {
       const card = element('article', undefined, 'card');
@@ -620,11 +1008,13 @@ async function load() {
   $('previous').disabled = offset === 0;
   $('next').disabled = data.items.length < 20;
   status(
-    `Signed in as ${summary.reviewer}. ${
-      isContent
-        ? `Showing ${data.items.length} item(s), starting at ${offset + 1}.`
-        : `${data.items.length} record(s).`
-    }`,
+    isBuiltin
+      ? `Signed in as ${summary.reviewer}. ${data.items.length} built-in recipe(s) loaded.`
+      : `Signed in as ${summary.reviewer}. ${
+          isContent
+            ? `Showing ${data.items.length} item(s), starting at ${offset + 1}.`
+            : `${data.items.length} record(s).`
+        }`,
   );
 }
 $('email-form').addEventListener('submit', async event => {

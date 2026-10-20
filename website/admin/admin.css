@@ -239,6 +239,26 @@ footer {
   background: white;
   margin: 16px 0;
 }
+.builtin-editor {
+  border-top: 1px solid #d8ddcf;
+  margin-top: 18px;
+  padding-top: 10px;
+}
+.builtin-editor textarea {
+  min-height: 112px;
+}
+#builtin-tools {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  margin: 16px 0;
+}
+#builtin-tools input {
+  max-width: 560px;
+}
+.text {
+  color: #586156;
+}
 #mfa-secret {
   font-family: monospace;
   font-size: 0.9rem;

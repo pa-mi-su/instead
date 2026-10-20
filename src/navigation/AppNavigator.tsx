@@ -36,6 +36,8 @@ export function AppNavigator() {
   const [view, setView] = useState<ViewName>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const history = useRef<{ view: ViewName; selectedId: string | null }[]>([]);
+  const homeScrollOffset = useRef(0);
+  const savedScrollOffset = useRef(0);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<(typeof categories)[number]>('All');
   const [barcodeLookup, setBarcodeLookup] = useState<BarcodeLookupState | null>(
@@ -244,6 +246,10 @@ export function AppNavigator() {
               onOpen={openGuide}
               onExplore={goHome}
               bottomInset={insets.bottom}
+              scrollOffset={savedScrollOffset.current}
+              onScrollOffsetChange={offset => {
+                savedScrollOffset.current = offset;
+              }}
             />
           ) : (
             <HomeScreen
@@ -256,6 +262,10 @@ export function AppNavigator() {
               onScan={scanProduct}
               isLoadingLive={isLoading}
               bottomInset={insets.bottom}
+              scrollOffset={homeScrollOffset.current}
+              onScrollOffsetChange={offset => {
+                homeScrollOffset.current = offset;
+              }}
             />
           )}
         </>
