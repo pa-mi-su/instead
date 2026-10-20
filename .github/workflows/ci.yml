@@ -173,7 +173,9 @@ jobs:
 
   deploy-website:
     name: Deploy website and admin
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.required.result == 'success'
     needs: required
     runs-on: ubuntu-latest
     environment: production
