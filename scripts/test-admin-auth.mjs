@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
+import { readFile } from 'node:fs/promises';
 import {
   isIdle,
   hasRecentMfa,
@@ -12,6 +13,18 @@ const jwt = claims =>
   'header.' +
   Buffer.from(JSON.stringify(claims)).toString('base64url') +
   '.signature';
+test('admin CSP allows same-origin recipe catalog and configured Supabase requests', async () => {
+  const html = await readFile(
+    new URL('../website/admin/index.html', import.meta.url),
+    'utf8',
+  );
+  const policy = html.match(
+    /http-equiv="Content-Security-Policy"\s+content="([^"]+)"/,
+  )?.[1];
+
+  assert.ok(policy, 'admin Content Security Policy exists');
+  assert.match(policy, /connect-src 'self' __SUPABASE_ORIGIN__/);
+});
 test('admin idle handling expires old, missing, and invalid timestamps', () => {
   assert.equal(isIdle({ last_activity: now - ADMIN_IDLE_MS + 1 }, now), false);
   assert.equal(isIdle({ last_activity: now - ADMIN_IDLE_MS }, now), true);
