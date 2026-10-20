@@ -462,46 +462,7 @@ function renderContent(item) {
     card.append(reports);
   }
   const review = element('div', undefined, 'review');
-  const requiresQualifiedReview =
-    view === 'recipe' &&
-    [
-      'natural-toothpaste',
-      'natural-shampoo',
-      'natural-body-soap',
-      'natural-deodorant',
-      'natural-skin-care',
-      'natural-sunburn-care',
-      'natural-bug-bite-care',
-      'natural-cough-comfort',
-    ].includes(item.product_id);
-  if (requiresQualifiedReview)
-    review.append(
-      element(
-        'p',
-        'Required for approval: enter the reviewer’s genuine qualifications and the evidence sources used. The recipe will stay pending until both are provided.',
-        'notice',
-      ),
-    );
   const reason = field(review, 'Review reason / action note', true);
-  const qualifications = field(
-    review,
-    requiresQualifiedReview
-      ? 'Reviewer qualifications — REQUIRED FOR APPROVAL'
-      : 'Reviewer qualifications (when applicable)',
-  );
-  const sources = field(
-    review,
-    requiresQualifiedReview
-      ? 'Evidence sources — REQUIRED FOR APPROVAL'
-      : 'Evidence sources (when applicable)',
-    true,
-  );
-  if (requiresQualifiedReview) {
-    qualifications.required = true;
-    qualifications.setAttribute('aria-required', 'true');
-    sources.required = true;
-    sources.setAttribute('aria-required', 'true');
-  }
   const check = element('label', undefined, 'check');
   const checkbox = element('input');
   checkbox.type = 'checkbox';
@@ -530,23 +491,12 @@ function renderContent(item) {
             );
           if (reason.value.trim().length < 3)
             throw new Error('Enter a review reason before approving.');
-          if (
-            requiresQualifiedReview &&
-            (qualifications.value.trim().length < 3 ||
-              sources.value.trim().length < 3)
-          )
-            throw new Error(
-              'Health and personal-care recipes need reviewer qualifications and evidence sources before approval.',
-            );
-
           await mutate(
             'moderate',
             {
               ...target,
               decision: 'approved',
               reviewed: checkbox.checked,
-              qualifications: qualifications.value,
-              sources: sources.value,
             },
             reason.value,
             {
@@ -554,31 +504,35 @@ function renderContent(item) {
                 $('filter').value = 'approved';
                 offset = 0;
               },
-              successMessage:
-                'Recipe approved. It is now in Approved history; use Remove to Trash to unpublish it.',
+              successMessage: 'Recipe approved. It is now in Approved history.',
             },
           );
         }),
       );
       actions.append(
         button(
-          'Reject / unpublish',
+          'Reject and move to Trash',
           () =>
             mutate(
               'moderate',
               {
                 ...target,
                 decision: 'rejected',
-                qualifications: qualifications.value,
-                sources: sources.value,
               },
               reason.value,
+              {
+                afterSuccess: () => {
+                  $('filter').value = 'trash';
+                  offset = 0;
+                },
+                successMessage: 'Rejected and moved to Trash.',
+              },
             ),
           true,
         ),
       );
     }
-    if (item.status !== 'withdrawn') {
+    if (item.status === 'approved') {
       actions.append(
         button(
           'Remove to Trash',

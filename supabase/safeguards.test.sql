@@ -13,8 +13,8 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000001',true);
 select pg_temp.must_reject($q$select public.community_post('natural-glass-cleaner','I use a clean cloth.')$q$);
 select pg_temp.must_reject($q$select public.community_accept_policy('outdated')$q$);
-select public.community_accept_policy('2026-10-19.1');
-select public.community_accept_policy('2026-10-19.1');
+select public.community_accept_policy('2026-10-16.2');
+select public.community_accept_policy('2026-10-16.2');
 select public.community_post('natural-glass-cleaner','I use a clean cloth.');
 select public.recipe_submit('natural-glass-cleaner','Water wipe','Water and a cloth','Wipe the glass','Prepare fresh','Check glass compatibility');
 do $$ begin
@@ -22,7 +22,7 @@ do $$ begin
  if (select moderation_status from public.community_list('natural-glass-cleaner'))<>'pending' then raise exception 'Comment not pending'; end if;
 end $$;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000002',true);
-select public.community_accept_policy('2026-10-19.1');
+select public.community_accept_policy('2026-10-16.2');
 do $$ begin
  if exists(select 1 from public.community_list('natural-glass-cleaner')) then raise exception 'Pending comment leaked'; end if;
  if exists(select 1 from public.recipe_list('natural-glass-cleaner')) then raise exception 'Pending recipe leaked'; end if;
@@ -66,12 +66,14 @@ do $$ begin
 end $$;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000003',true);
 do $$ begin if exists(select 1 from public.community_blocks_list()) then raise exception 'Private block leaked'; end if; end $$;
-select public.community_accept_policy('2026-10-19.1');
+select public.community_accept_policy('2026-10-16.2');
 select public.recipe_submit('natural-cough-comfort','Test cough remedy','Test ingredients','Test instructions','Test storage','Test cautions');
 reset role;
 do $$ declare rid uuid; begin
  select id into rid from public.community_recipes where user_id='30000000-0000-0000-0000-000000000003';
- perform pg_temp.must_reject(format('select public.community_moderate(%L,%L,%L,%L,%L)','recipe',rid,'approved','No professional review','Unqualified reviewer'));
+ perform public.community_moderate('recipe',rid,'approved','Admin reviewed the full recipe','Local test moderator');
+ if not exists(select 1 from public.community_recipes where id=rid and status='approved' and review_record ? 'reviewer' and not review_record ? 'qualifications' and not review_record ? 'sources')
+ then raise exception 'Health-topic approval should record the admin review without qualification or evidence fields'; end if;
  if (select count(*) from public.community_policy_acceptances where user_id='30000000-0000-0000-0000-000000000001')<>1 then raise exception 'Acceptance duplicate'; end if;
 end $$;
 insert into public.community_account_controls(user_id,suspended) values('30000000-0000-0000-0000-000000000001',true);
@@ -80,7 +82,7 @@ select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000001'
 select pg_temp.must_reject($q$select public.community_post('natural-glass-cleaner','Suspended write')$q$);
 select public.community_request_deletion();
 select public.community_request_deletion();
-select pg_temp.must_reject($q$select public.community_accept_policy('2026-10-19.1')$q$);
+select pg_temp.must_reject($q$select public.community_accept_policy('2026-10-16.2')$q$);
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000002',true);
 do $$ begin
  if exists(select 1 from public.community_list('natural-glass-cleaner')) or exists(select 1 from public.recipe_list('natural-glass-cleaner')) then raise exception 'Suspended/deleting author still public'; end if;
@@ -88,7 +90,7 @@ end $$;
 reset role;
 set local role anon;
 select set_config('request.jwt.claim.sub','',true);
-select pg_temp.must_reject($q$select public.community_accept_policy('2026-10-19.1')$q$);
+select pg_temp.must_reject($q$select public.community_accept_policy('2026-10-16.2')$q$);
 select pg_temp.must_reject($q$select * from public.community_deletion_queue()$q$);
 reset role;
 rollback;

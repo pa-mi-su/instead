@@ -1,6 +1,6 @@
 import tempfile, subprocess, pathlib, shutil, os
 root=pathlib.Path(__file__).resolve().parents[1]
-base=pathlib.Path(tempfile.mkdtemp(prefix='instead-db-',dir='/private/tmp'))
+base=pathlib.Path(tempfile.mkdtemp(prefix='instead-db-'))
 bin=pathlib.Path(os.environ.get('INSTEAD_PG_BIN', str(pathlib.Path(shutil.which('initdb')).parent) if shutil.which('initdb') else '/opt/homebrew/opt/postgresql@15/bin'))
 if not (bin/'initdb').exists(): raise SystemExit('Install PostgreSQL or set INSTEAD_PG_BIN to its bin directory. Tests always create a disposable local cluster.')
 def run(args):
@@ -47,10 +47,24 @@ grant select,insert,delete on storage.objects to authenticated;
  run(psql+['-f',str(root/'supabase/recipe-voting.sql')])
  run(psql+['-f',str(root/'supabase/builtin-recipe-admin.sql')])
  run(psql+['-f',str(root/'supabase/builtin-recipe-admin.sql')])
+ run(psql+['-c',"""alter table public.community_moderation_audit add column qualifications text;
+alter table public.community_moderation_audit add column sources text;
+insert into auth.users(id,email,email_confirmed_at) values('99000000-0000-0000-0000-000000000001','legacy-rejection@example.invalid',now());
+insert into public.community_recipes(id,product_id,user_id,title,ingredients,instructions,storage_notes,cautions,status,review_record)
+ values('99000000-0000-0000-0000-000000000002','natural-glass-cleaner','99000000-0000-0000-0000-000000000001','Legacy rejection','Test ingredients','Test instructions','Test storage','Test cautions','rejected',jsonb_build_object('qualifications','legacy','sources','legacy'));
+insert into public.community_comments(id,product_id,user_id,body,moderation_status,review_record)
+ values('99000000-0000-0000-0000-000000000003','natural-glass-cleaner','99000000-0000-0000-0000-000000000001','Legacy rejected comment','rejected',jsonb_build_object('qualifications','legacy','sources','legacy'));"""])
+ run(psql+['-f',str(root/'supabase/simplify-admin-review.sql')])
+ run(psql+['-f',str(root/'supabase/simplify-admin-review.sql')])
+ run(psql+['-c',"""do $$ begin
+if exists(select 1 from information_schema.columns where table_schema='public' and table_name='community_moderation_audit' and column_name in ('qualifications','sources')) then raise exception 'Obsolete moderation audit columns remain'; end if;
+if not exists(select 1 from public.community_recipes where id='99000000-0000-0000-0000-000000000002' and admin_removed_at is not null and not review_record ? 'qualifications' and not review_record ? 'sources') then raise exception 'Legacy rejected recipe was not cleaned into Trash'; end if;
+if not exists(select 1 from public.community_comments where id='99000000-0000-0000-0000-000000000003' and admin_removed_at is not null and hidden and not review_record ? 'qualifications' and not review_record ? 'sources') then raise exception 'Legacy rejected comment was not cleaned into Trash'; end if;
+end $$;"""])
+ run(psql+['-c',"delete from auth.users where id='99000000-0000-0000-0000-000000000001';"])
  print(run(psql+['-f',str(root/'supabase/admin-panel.test.sql')])[-800:])
  print(run(psql+['-f',str(root/'supabase/recipe-voting.test.sql')])[-500:])
  print(run(psql+['-f',str(root/'supabase/builtin-recipe-admin.test.sql')])[-500:])
- print(run(psql+['-f',str(root/'supabase/recipe-comments.test.sql')])[-800:])
 finally:
  if started: run([str(bin/'pg_ctl'),'-D',str(base/'data'),'-m','immediate','stop'])
  shutil.rmtree(base)

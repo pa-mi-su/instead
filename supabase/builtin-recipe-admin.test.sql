@@ -41,7 +41,7 @@ select public.community_builtin_admin('set_active',jsonb_build_object('id','admi
 select pg_temp.check_true(exists(select 1 from jsonb_array_elements(public.builtin_recipe_catalog()) as rows(value)
  where value->>'id'='admin:82000000-0000-0000-0000-000000000003' and value->>'is_active'='false' and value->'recipe_content'='null'::jsonb),'Archive hides its content from app clients');
 select public.community_builtin_admin('set_active',jsonb_build_object('id','admin:82000000-0000-0000-0000-000000000003','active',true,'note','Restore after testing'));
-select pg_temp.check_true((select count(*)=4 from public.community_builtin_recipe_audit),'Create, edit, archive, and restore are audited');
 reset role;
+select pg_temp.check_true((select count(*)=4 from public.community_builtin_recipe_audit),'Create, edit, archive, and restore are audited');
 rollback;
 \echo 'Built-in recipe editing, creation, app publishing, archive and audit passed.'

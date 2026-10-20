@@ -27,9 +27,11 @@ revoke all on public.community_photo_folders from public,anon,authenticated;
 create table if not exists public.community_moderation_audit (
  id uuid primary key default gen_random_uuid(), kind text not null,
  content_id uuid not null, decision text not null, note text not null,
- reviewer text not null, qualifications text not null, sources text not null,
+ reviewer text not null,
  reviewed_at timestamptz not null default now()
 );
+alter table public.community_moderation_audit drop column if exists qualifications;
+alter table public.community_moderation_audit drop column if exists sources;
 alter table public.community_policy_acceptances enable row level security;
 alter table public.community_account_controls enable row level security;
 alter table public.community_blocks enable row level security;
@@ -38,6 +40,8 @@ revoke all on public.community_policy_acceptances,public.community_account_contr
 alter table public.community_comments add column if not exists moderation_status text not null default 'pending' check(moderation_status in ('pending','approved','rejected'));
 alter table public.community_comments add column if not exists review_record jsonb;
 alter table public.community_recipes add column if not exists review_record jsonb;
+update public.community_comments set review_record=review_record-'qualifications'-'sources' where review_record ? 'qualifications' or review_record ? 'sources';
+update public.community_recipes set review_record=review_record-'qualifications'-'sources' where review_record ? 'qualifications' or review_record ? 'sources';
 -- Holding previously approved entries without an accountable review is deliberate.
 update public.community_recipes set status='pending' where status='approved' and review_record is null;
 create or replace function public.community_policy_version() returns text
@@ -279,9 +283,7 @@ create or replace function public.recipe_photo_removable(p_path text) returns bo
 language sql stable security definer set search_path='' as $$
  select public.recipe_photo_owned(p_path) and not exists(select 1 from public.community_recipes where p_path=any(photo_paths) and status<>'withdrawn');
 $$;
--- An approval needs an accountable review record; health/personal-care topics also
--- need qualifications and sources. A moderator cannot assert clinical credentials
--- on behalf of someone who has not actually performed the review.
+-- An approval needs an accountable admin review record for the full submission.
 create or replace function public.community_review_guard() returns trigger
 language plpgsql security definer set search_path='' as $$
 declare approved boolean; record jsonb;
@@ -295,29 +297,27 @@ begin
  if approved and (record is null or coalesce(length(btrim(record->>'reviewer')),0)<3
  or coalesce(length(btrim(record->>'note')),0)<3 or record->>'reviewed_at' is null)
  then raise exception 'Approval requires a named reviewer and documented review.'; end if;
- if approved and NEW.product_id in ('natural-toothpaste','natural-shampoo','natural-body-soap','natural-deodorant','natural-skin-care','natural-sunburn-care','natural-bug-bite-care','natural-cough-comfort')
- and (coalesce(length(btrim(record->>'qualifications')),0)<3 or coalesce(length(btrim(record->>'sources')),0)<3)
- then raise exception 'Health and personal-care content requires qualified review and evidence sources before approval.'; end if;
  return NEW;
 end $$;
 drop trigger if exists community_comment_review_guard on public.community_comments;
 create trigger community_comment_review_guard before insert or update on public.community_comments for each row execute function public.community_review_guard();
 drop trigger if exists community_recipe_review_guard on public.community_recipes;
 create trigger community_recipe_review_guard before insert or update on public.community_recipes for each row execute function public.community_review_guard();
-create or replace function public.community_moderate(p_kind text,p_content uuid,p_decision text,p_note text,p_reviewer text,p_qualifications text default '',p_sources text default '') returns void
+drop function if exists public.community_moderate(text,uuid,text,text,text,text,text);
+create or replace function public.community_moderate(p_kind text,p_content uuid,p_decision text,p_note text,p_reviewer text) returns void
 language plpgsql security definer set search_path='' as $$
 declare review jsonb;
 begin
  if p_decision is null or p_decision not in ('approved','rejected') or p_note is null or char_length(btrim(p_note)) not between 3 and 2000
- or p_reviewer is null or char_length(btrim(p_reviewer)) not between 3 and 200 or p_qualifications is null or length(p_qualifications)>2000 or p_sources is null or length(p_sources)>4000
+ or p_reviewer is null or char_length(btrim(p_reviewer)) not between 3 and 200
  then raise exception 'Provide a valid decision, reviewer, and reason.'; end if;
- review:=jsonb_build_object('reviewer',btrim(p_reviewer),'note',btrim(p_note),'qualifications',btrim(p_qualifications),'sources',btrim(p_sources),'reviewed_at',now());
+ review:=jsonb_build_object('reviewer',btrim(p_reviewer),'note',btrim(p_note),'reviewed_at',now());
  if p_kind='comment' then update public.community_comments set moderation_status=p_decision,review_record=review where id=p_content;
  elsif p_kind='recipe' then update public.community_recipes set status=p_decision,moderation_note=p_note,review_record=review where id=p_content and status<>'withdrawn';
  else raise exception 'Choose comment or recipe.'; end if;
  if not found then raise exception 'Content is unavailable.'; end if;
- insert into public.community_moderation_audit(kind,content_id,decision,note,reviewer,qualifications,sources)
- values(p_kind,p_content,p_decision,p_note,p_reviewer,p_qualifications,p_sources);
+ insert into public.community_moderation_audit(kind,content_id,decision,note,reviewer)
+ values(p_kind,p_content,p_decision,p_note,p_reviewer);
 end $$;
 create or replace function public.community_deletion_queue()
 returns table(user_id uuid,requested_at timestamptz)
@@ -338,10 +338,10 @@ revoke all on function public.community_photo_folder(),public.recipe_photo_owned
 grant execute on function public.community_photo_folder() to authenticated;
 grant execute on function public.recipe_photo_owned(text) to anon,authenticated;
 grant select on public.community_photo_folders to service_role;
-revoke all on function public.community_policy_version(),public.community_require_contributor(),public.community_author_visible(uuid),public.community_account_state(),public.community_accept_policy(text),public.community_request_deletion(),public.community_block(text,uuid),public.community_blocks_list(),public.community_unblock(uuid),public.community_review_guard(),public.community_moderate(text,uuid,text,text,text,text,text),public.community_deletion_queue() from public,anon,authenticated;
+revoke all on function public.community_policy_version(),public.community_require_contributor(),public.community_author_visible(uuid),public.community_account_state(),public.community_accept_policy(text),public.community_request_deletion(),public.community_block(text,uuid),public.community_blocks_list(),public.community_unblock(uuid),public.community_review_guard(),public.community_moderate(text,uuid,text,text,text),public.community_deletion_queue() from public,anon,authenticated;
 grant execute on function public.community_account_state(),public.community_accept_policy(text),public.community_request_deletion(),public.community_block(text,uuid),public.community_blocks_list(),public.community_unblock(uuid) to authenticated;
 grant execute on function public.community_list(text,integer) to anon,authenticated;
-grant execute on function public.community_moderate(text,uuid,text,text,text,text,text),public.community_deletion_queue() to service_role;
+grant execute on function public.community_moderate(text,uuid,text,text,text),public.community_deletion_queue() to service_role;
 grant select on public.community_account_controls to service_role;
 notify pgrst,'reload schema';
 commit;

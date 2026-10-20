@@ -23,6 +23,8 @@ alter table public.community_report_reviews enable row level security;
 revoke all on public.community_admins,public.community_admin_audit,public.community_report_reviews from public,anon,authenticated;
 alter table public.community_recipes add column if not exists admin_removed_at timestamptz;
 alter table public.community_comments add column if not exists admin_removed_at timestamptz;
+update public.community_recipes set admin_removed_at=coalesce(admin_removed_at,clock_timestamp()) where status='rejected';
+update public.community_comments set admin_removed_at=coalesce(admin_removed_at,clock_timestamp()),hidden=true where moderation_status='rejected';
 create or replace function public.community_admin_identity() returns boolean
 language sql stable security definer set search_path='' as $$
  select exists(select 1 from public.community_admins a join auth.users u on u.id=a.user_id
@@ -71,7 +73,7 @@ begin
  end if;
  if p_action='queue' then
   kind:=coalesce(p_payload->>'kind','recipe'); filter:=coalesce(p_payload->>'filter','pending');
-  if kind not in ('recipe','comment') or filter not in ('pending','approved','rejected','reported','trash','all') then raise exception 'Invalid queue.'; end if;
+  if kind not in ('recipe','comment') or filter not in ('pending','approved','reported','trash','all') then raise exception 'Invalid queue.'; end if;
   offset_n:=coalesce((p_payload->>'offset')::integer,0); search:=coalesce(p_payload->>'search','');
   if offset_n<0 or offset_n>100000 or length(search)>100 then raise exception 'Invalid page or search.'; end if;
   if kind='recipe' then
@@ -153,7 +155,11 @@ begin
     select 1 from public.community_recipes r cross join lateral unnest(r.photo_paths) p
     where r.id=target and not exists(select 1 from storage.objects o where o.bucket_id='recipe-photos' and o.name=p)
    ) then raise exception 'A submitted photo is unavailable. Keep pending or ask the owner to resubmit.'; end if;
-   perform public.community_moderate(kind,target,decision,note,reviewer,coalesce(p_payload->>'qualifications',''),coalesce(p_payload->>'sources',''));
+   perform public.community_moderate(kind,target,decision,note,reviewer);
+   if decision='rejected' then
+    if kind='recipe' then update public.community_recipes set admin_removed_at=clock_timestamp() where id=target;
+    else update public.community_comments set admin_removed_at=clock_timestamp(),hidden=true where id=target; end if;
+   end if;
    if kind='comment' and decision='approved' then update public.community_comments set hidden=false where id=target; end if;
   elsif p_action='remove' then
    if kind='recipe' and exists(select 1 from public.community_recipes where id=target and status='withdrawn' and admin_removed_at is null)
