@@ -61,7 +61,9 @@ test('docs and workflow-only changes do not select native builds', () => {
 
 test('web deploy still runs when native build jobs are skipped', async () => {
   const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
-  const deployJob = workflow.match(/  deploy-website:[\s\S]*?(?=\n  [a-z][\w-]*:|$)/)?.[0];
+  const deployJob = workflow.match(
+    /  deploy-website:[\s\S]*?(?=\n  [a-z][\w-]*:|$)/,
+  )?.[0];
 
   assert.ok(deployJob, 'website deploy job exists');
   assert.match(deployJob, /if:\s*>-\s+always\(\)/);
