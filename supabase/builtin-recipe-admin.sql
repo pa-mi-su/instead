@@ -71,18 +71,16 @@ begin
   if jsonb_typeof(content) is distinct from 'object'
    or length(btrim(coalesce(content->>'name',''))) not between 3 and 120
    or jsonb_typeof(content->'ingredients') is distinct from 'array'
-   or case when jsonb_typeof(content->'ingredients')='array'
-      then jsonb_array_length(content->'ingredients') not between 1 and 40 else true end
    or jsonb_typeof(content->'equipment') is distinct from 'array'
-   or case when jsonb_typeof(content->'equipment')='array'
-      then jsonb_array_length(content->'equipment')>20 else true end
    or jsonb_typeof(content->'instructions') is distinct from 'array'
-   or case when jsonb_typeof(content->'instructions')='array'
-      then jsonb_array_length(content->'instructions') not between 1 and 40 else true end
    or length(btrim(coalesce(content->>'storage',''))) not between 3 and 4000
    or length(btrim(coalesce(content->>'cautions',''))) not between 3 and 4000
    or octet_length(content::text)>24000
   then raise exception 'Complete the recipe name, ingredients, instructions, storage, and cautions within the field limits.'; end if;
+  if jsonb_array_length(content->'ingredients') not between 1 and 40
+   or jsonb_array_length(content->'equipment')>20
+   or jsonb_array_length(content->'instructions') not between 1 and 40
+  then raise exception 'Use 1–40 ingredients, up to 20 equipment items, and 1–40 instruction steps.'; end if;
   for field_name,values_json in select key,value from jsonb_each(content)
    where key in ('ingredients','equipment','instructions')
   loop
