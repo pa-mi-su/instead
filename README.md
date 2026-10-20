@@ -129,10 +129,14 @@ cannot accidentally create a debug-signed production release.
 
 After a change reaches `main` and the `CI` workflow passes, GitHub Actions:
 
+- runs separate Android and iOS simulator build jobs only when that platform or
+  shared app code changes; web-only changes skip both mobile builds;
+- builds and publishes the static website and admin panel, then invalidates
+  CloudFront;
 - builds a signed Android App Bundle and uploads it to Google Play Internal
-  Testing;
+  Testing only when Android or shared app code changes;
 - builds a signed iOS archive and uploads it to App Store Connect for
-  TestFlight processing; and
+  TestFlight processing only when iOS or shared app code changes; and
 - retains both signed artifacts in GitHub Actions for 14 days.
 
 The workflow can also be started manually. It uses the protected `production`
