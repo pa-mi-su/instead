@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { subscribeToForeground } from './appForeground';
 import { communityError, communityRpc } from '../lib/community';
 import type { ReportReason } from '../lib/community';
 import {
@@ -105,11 +105,9 @@ export function useRecipes(
     };
   }, [refresh]);
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', state => {
-      if (state === 'active')
-        refresh().catch(issue => setError(communityError(issue)));
+    return subscribeToForeground(() => {
+      refresh().catch(issue => setError(communityError(issue)));
     });
-    return () => subscription.remove();
   }, [refresh]);
   async function run(task: () => Promise<void>) {
     if (lock.current) return;
