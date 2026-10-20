@@ -162,6 +162,36 @@ if (adminKey && !adminKey.startsWith('sb_publishable_')) {
       'Admin website requires a publishable/anon key, never a privileged key.',
     );
 }
+const catalogSource = (
+  await fs.readFile(new URL('src/catalog.ts', root), 'utf8')
+).replace(/require\((['"])[^'"]+\1\)/g, 'null');
+const catalogModule = ts.transpileModule(catalogSource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext },
+}).outputText;
+const { productCatalog } = await import(
+  `data:text/javascript;base64,${Buffer.from(catalogModule).toString('base64')}`
+);
+const builtinRecipes = productCatalog.flatMap(guide =>
+  (guide.recipes ?? []).map(recipe => ({
+    id: recipe.id,
+    product_id: guide.id,
+    product_title: guide.title,
+    category: guide.category,
+    title: recipe.name,
+    recipe: {
+      name: recipe.name,
+      ingredients: recipe.ingredients,
+      equipment: recipe.equipment,
+      instructions: recipe.instructions,
+      storage: recipe.storage,
+      cautions: recipe.cautions,
+    },
+  })),
+);
+await fs.writeFile(
+  new URL('builtin-recipes.json', adminDirectory),
+  JSON.stringify(builtinRecipes),
+);
 for (const file of [
   'index.html',
   'admin.css',

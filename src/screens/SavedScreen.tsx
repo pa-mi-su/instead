@@ -4,20 +4,31 @@ import { AnimatedPressable as Pressable } from '../components/AnimatedPressable'
 import { GuideCard } from '../components/GuideCard';
 import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';
+import { useScrollRestoration } from '../hooks/useScrollRestoration';
 
 export function SavedScreen({
   guides,
   onOpen,
   onExplore,
   bottomInset,
+  scrollOffset,
+  onScrollOffsetChange,
 }: {
   guides: Guide[];
   onOpen: (id: string) => void;
   onExplore: () => void;
   bottomInset: number;
+  scrollOffset: number;
+  onScrollOffsetChange: (offset: number) => void;
 }) {
+  const scroll = useScrollRestoration(scrollOffset, onScrollOffsetChange);
   return (
     <ScrollView
+      ref={scroll.scrollRef}
+      onLayout={scroll.onLayout}
+      onContentSizeChange={scroll.onContentSizeChange}
+      onScroll={scroll.onScroll}
+      scrollEventThrottle={16}
       contentContainerStyle={[
         styles.scrollContent,
         { paddingBottom: Math.max(bottomInset + 30, 46) },

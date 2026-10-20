@@ -43,7 +43,13 @@ grant select,insert,delete on storage.objects to authenticated;
  run(psql+['-f',str(root/'supabase/recipe-comments.sql')])
  run(psql+['-f',str(root/'supabase/admin-panel.sql')])
  run(psql+['-f',str(root/'supabase/admin-panel.sql')])
+ run(psql+['-f',str(root/'supabase/recipe-voting.sql')])
+ run(psql+['-f',str(root/'supabase/recipe-voting.sql')])
+ run(psql+['-f',str(root/'supabase/builtin-recipe-admin.sql')])
+ run(psql+['-f',str(root/'supabase/builtin-recipe-admin.sql')])
  print(run(psql+['-f',str(root/'supabase/admin-panel.test.sql')])[-800:])
+ print(run(psql+['-f',str(root/'supabase/recipe-voting.test.sql')])[-500:])
+ print(run(psql+['-f',str(root/'supabase/builtin-recipe-admin.test.sql')])[-500:])
  print(run(psql+['-f',str(root/'supabase/recipe-comments.test.sql')])[-800:])
 finally:
  if started: run([str(bin/'pg_ctl'),'-D',str(base/'data'),'-m','immediate','stop'])
