@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { classifyPlatformChanges } from './detect-platform-changes.mjs';
 
 test('web and admin changes do not select native builds', () => {
@@ -56,4 +57,17 @@ test('docs and workflow-only changes do not select native builds', () => {
     ]),
     { android: false, ios: false },
   );
+});
+
+test('web deploy still runs when native build jobs are skipped', async () => {
+  const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
+  const deployJob = workflow.match(
+    /  deploy-website:[\s\S]*?(?=\n  [a-z][\w-]*:|$)/,
+  )?.[0];
+
+  assert.ok(deployJob, 'website deploy job exists');
+  assert.match(deployJob, /if:\s*>-\s+always\(\)/);
+  assert.match(deployJob, /github\.event_name == 'push'/);
+  assert.match(deployJob, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(deployJob, /needs\.required\.result == 'success'/);
 });
