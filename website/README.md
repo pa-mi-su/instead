@@ -33,6 +33,7 @@ These are target URLs, not verified live pages yet. Do not submit them to the st
    ```
 
    Keep real 404s; do not map all missing pages to a successful home page.
+
 5. Build and sync website/dist to the dedicated bucket; invalidate CloudFront after updates. Verify all six pages and their navigation at the distribution domain before DNS cutover.
 6. Point Namecheap's apex ALIAS and www CNAME at the distribution domain, replacing only the parking/website redirect records. Preserve SES DKIM, email, and certificate-validation records.
 7. Verify HTTPS and HTTP-to-HTTPS redirects for both domains, policy text, deletion email link, mobile layout, and no-login accessibility. Verify inbox receipt with the owner. Then enter the URLs in App Store Connect and Google Play and update only the release attestations actually verified.
@@ -69,4 +70,4 @@ Support delivery verified October 16, 2026: the owner configured Namecheap forwa
 
 ## Administration
 
-The public policy pages remain script-free. The separate /admin shell loads local JavaScript and uses Supabase email-code sign-in. Database membership, not access to the URL, controls review and restriction permissions. See docs/admin-panel.md. Only the public Supabase key is embedded in the built admin configuration.
+The public policy pages remain script-free. The separate /admin shell loads local JavaScript and uses Supabase email-code sign-in. Database membership, not access to the URL, controls review and restriction permissions. See docs/admin-panel.md. Only the public Supabase key is embedded in the built admin configuration. Successful CI runs on main automatically publish website/dist to the dedicated S3 bucket and invalidate CloudFront. The workflow assumes a GitHub OIDC role scoped to this repository and production environment.

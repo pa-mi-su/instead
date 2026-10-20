@@ -14,8 +14,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect platform changes
+    runs-on: ubuntu-latest
+    outputs:
+      android: ${{ steps.filter.outputs.android }}
+      ios: ${{ steps.filter.outputs.ios }}
+
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Select native builds
+        id: filter
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/detect-platform-changes.mjs "$BASE_SHA" "$HEAD_SHA"
+
   quality:
-    name: Quality and Android
+    name: Quality checks
     runs-on: ubuntu-latest
 
     steps:
@@ -30,13 +51,6 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             web/package-lock.json
-
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
 
       - name: Install native dependencies
         run: npm ci
@@ -60,12 +74,146 @@ jobs:
           npm run website:build
           node --check website/admin/admin.mjs
           npx eslint website/admin/admin.mjs website/admin/auth-security.mjs --env browser,es2022 --parser-options '{"ecmaVersion":2022,"sourceType":"module"}'
+          node --test scripts/test-detect-platform-changes.mjs
 
       - name: Verify website
         run: |
           npm --prefix web run lint
           npm run web:test
 
+  android:
+    name: Android debug build
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Build Android debug app
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --no-daemon --stacktrace --console=plain
+
+  ios:
+    name: iOS simulator build
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Select Xcode 26.3
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_26.3.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install
+
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild \
+            -workspace ios/Instead.xcworkspace \
+            -scheme Instead \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/InsteadDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+  required:
+    name: Quality and Android
+    if: always()
+    needs: [changes, quality, android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require quality and every applicable mobile build
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          ANDROID_RESULT: ${{ needs.android.result }}
+          IOS_RESULT: ${{ needs.ios.result }}
+        run: |
+          set -euo pipefail
+          test "$CHANGES_RESULT" = success
+          test "$QUALITY_RESULT" = success
+          test "$ANDROID_RESULT" = success || test "$ANDROID_RESULT" = skipped
+          test "$IOS_RESULT" = success || test "$IOS_RESULT" = skipped
+
+  deploy-website:
+    name: Deploy website and admin
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: required
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build website and admin
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_PUBLISHABLE_KEY"
+          npm run website:build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::160885294528:role/github-actions-instead-website-deploy
+          aws-region: us-east-1
+
+      - name: Publish site and refresh CloudFront
+        run: |
+          set -euo pipefail
+          aws s3 sync website/dist/ s3://insteadtry-website-160885294528/ --no-cli-pager
+          aws cloudfront create-invalidation \
+            --distribution-id EMXS0LG36D5KE \
+            --paths '/*' \
+            --no-cli-pager
