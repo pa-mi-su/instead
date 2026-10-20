@@ -53,16 +53,24 @@ function saveSession(data) {
   armIdleTimer();
 }
 async function request(route, body, bearer, method = 'POST') {
-  const response = await fetch(base + route, {
-    method,
-    cache: 'no-store',
-    headers: {
-      apikey: config.key,
-      'Content-Type': 'application/json',
-      ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-    },
-    ...(method === 'GET' ? {} : { body: JSON.stringify(body) }),
-  });
+  let response;
+  try {
+    response = await fetch(base + route, {
+      method,
+      cache: 'no-store',
+      headers: {
+        apikey: config.key,
+        'Content-Type': 'application/json',
+        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+      },
+      ...(method === 'GET' ? {} : { body: JSON.stringify(body) }),
+    });
+  } catch (error) {
+    console.error('Admin request could not reach Supabase:', route, error);
+    throw new Error(
+      `Could not reach Supabase for ${route}. Check your connection and try again.`,
+    );
+  }
   const data = await response.json();
   if (!response.ok) {
     const message =
@@ -611,9 +619,17 @@ function renderContent(item) {
 }
 async function loadBuiltinSeeds() {
   if (builtinSeeds) return builtinSeeds;
-  const response = await fetch('/admin/builtin-recipes.json', {
-    cache: 'no-store',
-  });
+  let response;
+  try {
+    response = await fetch('/admin/builtin-recipes.json', {
+      cache: 'no-store',
+    });
+  } catch (error) {
+    console.error('Built-in recipe inventory request failed:', error);
+    throw new Error(
+      'Could not load the built-in recipe catalog. Check your connection and try again.',
+    );
+  }
   if (!response.ok)
     throw new Error('Built-in recipe inventory is unavailable.');
   const data = await response.json();
