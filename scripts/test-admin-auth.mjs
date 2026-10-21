@@ -25,6 +25,23 @@ test('admin CSP allows same-origin recipe catalog and configured Supabase reques
   assert.ok(policy, 'admin Content Security Policy exists');
   assert.match(policy, /connect-src 'self' __SUPABASE_ORIGIN__/);
 });
+test('admin review keeps only the reason field and rejects directly to Trash', async () => {
+  const source = await readFile(
+    new URL('../website/admin/admin.mjs', import.meta.url),
+    'utf8',
+  );
+  const html = await readFile(
+    new URL('../website/admin/index.html', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /Review reason \/ action note/);
+  assert.doesNotMatch(source, /Reviewer qualifications|Evidence sources/);
+  assert.match(source, /Reject and move to Trash/);
+  assert.match(source, /decision: 'rejected'/);
+  assert.match(source, /\$\('filter'\)\.value = 'trash'/);
+  assert.doesNotMatch(html, /<option value="rejected">/);
+});
 test('admin idle handling expires old, missing, and invalid timestamps', () => {
   assert.equal(isIdle({ last_activity: now - ADMIN_IDLE_MS + 1 }, now), false);
   assert.equal(isIdle({ last_activity: now - ADMIN_IDLE_MS }, now), true);

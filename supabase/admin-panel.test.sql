@@ -13,7 +13,8 @@ insert into auth.sessions values('65000000-0000-0000-0000-000000000001','6000000
 select set_config('request.jwt.claims',jsonb_build_object('aal','aal2','session_id','65000000-0000-0000-0000-000000000001','amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from now()))))::text,true);
 insert into public.community_recipes(id,product_id,user_id,title,ingredients,instructions,storage_notes,cautions,photo_paths) values
  ('61000000-0000-0000-0000-000000000001','natural-glass-cleaner','60000000-0000-0000-0000-000000000002','Window recipe','Test ingredients','Test instructions','Test storage','Test cautions',array['62000000-0000-0000-0000-000000000001/test.png']),
- ('61000000-0000-0000-0000-000000000002','natural-cough-comfort','60000000-0000-0000-0000-000000000002','Health recipe','Test ingredients','Test instructions','Test storage','Test cautions','{}');
+ ('61000000-0000-0000-0000-000000000002','natural-cough-comfort','60000000-0000-0000-0000-000000000002','Health recipe','Test ingredients','Test instructions','Test storage','Test cautions','{}'),
+ ('61000000-0000-0000-0000-000000000003','natural-glass-cleaner','60000000-0000-0000-0000-000000000002','Rejected recipe','Test ingredients','Test instructions','Test storage','Test cautions','{}');
 insert into public.community_comments(id,product_id,user_id,body) values
  ('63000000-0000-0000-0000-000000000001','natural-glass-cleaner','60000000-0000-0000-0000-000000000002','Pending comment');
 insert into storage.objects(bucket_id,name) values('recipe-photos','62000000-0000-0000-0000-000000000001/test.png');
@@ -41,15 +42,29 @@ select pg_temp.must_reject($q$select public.community_admin('state')$q$);
 select set_config('request.jwt.claims',jsonb_build_object('aal','aal2','session_id','65000000-0000-0000-0000-000000000001','amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from now()))))::text,true);
 do $$ begin
  if not public.community_is_admin() then raise exception 'Admin denied'; end if;
- if (public.community_admin('state')->>'pending_recipes')::int<>2 then raise exception 'Bad pending count'; end if;
- if jsonb_array_length(public.community_admin('queue','{"kind":"recipe"}')->'items')<>2 then raise exception 'Queue incomplete'; end if;
+ if (public.community_admin('state')->>'pending_recipes')::int<>3 then raise exception 'Bad pending count'; end if;
+ if jsonb_array_length(public.community_admin('queue','{"kind":"recipe"}')->'items')<>3 then raise exception 'Queue incomplete'; end if;
  if not exists(select 1 from storage.objects where name='62000000-0000-0000-0000-000000000001/test.png') then raise exception 'Admin cannot review pending photo'; end if;
 end $$;
 select pg_temp.must_reject($q$select public.community_admin('moderate','{"kind":"recipe","id":"61000000-0000-0000-0000-000000000001","decision":"approved","note":"Missing confirmation"}')$q$);
 select public.community_admin('moderate','{"kind":"recipe","id":"61000000-0000-0000-0000-000000000001","decision":"approved","reviewed":true,"note":"Reviewed text and test photo"}');
 select public.community_admin('moderate','{"kind":"comment","id":"63000000-0000-0000-0000-000000000001","decision":"approved","reviewed":true,"note":"Reviewed comment"}');
-select pg_temp.must_reject($q$select public.community_admin('moderate','{"kind":"recipe","id":"61000000-0000-0000-0000-000000000002","decision":"approved","reviewed":true,"note":"Missing qualified review"}')$q$);
-select pg_temp.must_reject($q$select public.community_moderate('recipe','61000000-0000-0000-0000-000000000002','approved','Bypass via helper','Forged reviewer','Forged qualifications','Forged source')$q$);
+select public.community_admin('moderate','{"kind":"recipe","id":"61000000-0000-0000-0000-000000000002","decision":"approved","reviewed":true,"note":"Admin reviewed the full recipe"}');
+select public.community_admin('moderate','{"kind":"recipe","id":"61000000-0000-0000-0000-000000000003","decision":"rejected","note":"Rejected after review"}');
+reset role;
+do $$ begin
+ if not exists(select 1 from public.community_recipes where id='61000000-0000-0000-0000-000000000003' and status='rejected' and admin_removed_at is not null) then raise exception 'Rejected recipe must move directly to Trash'; end if;
+ if not exists(select 1 from jsonb_array_elements(public.community_admin('queue','{"kind":"recipe","filter":"trash"}')->'items') q where q->>'id'='61000000-0000-0000-0000-000000000003') then raise exception 'Rejected recipe missing from Trash queue'; end if;
+ if exists(select 1 from jsonb_array_elements(public.community_admin('queue','{"kind":"recipe","filter":"all"}')->'items') q where q->>'id'='61000000-0000-0000-0000-000000000003') then raise exception 'Rejected recipe visible outside Trash'; end if;
+end $$;
+do $$ begin
+ if not exists(select 1 from public.community_recipes where id='61000000-0000-0000-0000-000000000002' and status='approved' and review_record ? 'reviewer' and not review_record ? 'qualifications' and not review_record ? 'sources') then raise exception 'Admin approval should only need the review note and full-review confirmation'; end if;
+ if exists(select 1 from information_schema.columns where table_schema='public' and table_name='community_moderation_audit' and column_name in ('qualifications','sources')) then raise exception 'Removed review fields remain in moderation audit'; end if;
+end $$;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000001',true);
+select set_config('request.jwt.claims',jsonb_build_object('aal','aal2','session_id','65000000-0000-0000-0000-000000000001','amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from now()))))::text,true);
+select pg_temp.must_reject($q$select public.community_moderate('recipe','61000000-0000-0000-0000-000000000002','approved','Bypass via helper','Forged reviewer')$q$);
 select public.community_admin('restrict','{"user_id":"60000000-0000-0000-0000-000000000002","suspended":true,"note":"Repeated unsafe advice"}');
 select pg_temp.must_reject($q$select public.community_admin('restrict','{"user_id":"60000000-0000-0000-0000-000000000001","suspended":true,"note":"Self lockout"}')$q$);
 select pg_temp.must_reject($q$select public.community_admin('queue','{"kind":"recipe","offset":-1}')$q$);
@@ -60,7 +75,8 @@ reset role;
 set local role anon;
 select set_config('request.jwt.claim.sub','',true);
 do $$ begin
- if exists(select 1 from public.recipe_list('natural-glass-cleaner')) or exists(select 1 from public.community_list('natural-glass-cleaner')) then raise exception 'Restricted author public'; end if;
+ if exists(select 1 from public.recipe_list('natural-glass-cleaner')) then raise exception 'Restricted author public'; end if;
+ if has_function_privilege('anon','public.community_list(text,integer)','execute') then raise exception 'Legacy comment listing should remain unavailable'; end if;
 end $$;
 select pg_temp.must_reject($q$select public.community_admin('state')$q$);
 reset role;
@@ -70,9 +86,9 @@ select public.community_admin('restrict','{"user_id":"60000000-0000-0000-0000-00
 select public.community_admin('remove','{"kind":"recipe","id":"61000000-0000-0000-0000-000000000001","note":"Removed for further review"}');
 select public.community_admin('remove','{"kind":"comment","id":"63000000-0000-0000-0000-000000000001","note":"Removed for further review"}');
 do $$ begin
- if jsonb_array_length(public.community_admin('queue','{"kind":"recipe","filter":"trash"}')->'items')<>1 then raise exception 'Trash recipe missing'; end if;
+ if jsonb_array_length(public.community_admin('queue','{"kind":"recipe","filter":"trash"}')->'items')<>2 then raise exception 'Trash recipe missing'; end if;
  if jsonb_array_length(public.community_admin('queue','{"kind":"comment","filter":"trash"}')->'items')<>1 then raise exception 'Trash comment missing'; end if;
- if exists(select 1 from public.recipe_list('natural-glass-cleaner')) or exists(select 1 from public.community_list('natural-glass-cleaner')) then raise exception 'Removed content public'; end if;
+ if exists(select 1 from public.recipe_list('natural-glass-cleaner')) then raise exception 'Removed content public'; end if;
 end $$;
 select public.community_admin('restore','{"kind":"recipe","id":"61000000-0000-0000-0000-000000000001","note":"Restored for fresh review"}');
 select public.community_admin('restore','{"kind":"comment","id":"63000000-0000-0000-0000-000000000001","note":"Restored for fresh review"}');

@@ -69,6 +69,12 @@ jobs:
       - name: Verify account-deletion authorization
         run: npm run safety:test
 
+      - name: Verify Supabase database policies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql
+          INSTEAD_PG_BIN="$(pg_config --bindir)" python3 scripts/test-community-db.py
+
       - name: Verify static administration site
         run: |
           npm run website:build

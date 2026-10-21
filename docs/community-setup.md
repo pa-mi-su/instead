@@ -19,6 +19,7 @@ SES is now verified for insteadtry.com in us-east-1 (DKIM SUCCESS). Dedicated SM
    ```
 
    Configure code expiry to 10 minutes, keep the existing eight-digit code length, and at least 60 seconds between sends. No deep links or auth callback route are needed.
+
 4. Configure custom SMTP for real users. Supabase's default sender is restricted and is unsuitable for a public launch. Keep sender credentials in Supabase, never in the app.
 5. Keep the existing public URL/key in native `.env` and web `.env.local`. The browser uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Do not put service-role keys in either client.
 6. Run `npm run verify`, `npm run web:test`, then test on a native device and two independent browsers with real email addresses. No test emails are sent by automated checks.
@@ -55,3 +56,5 @@ RLS is enabled with no client table policies or grants. Only scoped RPCs have cl
 ## Current safeguards
 
 After the original community, recipes, and directory-topics migrations, apply the repeatable `supabase/community-safeguards.sql`. It adds account-linked policy acceptance, pre-publication moderation, contributor blocking, suspension and deletion controls, and opaque photo folders. Deploy the `delete-account` Edge Function. These safeguards and the function were applied October 16, 2026. See `docs/moderation-runbook.md` for current review procedures and `docs/release-safety.md` for release requirements. The original SQL tests target the original schema; run `supabase/safeguards.test.sql` after the safeguards in a disposable database.
+
+After `supabase/community-safeguards.sql` and `supabase/admin-panel.sql`, apply `supabase/simplify-admin-review.sql` to existing projects. It removes the obsolete qualification and evidence-source audit fields, clears those legacy keys from review records, and moves previously rejected entries into Trash. Rejection in the admin panel now sends content directly to Trash.
