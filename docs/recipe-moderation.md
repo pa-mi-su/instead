@@ -1,6 +1,6 @@
 # Community recipe submissions and photos
 
-Recipes are attached to product IDs, not public contributor profiles. Email-code accounts remain private and are required to submit, vote, report, and withdraw. The old internal comment nickname table is retained for compatibility; new comments automatically use Community member, and no profile UI is shown.
+Recipes are attached to product IDs and approved recipes link to the contributor's public username and optional bio. Email-and-password accounts are required to submit, vote, report, and withdraw; email addresses remain private. INSTEAD has no comment feed. Historical comment records and their backend tables remain hidden for account-deletion cleanup and are not part of current user workflows.
 
 ## Database and storage
 
@@ -32,4 +32,4 @@ Both native and web provide title, ingredients with quantities, instructions, st
 
 ## Current safeguards
 
-`community-safeguards.sql` supersedes the original approval procedure. All comments and recipes require moderation. Health and personal-care approvals require qualifications and sources in the review record; this records review, not a guarantee of genuine credentials. New photo folders are opaque and privately mapped to their owner. Legacy account-ID photo paths must be migrated before publication. Contributors can block authors and cannot vote on their own content. Account deletion removes legacy and opaque photo folders before Auth deletion through the deployed `delete-account` function; failed requests remain pending for retry or operator action.
+`community-safeguards.sql` supersedes the original approval procedure. Current apps accept and display recipes but no comments; legacy comment tables and moderation data remain only for cleanup and account deletion. An authenticated admin and a specific review reason are recorded for each decision; separate qualifications and evidence-source fields are not required. New photo folders are opaque and privately mapped to their owner. Legacy account-ID photo paths must be migrated before publication. Contributors can block authors and cannot vote on their own content. Account deletion removes legacy and opaque photo folders before Auth deletion through the deployed `delete-account` function; failed requests remain pending for retry or operator action.

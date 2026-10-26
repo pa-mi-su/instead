@@ -18,9 +18,13 @@ import { useGuideCatalog } from '../hooks/useGuideCatalog';
 import { GuideDetailScreen } from '../screens/GuideDetailScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { SavedScreen } from '../screens/SavedScreen';
+import { AccountScreen } from '../screens/AccountScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 import { COLORS, styles } from '../styles';
 import { InfoScreen } from '../screens/InfoScreen';
 import { useSafetyAcknowledgement } from '../hooks/useSafetyAcknowledgement';
+import { useCommunity } from '../hooks/useCommunity';
+import { supabase } from '../lib/supabase';
 import { lookupBarcodeProduct, normalizeBarcode } from '../lib/barcodeLookup';
 import {
   BarcodeMatchScreen,
@@ -32,10 +36,26 @@ export function AppNavigator() {
   const insets = useSafeAreaInsets();
   const acknowledgement = useSafetyAcknowledgement();
   const { guides: catalog, isLoading } = useGuideCatalog();
-  const { favorites, toggleFavorite } = useFavorites();
+  const community = useCommunity(
+    supabase,
+    'natural-toothpaste',
+    undefined,
+    'helpful',
+    false,
+  );
+  const { favorites, toggleFavorite, syncStatus } = useFavorites(
+    community.session?.user.id,
+  );
   const [view, setView] = useState<ViewName>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const history = useRef<{ view: ViewName; selectedId: string | null }[]>([]);
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+  const history = useRef<
+    {
+      view: ViewName;
+      selectedId: string | null;
+      selectedProfile: string | null;
+    }[]
+  >([]);
   const homeScrollOffset = useRef(0);
   const savedScrollOffset = useRef(0);
   const [query, setQuery] = useState('');
@@ -63,26 +83,36 @@ export function AppNavigator() {
   }, [catalog, category, query]);
 
   function navigate(nextView: ViewName, nextSelectedId = selectedId) {
-    history.current.push({ view, selectedId });
+    history.current.push({ view, selectedId, selectedProfile });
     setSelectedId(nextSelectedId);
+    if (nextView !== 'profile') setSelectedProfile(null);
     setView(nextView);
   }
 
   function openGuide(id: string) {
-    history.current.push({ view, selectedId });
+    history.current.push({ view, selectedId, selectedProfile });
     setSelectedId(id);
+    setSelectedProfile(null);
     setView('detail');
+  }
+
+  function openProfile(username: string) {
+    history.current.push({ view, selectedId, selectedProfile });
+    setSelectedProfile(username);
+    setView('profile');
   }
 
   function goHome() {
     history.current = [];
     setSelectedId(null);
+    setSelectedProfile(null);
     setView('home');
   }
 
   function goBack() {
     const previous = history.current.pop();
     setSelectedId(previous?.selectedId ?? null);
+    setSelectedProfile(previous?.selectedProfile ?? null);
     setView(previous?.view ?? 'home');
   }
 
@@ -208,6 +238,7 @@ export function AppNavigator() {
           isSaved={favorites.includes(selected.id)}
           onBack={goBack}
           onSave={() => toggleFavorite(selected.id)}
+          onOpenProfile={openProfile}
           bottomInset={insets.bottom}
         />
       ) : (
@@ -218,9 +249,26 @@ export function AppNavigator() {
             onInfo={() => navigate('info')}
             onHome={goHome}
             onSaved={() => navigate('saved')}
+            onAccount={() => navigate('account')}
           />
           {view === 'info' ? (
             <InfoScreen onBack={goHome} bottomInset={insets.bottom} />
+          ) : view === 'account' ? (
+            <AccountScreen
+              community={community}
+              guides={catalog}
+              savedGuideIds={favorites}
+              syncStatus={syncStatus}
+              onOpenGuide={openGuide}
+              bottomInset={insets.bottom}
+            />
+          ) : view === 'profile' ? (
+            <ProfileScreen
+              username={selectedProfile ?? ''}
+              guides={catalog}
+              onBack={goBack}
+              bottomInset={insets.bottom}
+            />
           ) : view === 'barcode' && barcodeLookup ? (
             <BarcodeMatchScreen
               lookup={barcodeLookup}

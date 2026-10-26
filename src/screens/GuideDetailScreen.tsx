@@ -34,12 +34,14 @@ export function GuideDetailScreen({
   isSaved,
   onBack,
   onSave,
+  onOpenProfile,
   bottomInset,
 }: {
   guide: Guide;
   isSaved: boolean;
   onBack: () => void;
   onSave: () => void;
+  onOpenProfile: (username: string) => void;
   bottomInset: number;
 }) {
   const scrollRef = useRef<ScrollView>(null);
@@ -264,6 +266,7 @@ export function GuideDetailScreen({
             productId={guide.id}
             community={community}
             onSignInRequest={requestSignIn}
+            onOpenProfile={onOpenProfile}
           />
         </DetailSection>
         <Text style={styles.disclaimer}>

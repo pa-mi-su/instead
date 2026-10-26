@@ -1,5 +1,10 @@
 export type CommunitySession = {
-  user: { id: string; email_confirmed_at?: string; is_anonymous?: boolean };
+  user: {
+    id: string;
+    email?: string;
+    email_confirmed_at?: string;
+    is_anonymous?: boolean;
+  };
 };
 export type CommunityClient = {
   functions?: {
@@ -13,12 +18,24 @@ export type CommunityClient = {
     onAuthStateChange: (
       callback: (event: string, session: CommunitySession | null) => void,
     ) => { data: { subscription: { unsubscribe: () => void } } };
-    signInWithOtp: (args: { email: string }) => Promise<{ error: unknown }>;
+    signInWithOtp: (args: {
+      email: string;
+      options?: { shouldCreateUser?: boolean };
+    }) => Promise<{ error: unknown }>;
+    signInWithPassword: (args: {
+      email: string;
+      password: string;
+    }) => Promise<{ error: unknown }>;
+    signUp: (args: { email: string; password: string }) => Promise<{
+      data?: { session: CommunitySession | null };
+      error: unknown;
+    }>;
     verifyOtp: (args: {
       email: string;
       token: string;
-      type: 'email';
+      type: 'email' | 'signup';
     }) => Promise<{ error: unknown }>;
+    updateUser: (args: { password: string }) => Promise<{ error: unknown }>;
     signOut: (args: { scope: 'local' }) => Promise<{ error: unknown }>;
   };
   rpc: (
@@ -28,6 +45,10 @@ export type CommunityClient = {
     data: unknown;
     error: { code?: string; message: string } | null;
   }>;
+};
+export type CommunityProfile = {
+  username: string;
+  bio: string;
 };
 export const COMMENT_LIMIT = 1000;
 export type CommunityComment = {
@@ -50,6 +71,13 @@ export const reportReasons: ReportReason[] = [
 ];
 export function communityError(error: unknown) {
   const value = error as { code?: string; message?: string; status?: number };
+  if (value?.code === '23505')
+    return 'That username is already taken. Choose another.';
+  if (
+    value?.code === 'invalid_credentials' ||
+    value?.message === 'Invalid login credentials'
+  )
+    return 'Email or password is incorrect.';
   if (value?.code === 'PGRST202' || value?.code === '42P01')
     return 'Community setup is not complete yet. Please try again later.';
   if (value?.code === 'P0001')

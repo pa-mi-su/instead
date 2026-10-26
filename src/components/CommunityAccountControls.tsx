@@ -92,7 +92,7 @@ export function CommunityAccountControls({
       {deleting && !c.account?.deletion_requested_at && (
         <View>
           <Text>
-            Request permanent deletion of your account, comments, recipes,
+            Request permanent deletion of your account, saved guides, recipes,
             votes, reports, agreements, and uploaded photos? Your public
             contributions will be hidden immediately. Deletion cannot be undone
             once processed.

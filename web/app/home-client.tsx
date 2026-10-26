@@ -1,17 +1,20 @@
 "use client";
 import Link from "next/link";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { categories } from "../../src/categories";
+import { useCommunity } from "../../src/hooks/useCommunity";
+import { communityRpc } from "../../src/lib/community";
 import type { Guide } from "../../src/types";
 import { universalSafetyNotices } from "../../src/safetyNotices";
-import { RecipeComments } from "../components/recipe-comments";
-import { ProductCommunity as ProductComments } from "../components/product-community";
+import { AccountHub } from "../components/account-hub";
+import { ProductCommunity } from "../components/product-community";
+import { communityClient } from "../lib/community-client";
 import { SiteFooter } from "../components/site-chrome";
 
 const SAVED_KEY = "instead:web:saved-guides";
 
-type View = "home" | "saved" | "detail";
+type View = "home" | "saved" | "account" | "detail";
 
 export default function HomeClient({
   initialGuides,
@@ -19,12 +22,29 @@ export default function HomeClient({
   initialGuides: Guide[];
 }) {
   const catalog = initialGuides;
+  const community = useCommunity(
+    communityClient,
+    catalog[0]?.id ?? "natural-toothpaste",
+    undefined,
+    "helpful",
+    false,
+  );
   const [view, setView] = useState<View>("home");
   const [query, setQuery] = useState("");
   const [category, setCategory] =
     useState<(typeof categories)[number]>("All");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [cloudSavedIds, setCloudSavedIds] = useState<string[]>([]);
+  const [cloudUserId, setCloudUserId] = useState<string | null>(null);
+  const [favoritesReady, setFavoritesReady] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<"local" | "syncing" | "synced" | "error">("local");
+  const userId = community.session?.user.id;
+  const localSavedRef = useRef(savedIds);
+
+  useEffect(() => {
+    localSavedRef.current = savedIds;
+  }, [savedIds]);
 
   useEffect(() => {
     let saved: string[] | null = null;
@@ -46,10 +66,46 @@ export default function HomeClient({
 
     const timeout = window.setTimeout(() => {
       if (saved) setSavedIds(saved);
+      setFavoritesReady(true);
     }, 0);
 
     return () => window.clearTimeout(timeout);
   }, [initialGuides]);
+
+  useEffect(() => {
+    if (!userId || !favoritesReady || !communityClient) return;
+    let active = true;
+    const syncingTimer = window.setTimeout(() => setSyncStatus("syncing"), 0);
+    void (async () => {
+      try {
+        const rows = await communityRpc<{ product_id: string }[]>(
+          communityClient,
+          "community_saved_guides_list",
+        );
+        const remote = rows.map((row) => row.product_id);
+        const remoteSet = new Set(remote);
+        const localSaved = localSavedRef.current;
+        for (const productId of localSaved) {
+          if (!remoteSet.has(productId)) {
+            await communityRpc(communityClient, "community_saved_guides_set", {
+              p_product: productId,
+              p_saved: true,
+            });
+          }
+        }
+        window.clearTimeout(syncingTimer);
+        if (active) {
+          setCloudSavedIds([...new Set([...remote, ...localSaved])]);
+          setCloudUserId(userId);
+          setSyncStatus("synced");
+        }
+      } catch {
+        window.clearTimeout(syncingTimer);
+        if (active) setSyncStatus("error");
+      }
+    })();
+    return () => { active = false; window.clearTimeout(syncingTimer); };
+  }, [userId, favoritesReady]);
 
   const filteredGuides = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -67,7 +123,9 @@ export default function HomeClient({
     });
   }, [catalog, category, query]);
 
-  const savedGuides = catalog.filter((guide) => savedIds.includes(guide.id));
+  const activeCloudIds = cloudUserId === userId ? cloudSavedIds : [];
+  const allSavedIds = [...new Set([...savedIds, ...activeCloudIds])];
+  const savedGuides = catalog.filter((guide) => allSavedIds.includes(guide.id));
   const selectedGuide =
     catalog.find((guide) => guide.id === selectedId) ?? null;
 
@@ -83,15 +141,30 @@ export default function HomeClient({
   }
 
   function toggleSaved(id: string) {
-    const next = savedIds.includes(id)
+    const activeIds = allSavedIds;
+    const next = activeIds.includes(id)
+      ? activeIds.filter((savedId) => savedId !== id)
+      : [...activeIds, id];
+    const localNext = savedIds.includes(id)
       ? savedIds.filter((savedId) => savedId !== id)
-      : [...savedIds, id];
+      : userId && activeCloudIds.includes(id)
+        ? savedIds
+        : [...savedIds, id];
 
-    setSavedIds(next);
+    setSavedIds(localNext);
     try {
-      window.localStorage.setItem(SAVED_KEY, JSON.stringify(next));
+      window.localStorage.setItem(SAVED_KEY, JSON.stringify(localNext));
     } catch {
       // Keep in-memory saving available when browser storage is blocked.
+    }
+    if (userId && communityClient) {
+      const cloudNext = next;
+      setCloudSavedIds(cloudNext);
+      setCloudUserId(userId);
+      void communityRpc(communityClient, "community_saved_guides_set", {
+        p_product: id,
+        p_saved: cloudNext.includes(id),
+      }).catch(() => setSyncStatus("error"));
     }
   }
 
@@ -99,7 +172,7 @@ export default function HomeClient({
     return (
       <GuideDetail
         guide={selectedGuide}
-        isSaved={savedIds.includes(selectedGuide.id)}
+        isSaved={allSavedIds.includes(selectedGuide.id)}
         onBack={showHome}
         onSave={() => toggleSaved(selectedGuide.id)}
       />
@@ -110,13 +183,23 @@ export default function HomeClient({
     <>
       <main>
         <Header
-          savedCount={savedIds.length}
+          savedCount={allSavedIds.length}
           savedActive={view === "saved"}
+          accountActive={view === "account"}
           onHome={showHome}
           onSaved={() => setView("saved")}
+          onAccount={() => setView("account")}
         />
 
-        {view === "saved" ? (
+        {view === "account" ? (
+          <AccountHub
+            community={community}
+            guides={catalog}
+            savedGuides={savedGuides}
+            syncStatus={syncStatus}
+            onOpenGuide={openGuide}
+          />
+        ) : view === "saved" ? (
           <SavedGuides
             guides={savedGuides}
             onOpen={openGuide}
@@ -141,13 +224,17 @@ export default function HomeClient({
 function Header({
   savedCount,
   savedActive,
+  accountActive,
   onHome,
   onSaved,
+  onAccount,
 }: {
   savedCount: number;
   savedActive: boolean;
+  accountActive: boolean;
   onHome: () => void;
   onSaved: () => void;
+  onAccount: () => void;
 }) {
   return (
     <header className="site-header">
@@ -159,6 +246,14 @@ function Header({
       >
         <span>INSTEAD</span>
         <small aria-hidden="true">try</small>
+      </button>
+      <button
+        aria-pressed={accountActive}
+        className={`saved-button ${accountActive ? "active" : ""}`}
+        onClick={onAccount}
+        type="button"
+      >
+        MY INSTEAD
       </button>
       <Link className="saved-button" href="/safety">INFO & SAFETY</Link>
       <button
@@ -326,7 +421,7 @@ function SavedGuides({
       <section className="saved-intro">
         <p>YOUR SHORTLIST</p>
         <h1>Saved for later.</h1>
-        <span>Your saved guides stay in this browser.</span>
+        <span>Saved guides stay in this browser. Sign in through My INSTEAD to sync across devices.</span>
       </section>
 
       {savedGuides.length ? (
@@ -426,14 +521,13 @@ function GuideDetail({
                   <ol>{recipe.instructions.map(step => <li key={step}>{step}</li>)}</ol>
                   <h4>Storage</h4><p>{recipe.storage}</p>
                   <h4>Cautions</h4><p>{recipe.cautions}</p>
-                  <RecipeComments productId={guide.id} recipeId={recipe.id} title={recipe.name} />
                 </div>
               ))}
             </div>
           </DetailSection>
         ) : null}
         <DetailSection number={guide.recipes?.length ? "02" : "01"} title="COMMUNITY RECIPES & ACCOUNT">
-          <ProductComments key={guide.id} productId={guide.id} />
+          <ProductCommunity key={guide.id} productId={guide.id} />
         </DetailSection>
         <p className="disclaimer">
           Educational information only. Use qualified professional help when a

@@ -1,1 +1,8 @@
-export type ViewName = 'home' | 'saved' | 'detail' | 'info' | 'barcode';
+export type ViewName =
+  | 'home'
+  | 'saved'
+  | 'account'
+  | 'detail'
+  | 'info'
+  | 'barcode'
+  | 'profile';

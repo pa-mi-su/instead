@@ -46,7 +46,7 @@ Use a separate SMTP IAM user/group scoped to ses:SendRawEmail for Instead's veri
 3. Create dedicated, narrowly scoped SMTP access, store it only in Supabase through an authorized secure workflow, and configure TLS SMTP.
 4. Update Supabase's sign-in and any applicable first-signup templates to show the code, check sending/verification limits, and preserve email confirmation.
 5. Update app support/policy domain references if the confirmed domain differs; verify the policy URLs work before release.
-6. Test delivery, expired/wrong codes, sign-out, persistence, shared comments and independent votes with authorized test accounts. Configure/check bounce and complaint handling plus suppression and review sending limits before wider release.
+6. Test delivery, expired/wrong codes, sign-out, session persistence, private saved-guide sync, recipe submission status, and independent recipe votes with authorized test accounts. Configure/check bounce and complaint handling plus suppression and review sending limits before wider release.
 
 ## Expected cost and dependencies
 

@@ -61,7 +61,7 @@ test("server-renders the guide directory and policy pages", async () => {
     assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 
     const policyPages = [
-      ["/privacy", /<title>Privacy Policy — INSTEAD<\/title>/i, /email-code sign-in/i],
+      ["/privacy", /<title>Privacy Policy — INSTEAD<\/title>/i, /email-and-password account/i],
       ["/terms", /<title>Terms of Use — INSTEAD<\/title>/i, /reference tool/i],
       [
         "/safety",

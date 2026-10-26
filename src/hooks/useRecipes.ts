@@ -34,8 +34,19 @@ export function useRecipes(
   const epoch = useRef(0);
   const store = client?.storage.from('recipe-photos');
   const decorate = useCallback(
-    async (rows: Recipe[]) =>
-      Promise.all(
+    async (rows: Recipe[]) => {
+      let authors: { recipe_id: string; username: string; bio: string }[] = [];
+      try {
+        authors = await communityRpc(client, 'community_recipe_authors', {
+          p_recipes: rows.map(row => row.id),
+        });
+      } catch {
+        // Older backend deployments can still display recipes without profiles.
+      }
+      const authorByRecipe = new Map(
+        authors.map(author => [author.recipe_id, author]),
+      );
+      return Promise.all(
         rows.map(async row => {
           const links = await Promise.all(
             row.photo_paths.map(async path => {
@@ -51,11 +62,14 @@ export function useRecipes(
           );
           return {
             ...row,
+            author_username: authorByRecipe.get(row.id)?.username,
+            author_bio: authorByRecipe.get(row.id)?.bio,
             photos: links.filter((link): link is string => Boolean(link)),
             photoError: links.some(link => !link),
           };
         }),
-      ),
+      );
+    },
     [client],
   );
   const refresh = useCallback(async () => {

@@ -71,3 +71,31 @@ test('web deploy still runs when native build jobs are skipped', async () => {
   assert.match(deployJob, /github\.ref == 'refs\/heads\/main'/);
   assert.match(deployJob, /needs\.required\.result == 'success'/);
 });
+
+test('manual mobile releases are limited to main before production credentials load', async () => {
+  const workflow = await readFile(
+    '.github/workflows/mobile-release.yml',
+    'utf8',
+  );
+  const changesJob = workflow.match(
+    /^  changes:[\s\S]*?(?=^  (?! )[a-z][\w-]*:|(?![\s\S]))/m,
+  )?.[0];
+  assert.ok(changesJob, 'mobile change-detection job exists');
+  assert.match(changesJob, /github\.event_name == 'workflow_dispatch'/);
+  assert.match(changesJob, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(
+    changesJob,
+    /github\.event\.workflow_run\.head_branch == 'main'/,
+  );
+  for (const jobName of ['android', 'ios']) {
+    const job = workflow.match(
+      new RegExp(
+        `^  ${jobName}:[\\s\\S]*?(?=^  (?! )[a-z][\\w-]*:|(?![\\s\\S]))`,
+        'm',
+      ),
+    )?.[0];
+    assert.ok(job, `${jobName} release job exists`);
+    assert.match(job, /needs: changes/);
+    assert.match(job, /environment: production/);
+  }
+});
