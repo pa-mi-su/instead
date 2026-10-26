@@ -368,7 +368,7 @@ function restrictButton(user, suspended, reason) {
 function renderContent(item) {
   const card = element('article', undefined, 'card');
   card.append(
-    element('h2', view === 'recipe' ? item.title : 'Community comment'),
+    element('h2', item.title),
   );
   card.append(
     element(
@@ -435,9 +435,6 @@ function renderContent(item) {
       );
       card.append(loadPhotos, photos);
     }
-  } else {
-    details(card, 'Recipe', item.recipe_title || 'Earlier product discussion');
-    details(card, 'Comment', item.body);
   }
   if (item.reports?.length) {
     const reports = element('div', undefined, 'reports');
@@ -893,7 +890,7 @@ async function load() {
     }
     data = { items: builtinItems };
   } else {
-    data = await rpc(['recipe', 'comment'].includes(view) ? 'queue' : view, {
+    data = await rpc(view === 'recipe' ? 'queue' : view, {
       kind: view,
       filter: $('filter').value,
       search: $('search').value,
@@ -908,7 +905,6 @@ async function load() {
   $('counts').replaceChildren();
   for (const [label, key] of [
     ['Pending recipes', 'pending_recipes'],
-    ['Pending comments', 'pending_comments'],
     ['Restricted accounts', 'restricted_accounts'],
     ['Deletion requests', 'deletion_requests'],
   ]) {
@@ -919,7 +915,7 @@ async function load() {
     );
     $('counts').append(count);
   }
-  const isContent = ['recipe', 'comment'].includes(view);
+  const isContent = view === 'recipe';
   const isBuiltin = view === 'builtin';
   $('filters').hidden = !isContent;
   $('builtin-tools').hidden = !isBuiltin;
@@ -943,7 +939,7 @@ async function load() {
       details(
         card,
         'Contributions',
-        `${item.recipes} recipe(s), ${item.comments} comment(s)`,
+        `${item.recipes} recipe(s)`,
       );
       if (item.deletion_requested_at)
         details(

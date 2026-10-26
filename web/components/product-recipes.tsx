@@ -1,6 +1,6 @@
 "use client";
-import { RecipeComments } from "./recipe-comments";
 import Image from "next/image";
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { useRecipes } from '../../src/hooks/useRecipes';
 import { PHOTO_BYTES, PHOTO_LIMIT, recipeFields, validatePhoto } from '../../src/lib/recipes';
@@ -45,11 +45,12 @@ export function ProductRecipes({ productId, userId, canContribute, canManage, on
     return <article className="recipe-card" key={recipe.id}>
       <small>COMMUNITY RECIPE · {recipe.status === 'pending' ? 'AWAITING REVIEW' : recipe.status === 'rejected' ? 'NOT PUBLISHED' : 'COMMUNITY SUBMISSION'}{recipe.mine ? ' · YOUR SUBMISSION' : ''}</small>
       <h4>{recipe.title}</h4>
+      {recipe.author_username && <p className="recipe-author">By <Link href={`/profile/${encodeURIComponent(recipe.author_username)}`}>@{recipe.author_username}</Link>{recipe.author_bio ? ` · ${recipe.author_bio}` : ''}</p>}
       <div className="recipe-photos">{recipe.photos?.map((url, i) => <Image unoptimized width={220} height={180} key={url} src={url} alt={`${recipe.title}, photo ${i + 1}`} loading="lazy" />)}</div>
       {recipe.photoError && <p>Some photos could not load. Refresh recipes to retry.</p>}
       <dl>{[['Ingredients and quantities', recipe.ingredients], ['Instructions', recipe.instructions], ['Storage and shelf life', recipe.storage_notes], ['Cautions', recipe.cautions], ...(recipe.source ? [['Source / credit', recipe.source]] : [])].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
       {!!recipe.moderation_note && <p>Review note: {recipe.moderation_note}</p>}
-      {recipe.status === "approved" && <RecipeComments productId={productId} recipeId={recipe.id} title={recipe.title} />}{recipe.status === 'approved' && <><p>Score: {recipe.score} · {recipe.upvotes} upvotes · {recipe.downvotes} downvotes</p>
+      {recipe.status === 'approved' && <><p>Score: {recipe.score} · {recipe.upvotes} upvotes · {recipe.downvotes} downvotes</p>
         <button type="button" aria-pressed={recipe.my_vote === 1} disabled={r.busy || !canContribute || recipe.mine} onClick={() => r.vote(recipe, 1)}>▲ Upvote</button>
         <button type="button" aria-pressed={recipe.my_vote === -1} disabled={r.busy || !canContribute || recipe.mine} onClick={() => r.vote(recipe, -1)}>▼ Downvote</button>
         {canManage && <button type="button" disabled={r.busy || recipe.reported} onClick={() => setReportId(reportId === recipe.id ? null : recipe.id)}>{recipe.reported ? 'Reported' : 'Report recipe'}</button>}
@@ -61,8 +62,8 @@ export function ProductRecipes({ productId, userId, canContribute, canManage, on
     </article>;
   }
   return <section className="product-recipes" aria-label="Community recipes">
-    <h3>Community recipes</h3><p>Share the recipe, not a profile. No bio, avatar, or public account page. Submissions and photos are checked before publishing; publication and votes do not establish safety or effectiveness.</p>
-    {!canContribute && <p>Use email-code sign-in below to submit a recipe or vote.</p>}
+    <h3>Community recipes</h3><p>Recipes are attributed to public usernames. Email addresses stay private. Submissions and photos are checked before publishing; publication and votes do not establish safety or effectiveness.</p>
+    {!canContribute && <p>Sign in or create an account below to submit a recipe or vote.</p>}
     {canContribute && <button type="button" aria-expanded={open} disabled={r.busy || selecting} onClick={() => setOpen(!open)}>{open ? 'Close submission form' : 'Submit a recipe'}</button>}
     {open && canContribute && <form onSubmit={e => { e.preventDefault(); r.submit(); }}>
       {recipeFields.map(field => <label key={field.key}>{field.label}<textarea required={field.key !== 'source'} minLength={field.key === 'source' ? undefined : 3} maxLength={field.max} value={r.draft[field.key]} onChange={e => r.setDraft(current => ({ ...current, [field.key]: e.target.value }))} disabled={r.busy} /></label>)}

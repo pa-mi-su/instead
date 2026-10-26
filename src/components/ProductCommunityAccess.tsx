@@ -1,5 +1,4 @@
 import { CommunityAccountControls } from './CommunityAccountControls';
-import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Linking, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
@@ -10,6 +9,7 @@ export function ProductCommunityAccess({
   community: c,
   renderRecipes,
   onSignInRequest,
+  purpose = 'community',
 }: {
   community: ReturnType<typeof useCommunity>;
   renderRecipes?: (
@@ -17,12 +17,10 @@ export function ProductCommunityAccess({
     onSignInRequest: () => void,
   ) => ReactNode;
   onSignInRequest: () => void;
+  purpose?: 'community' | 'account';
 }) {
-  const emailInput = useRef<TextInput>(null);
-  const codeInput = useRef<TextInput>(null);
-  const [focusedField, setFocusedField] = useState<'email' | 'code' | null>(
-    null,
-  );
+  const signupCode = c.pendingAuth === 'signup' && c.sentEmail;
+  const recoveryCode = c.pendingAuth === 'recovery' && c.sentEmail;
   const button = (label: string, action: () => unknown, disabled = c.busy) => (
     <Pressable
       accessibilityRole="button"
@@ -38,143 +36,232 @@ export function ProductCommunityAccess({
       <Text style={styles.chipText}>{label}</Text>
     </Pressable>
   );
+  const field = (
+    label: string,
+    value: string,
+    onChangeText: (value: string) => void,
+    options: {
+      password?: boolean;
+      email?: boolean;
+      multiline?: boolean;
+      maxLength?: number;
+      autocomplete?:
+        | 'email'
+        | 'username'
+        | 'current-password'
+        | 'new-password'
+        | 'one-time-code';
+      keyboard?: 'email-address' | 'default' | 'number-pad';
+    } = {},
+  ) => (
+    <View>
+      <Text style={local.fieldLabel}>{label}</Text>
+      <TextInput
+        accessibilityLabel={label}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={label}
+        placeholderTextColor={COLORS.muted}
+        selectionColor={COLORS.sage}
+        autoCapitalize={options.email ? 'none' : 'sentences'}
+        autoCorrect={!options.email && !options.password}
+        autoComplete={options.autocomplete}
+        keyboardType={options.keyboard ?? 'default'}
+        secureTextEntry={options.password}
+        multiline={options.multiline}
+        maxLength={options.maxLength}
+        editable={!c.busy}
+        style={[local.authInput, options.multiline && local.bioInput]}
+      />
+    </View>
+  );
+
   return (
     <View style={styles.optionList}>
       <Text style={styles.optionDetail}>
-        Sign in with an email code to vote or submit a recipe. Email addresses
-        stay private; approved community recipes are public and reviewed before
-        publication. Votes show preferences, not safety or effectiveness.
+        {purpose === 'account'
+          ? 'Create a profile to share recipes, keep saved guides in sync, and manage your submissions. Your email stays private.'
+          : 'Sign in to vote or share a recipe. Your public username identifies approved recipes; your email stays private.'}
       </Text>
       {!c.configured && <Text>Community features are not configured yet.</Text>}
       {!!c.error && <Text accessibilityRole="alert">{c.error}</Text>}
       {!!c.notice && <Text accessibilityLiveRegion="polite">{c.notice}</Text>}
       {!!c.error && button('Retry', c.retry)}
-      {c.configured && c.authReady && !c.session && (
+      {c.configured &&
+        c.authReady &&
+        !c.session &&
+        !signupCode &&
+        !recoveryCode && (
+          <View style={styles.optionCard}>
+            <Text style={styles.optionName}>
+              {c.authMode === 'signup'
+                ? 'Create your INSTEAD account'
+                : c.authMode === 'recovery'
+                ? 'Set or reset your password'
+                : 'Sign in to INSTEAD'}
+            </Text>
+            <Text style={styles.optionDetail}>
+              Email and password sign-in. New accounts confirm their email. Use
+              password recovery if you used an email code in an earlier version.
+            </Text>
+            {button(
+              'Terms',
+              () =>
+                Linking.openURL('https://insteadtry.com/terms').catch(
+                  () => undefined,
+                ),
+              false,
+            )}
+            {button(
+              'Privacy Policy',
+              () =>
+                Linking.openURL('https://insteadtry.com/privacy').catch(
+                  () => undefined,
+                ),
+              false,
+            )}
+            {c.authMode === 'signup' ? (
+              <>
+                {field('Email address', c.email, c.setEmail, {
+                  email: true,
+                  autocomplete: 'email',
+                  keyboard: 'email-address',
+                  maxLength: 254,
+                })}
+                {field('Password (10+ characters)', c.password, c.setPassword, {
+                  password: true,
+                  autocomplete: 'new-password',
+                })}
+                {field(
+                  'Confirm password',
+                  c.passwordConfirmation,
+                  c.setPasswordConfirmation,
+                  { password: true, autocomplete: 'new-password' },
+                )}
+                {field(
+                  'Public username (3–20 characters)',
+                  c.username,
+                  c.setUsername,
+                  { autocomplete: 'username', maxLength: 20 },
+                )}
+                {field('Short bio (optional)', c.bio, c.setBio, {
+                  multiline: true,
+                  maxLength: 280,
+                })}
+                {button(
+                  c.busy ? 'Creating account…' : 'Create account',
+                  c.signUp,
+                  c.busy,
+                )}
+                {button('Back to sign in', () => c.setAuthMode('signin'))}
+              </>
+            ) : c.authMode === 'recovery' ? (
+              <>
+                {field('Account email', c.email, c.setEmail, {
+                  email: true,
+                  autocomplete: 'email',
+                  keyboard: 'email-address',
+                  maxLength: 254,
+                })}
+                {button(
+                  c.busy ? 'Sending…' : 'Email recovery code',
+                  c.sendCode,
+                  c.busy || !c.email.trim(),
+                )}
+                {button('Back to sign in', () => c.setAuthMode('signin'))}
+              </>
+            ) : (
+              <>
+                {field('Email address', c.email, c.setEmail, {
+                  email: true,
+                  autocomplete: 'email',
+                  keyboard: 'email-address',
+                  maxLength: 254,
+                })}
+                {field('Password', c.password, c.setPassword, {
+                  password: true,
+                  autocomplete: 'current-password',
+                })}
+                {button(
+                  c.busy ? 'Signing in…' : 'Sign in',
+                  c.signIn,
+                  c.busy || !c.email.trim() || !c.password,
+                )}
+                {button('Create account', () => c.setAuthMode('signup'))}
+                {button('Forgot or set password', () =>
+                  c.setAuthMode('recovery'),
+                )}
+              </>
+            )}
+          </View>
+        )}
+      {(signupCode || recoveryCode) && !c.passwordSetupReady && (
         <View style={styles.optionCard}>
           <Text style={styles.optionName}>
-            Sign in to vote or share a recipe
+            {signupCode ? 'Confirm your email' : 'Verify your email'}
           </Text>
-          <Text style={styles.optionDetail}>
-            No password or public profile needed. By continuing, you agree to
-            our Terms and Privacy Policy.
-          </Text>
-          {button(
-            'Terms',
-            () =>
-              Linking.openURL('https://insteadtry.com/terms').catch(
-                () => undefined,
-              ),
-            false,
+          <Text>Enter the code sent to {c.sentEmail}.</Text>
+          {field(
+            signupCode ? 'Confirmation code' : 'Recovery code',
+            c.code,
+            value => c.setCode(value.replace(/\D/g, '')),
+            {
+              keyboard: 'number-pad',
+              autocomplete: 'one-time-code',
+              maxLength: 10,
+            },
           )}
           {button(
-            'Privacy Policy',
-            () =>
-              Linking.openURL('https://insteadtry.com/privacy').catch(
-                () => undefined,
-              ),
-            false,
+            signupCode ? 'Verify and create profile' : 'Verify code',
+            c.verifyCode,
+            c.busy || !c.code.trim(),
           )}
-          {!c.sentEmail ? (
-            <>
-              <Text style={local.fieldLabel}>Email address</Text>
-              <TextInput
-                ref={emailInput}
-                accessibilityLabel="Email address"
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                maxLength={254}
-                value={c.email}
-                onChangeText={c.setEmail}
-                autoCorrect={false}
-                placeholderTextColor={COLORS.muted}
-                selectionColor={COLORS.sage}
-                returnKeyType="send"
-                editable={!c.busy}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
-                onSubmitEditing={() => {
-                  if (c.email.trim() && !c.busy) c.sendCode();
-                }}
-                style={[
-                  local.authInput,
-                  focusedField === 'email' && local.authInputFocused,
-                ]}
-              />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Send sign-in code"
-                disabled={c.busy || !c.email.trim()}
-                onPress={c.sendCode}
-                style={({ pressed }) => [
-                  local.authAction,
-                  (c.busy || !c.email.trim()) && local.authActionDisabled,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text style={local.authActionText}>
-                  {c.busy ? 'Sending…' : 'Send sign-in code'}
-                </Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Text>Enter the code sent to {c.sentEmail}.</Text>
-              <Text style={local.fieldLabel}>Sign-in code</Text>
-              <TextInput
-                ref={codeInput}
-                accessibilityLabel="Email code"
-                placeholder="8-digit code"
-                keyboardType="number-pad"
-                autoComplete="one-time-code"
-                maxLength={10}
-                value={c.code}
-                onChangeText={value => c.setCode(value.replace(/\D/g, ''))}
-                placeholderTextColor={COLORS.muted}
-                selectionColor={COLORS.sage}
-                returnKeyType="done"
-                editable={!c.busy}
-                onFocus={() => setFocusedField('code')}
-                onBlur={() => setFocusedField(null)}
-                onSubmitEditing={() => {
-                  if (c.code.trim() && !c.busy) c.verifyCode();
-                }}
-                style={[
-                  local.authInput,
-                  focusedField === 'code' && local.authInputFocused,
-                ]}
-              />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Verify code"
-                disabled={c.busy || !c.code.trim()}
-                onPress={c.verifyCode}
-                style={({ pressed }) => [
-                  local.authAction,
-                  (c.busy || !c.code.trim()) && local.authActionDisabled,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text style={local.authActionText}>
-                  {c.busy ? 'Verifying…' : 'Verify code'}
-                </Text>
-              </Pressable>
-              {button(
-                c.resendSeconds
-                  ? `Resend in ${c.resendSeconds}s`
-                  : 'Resend code',
-                c.sendCode,
-                c.busy || c.resendSeconds > 0,
-              )}
-              {button('Use a different email', c.changeEmail)}
-            </>
-          )}
+          {recoveryCode &&
+            button(
+              c.resendSeconds
+                ? `Resend in ${c.resendSeconds}s`
+                : 'Resend recovery code',
+              c.sendCode,
+              c.busy || c.resendSeconds > 0,
+            )}
+          {button('Cancel', c.changeEmail)}
         </View>
       )}
-      {!!c.session && (
+      {c.passwordSetupReady && (
         <View style={styles.optionCard}>
-          <Text>Signed in · Your email is private.</Text>
+          <Text style={styles.optionName}>Choose a password</Text>
+          {field('New password (10+ characters)', c.password, c.setPassword, {
+            password: true,
+            autocomplete: 'new-password',
+          })}
+          {field(
+            'Confirm new password',
+            c.passwordConfirmation,
+            c.setPasswordConfirmation,
+            { password: true, autocomplete: 'new-password' },
+          )}
+          {button('Save password', c.setNewPassword, c.busy)}
+        </View>
+      )}
+      {!!c.session && !c.passwordSetupReady && (
+        <View style={styles.optionCard}>
+          <Text>
+            Signed in{c.session.user.email ? ` as ${c.session.user.email}` : ''}
+            . Your email is private.
+          </Text>
+          {purpose === 'account' && (
+            <>
+              {field('Public username', c.username, c.setUsername, {
+                autocomplete: 'username',
+                maxLength: 20,
+              })}
+              {field('Short bio (optional)', c.bio, c.setBio, {
+                multiline: true,
+                maxLength: 280,
+              })}
+              {button('Save profile', c.saveProfile, c.busy || !c.accountReady)}
+            </>
+          )}
           {button('Sign out', c.signOut)}
           <CommunityAccountControls community={c} />
           {!c.canContribute && (
@@ -204,7 +291,7 @@ const local = StyleSheet.create({
     fontSize: 18,
     color: COLORS.ink,
   },
-  authInputFocused: { borderColor: COLORS.sage },
+  bioInput: { minHeight: 96, textAlignVertical: 'top' },
   fieldLabel: {
     color: COLORS.ink,
     fontSize: 14,
@@ -212,16 +299,4 @@ const local = StyleSheet.create({
     marginTop: 18,
     marginBottom: 8,
   },
-  authAction: {
-    minHeight: 48,
-    borderRadius: 18,
-    backgroundColor: COLORS.sage,
-    borderWidth: 1.5,
-    borderColor: COLORS.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-  },
-  authActionDisabled: { backgroundColor: '#C5C1B7' },
-  authActionText: { color: COLORS.ink, fontWeight: '800', fontSize: 15 },
 });

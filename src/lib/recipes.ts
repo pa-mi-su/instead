@@ -78,4 +78,16 @@ export type Recipe = {
   reported: boolean;
   photos?: string[];
   photoError?: boolean;
+  author_username?: string;
+  author_bio?: string;
+};
+export type PublicProfile = {
+  username: string;
+  bio: string;
+  recipes: {
+    id: string;
+    title: string;
+    product_id: string;
+    created_at: string;
+  }[];
 };

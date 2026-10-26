@@ -47,6 +47,9 @@ grant select,insert,delete on storage.objects to authenticated;
  run(psql+['-f',str(root/'supabase/recipe-voting.sql')])
  run(psql+['-f',str(root/'supabase/builtin-recipe-admin.sql')])
  run(psql+['-f',str(root/'supabase/builtin-recipe-admin.sql')])
+ run(psql+['-f',str(root/'supabase/private-account-hub.sql')])
+ run(psql+['-f',str(root/'supabase/private-account-hub.sql')])
+ print(run(psql+['-f',str(root/'supabase/private-account-hub.test.sql')])[-500:])
  run(psql+['-c',"""alter table public.community_moderation_audit add column qualifications text;
 alter table public.community_moderation_audit add column sources text;
 insert into auth.users(id,email,email_confirmed_at) values('99000000-0000-0000-0000-000000000001','legacy-rejection@example.invalid',now());

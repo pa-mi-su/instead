@@ -1,4 +1,4 @@
-import { Bookmark } from 'lucide-react-native';
+import { Bookmark, UserRound } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
 import { BrandLogo } from './BrandLogo';
@@ -10,12 +10,14 @@ export function TopBar({
   savedCount,
   onHome,
   onSaved,
+  onAccount,
   onInfo,
 }: {
   activeView: ViewName;
   savedCount: number;
   onHome: () => void;
   onSaved: () => void;
+  onAccount: () => void;
   onInfo: () => void;
 }) {
   return (
@@ -31,6 +33,21 @@ export function TopBar({
         accessibilityLabel="Go to home"
       >
         <BrandLogo />
+      </Pressable>
+      <Pressable
+        onPress={onAccount}
+        style={({ pressed }) => [
+          styles.savedButton,
+          activeView === 'account' && styles.savedButtonActive,
+          pressed && styles.pressed,
+        ]}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Open My INSTEAD account"
+        accessibilityState={{ selected: activeView === 'account' }}
+      >
+        <UserRound size={17} color={COLORS.ink} />
+        <Text style={styles.savedButtonText}>ME</Text>
       </Pressable>
       <Pressable
         onPress={onInfo}

@@ -19,6 +19,7 @@ export function ProductRecipes({
   canManage,
   onBlock,
   onSignInRequest,
+  onOpenProfile,
 }: {
   productId: string;
   userId?: string;
@@ -26,6 +27,7 @@ export function ProductRecipes({
   canManage: boolean;
   onBlock: (id: string) => unknown;
   onSignInRequest: () => void;
+  onOpenProfile: (username: string) => void;
 }) {
   const r = useRecipes(supabase, productId, userId);
   const [open, setOpen] = useState(false);
@@ -107,6 +109,19 @@ export function ProductRecipes({
           {recipe.mine ? ' · YOUR SUBMISSION' : ''}
         </Text>
         <Text style={styles.optionName}>{recipe.title}</Text>
+        {!!recipe.author_username && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`View ${recipe.author_username}'s profile`}
+            onPress={() => onOpenProfile(recipe.author_username!)}
+            style={({ pressed }) => [pressed && styles.pressed]}
+          >
+            <Text style={styles.optionDetail}>
+              By @{recipe.author_username}
+              {recipe.author_bio ? ` · ${recipe.author_bio}` : ''}
+            </Text>
+          </Pressable>
+        )}
         {recipe.photos?.length ? (
           <RecipePhotoGallery photos={recipe.photos} title={recipe.title} />
         ) : null}
@@ -187,12 +202,14 @@ export function ProductRecipes({
     <View style={styles.optionList}>
       <Text style={styles.optionName}>Community recipes</Text>
       <Text style={styles.optionDetail}>
-        Share the recipe, not a profile. No bio, avatar, or public account page.
-        Submissions and photos are checked before publishing; publication and
-        votes do not establish safety or effectiveness.
+        Approved recipes show your public username and optional bio. Your email
+        stays private. Submissions and photos are checked before publishing;
+        publication and votes do not establish safety or effectiveness.
       </Text>
       {!canContribute && (
-        <Text>Use email-code sign-in below to submit a recipe or vote.</Text>
+        <Text>
+          Sign in or create an account below to submit a recipe or vote.
+        </Text>
       )}
       {canContribute &&
         button(

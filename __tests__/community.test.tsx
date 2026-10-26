@@ -15,7 +15,13 @@ function mockClient(session: CommunitySession | null = null) {
       return { data: { subscription: { unsubscribe: jest.fn() } } };
     }),
     signInWithOtp: jest.fn(async () => ({ error: null })),
+    signInWithPassword: jest.fn(async () => ({ error: null })),
+    signUp: jest.fn(async () => ({
+      data: { session: null },
+      error: null as unknown,
+    })),
     verifyOtp: jest.fn(async () => ({ error: null as unknown })),
+    updateUser: jest.fn(async () => ({ error: null })),
     signOut: jest.fn(async () => {
       listener('SIGNED_OUT', null);
       return { error: null };
@@ -33,6 +39,8 @@ function mockClient(session: CommunitySession | null = null) {
           },
         ]
       : name === 'community_blocks_list'
+      ? []
+      : name === 'community_profile_me'
       ? []
       : null) as unknown,
     error: null as unknown,
@@ -61,15 +69,17 @@ test('guest browsing loads the product without signing in', async () => {
   });
   expect(m.auth.signInWithOtp).not.toHaveBeenCalled();
 });
-test('requests a normalized email code, blocks immediate resend, and verifies against the sent address', async () => {
+test('requests a recovery code only from recovery mode and verifies against the sent address', async () => {
   const m = mockClient();
   const hook = await renderHook(() =>
     useCommunity(m.client, 'natural-toothpaste'),
   );
+  await act(() => hook.result.current.setAuthMode('recovery'));
   await act(() => hook.result.current.setEmail('  Person@Example.com '));
   await act(() => hook.result.current.sendCode());
   expect(m.auth.signInWithOtp).toHaveBeenCalledWith({
     email: 'person@example.com',
+    options: { shouldCreateUser: false },
   });
   await act(() => hook.result.current.sendCode());
   expect(m.auth.signInWithOtp).toHaveBeenCalledTimes(1);
@@ -80,6 +90,56 @@ test('requests a normalized email code, blocks immediate resend, and verifies ag
     token: '123456',
     type: 'email',
   });
+  hook.unmount();
+});
+test('signs in with a normalized email and password', async () => {
+  const m = mockClient();
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(() => hook.result.current.setEmail(' Person@Example.com '));
+  await act(() => hook.result.current.setPassword('long-enough-password'));
+  await act(() => hook.result.current.signIn());
+  expect(m.auth.signInWithPassword).toHaveBeenCalledWith({
+    email: 'person@example.com',
+    password: 'long-enough-password',
+  });
+  expect(hook.result.current.notice).toMatch(/signed in/i);
+  hook.unmount();
+});
+test('creates an account and stores the public profile only after email confirmation', async () => {
+  const m = mockClient();
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(() => hook.result.current.setAuthMode('signup'));
+  await act(() => hook.result.current.setEmail(' Person@Example.com '));
+  await act(() => hook.result.current.setUsername('RecipeMaker'));
+  await act(() => hook.result.current.setPassword('long-enough-password'));
+  await act(() =>
+    hook.result.current.setPasswordConfirmation('long-enough-password'),
+  );
+  await act(() => hook.result.current.signUp());
+  expect(m.auth.signUp).toHaveBeenCalledWith({
+    email: 'person@example.com',
+    password: 'long-enough-password',
+  });
+  expect(m.rpc).not.toHaveBeenCalledWith(
+    'community_profile_set',
+    expect.anything(),
+  );
+  await act(() => hook.result.current.setCode('123456'));
+  await act(() => hook.result.current.verifyCode());
+  expect(m.auth.verifyOtp).toHaveBeenCalledWith({
+    email: 'person@example.com',
+    token: '123456',
+    type: 'signup',
+  });
+  expect(m.rpc).toHaveBeenCalledWith('community_profile_set', {
+    p_username: 'RecipeMaker',
+    p_bio: '',
+  });
+  expect(hook.result.current.notice).toMatch(/account is ready/i);
   hook.unmount();
 });
 test('wrong code retains the sent email for retry', async () => {

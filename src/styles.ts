@@ -26,6 +26,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    rowGap: 8,
   },
   wordmarkWrap: {
     minHeight: 42,

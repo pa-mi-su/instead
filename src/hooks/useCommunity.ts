@@ -8,6 +8,7 @@ import type {
   ReportReason,
   CommunityAccountState,
   BlockedContributor,
+  CommunityProfile,
 } from '../lib/community';
 
 export function useCommunity(
@@ -24,6 +25,18 @@ export function useCommunity(
   const [accountUserId, setAccountUserId] = useState<string>();
   const [blocks, setBlocks] = useState<BlockedContributor[]>([]);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [profile, setProfile] = useState<CommunityProfile | null>(null);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'recovery'>(
+    'signin',
+  );
+  const [pendingAuth, setPendingAuth] = useState<'signup' | 'recovery' | null>(
+    null,
+  );
+  const [passwordSetupReady, setPasswordSetupReady] = useState(false);
   const [sentEmail, setSentEmail] = useState('');
   const [code, setCode] = useState('');
   const [draft, setDraft] = useState('');
@@ -42,13 +55,17 @@ export function useCommunity(
   const loadAccount = useCallback(async () => {
     const version = ++accountGeneration.current;
     if (!userId) return;
-    const [rows, blocked] = await Promise.all([
+    const [rows, blocked, profiles] = await Promise.all([
       communityRpc<CommunityAccountState[]>(client, 'community_account_state'),
       communityRpc<BlockedContributor[]>(client, 'community_blocks_list'),
+      communityRpc<CommunityProfile[]>(client, 'community_profile_me'),
     ]);
     if (version === accountGeneration.current) {
       setAccount(rows[0] ?? null);
       setBlocks(blocked);
+      setProfile(profiles[0] ?? null);
+      setUsername(profiles[0]?.username ?? '');
+      setBio(profiles[0]?.bio ?? '');
       setAccountUserId(userId);
     }
   }, [client, userId]);
@@ -231,13 +248,79 @@ export function useCommunity(
       if (!client || Date.now() < resendAt) return;
       const { error: issue } = await client.auth.signInWithOtp({
         email: address,
+        options: { shouldCreateUser: false },
       });
       if (issue) throw issue;
       setSentEmail(address);
+      setPendingAuth('recovery');
       setCode('');
       setResendAt(Date.now() + 60000);
       setNow(Date.now());
-      setNotice('Check your email for a sign-in code.');
+      setNotice('Check your email for a password setup code.');
+    });
+  }
+  function signIn() {
+    return run(async () => {
+      const address = email.trim().toLowerCase();
+      if (!client || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address))
+        throw new Error('Enter a valid email address.');
+      if (!password) throw new Error('Enter your password.');
+      const { error: issue } = await client.auth.signInWithPassword({
+        email: address,
+        password,
+      });
+      if (issue) throw issue;
+      setPassword('');
+      setNotice('You are signed in.');
+    });
+  }
+  function signUp() {
+    return run(async () => {
+      const address = email.trim().toLowerCase();
+      if (!client || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address))
+        throw new Error('Enter a valid email address.');
+      if (!/^[A-Za-z0-9_]{3,20}$/.test(username.trim()))
+        throw new Error(
+          'Choose a username with 3–20 letters, numbers, or underscores.',
+        );
+      if (password.length < 10)
+        throw new Error('Use a password with at least 10 characters.');
+      if (password !== passwordConfirmation)
+        throw new Error('The passwords do not match.');
+      if (bio.length > 280)
+        throw new Error('Bio must be 280 characters or fewer.');
+      const { data, error: issue } = await client.auth.signUp({
+        email: address,
+        password,
+      });
+      if (issue) throw issue;
+      if (data?.session) {
+        await communityRpc(client, 'community_profile_set', {
+          p_username: username.trim(),
+          p_bio: bio.trim(),
+        });
+        setNotice('Account created. Your email stays private.');
+        setProfile({ username: username.trim(), bio: bio.trim() });
+        setPassword('');
+        setPasswordConfirmation('');
+      } else {
+        setPendingAuth('signup');
+        setSentEmail(address);
+        setCode('');
+        setNotice('Enter the confirmation code sent to your email.');
+      }
+    });
+  }
+  function saveProfile() {
+    return run(async () => {
+      if (!profile)
+        throw new Error('Complete account setup before editing your profile.');
+      await communityRpc(client, 'community_profile_set', {
+        p_username: username.trim(),
+        p_bio: bio.trim(),
+      });
+      setProfile({ username: username.trim(), bio: bio.trim() });
+      setNotice('Profile saved.');
     });
   }
   function verifyCode() {
@@ -249,7 +332,7 @@ export function useCommunity(
       const { error: issue } = await client.auth.verifyOtp({
         email: sentEmail,
         token: code.trim(),
-        type: 'email',
+        type: pendingAuth === 'signup' ? 'signup' : 'email',
       });
       if (issue) {
         setError(
@@ -259,8 +342,36 @@ export function useCommunity(
       }
       setCode('');
       setSentEmail('');
+      if (pendingAuth === 'signup') {
+        await communityRpc(client, 'community_profile_set', {
+          p_username: username.trim(),
+          p_bio: bio.trim(),
+        });
+        await loadAccount();
+        setPendingAuth(null);
+        setEmail('');
+        setNotice('Email verified. Your account is ready.');
+      } else if (pendingAuth === 'recovery') {
+        setPasswordSetupReady(true);
+        setNotice('Email verified. Choose a new password.');
+      }
+    });
+  }
+  function setNewPassword() {
+    return run(async () => {
+      if (!client || !passwordSetupReady) return;
+      if (password.length < 10)
+        throw new Error('Use a password with at least 10 characters.');
+      if (password !== passwordConfirmation)
+        throw new Error('The passwords do not match.');
+      const { error: issue } = await client.auth.updateUser({ password });
+      if (issue) throw issue;
+      setPassword('');
+      setPasswordConfirmation('');
+      setPasswordSetupReady(false);
+      setPendingAuth(null);
       setEmail('');
-      setNotice('You are signed in.');
+      setNotice('Password saved. You are signed in.');
     });
   }
   function post() {
@@ -362,6 +473,19 @@ export function useCommunity(
     requestDeletion,
     email,
     setEmail,
+    password,
+    setPassword,
+    passwordConfirmation,
+    setPasswordConfirmation,
+    username,
+    setUsername,
+    bio,
+    setBio,
+    profile,
+    authMode,
+    setAuthMode,
+    pendingAuth,
+    passwordSetupReady,
     sentEmail,
     code,
     setCode,
@@ -377,6 +501,10 @@ export function useCommunity(
     hasMore,
     sendCode,
     verifyCode,
+    signIn,
+    signUp,
+    saveProfile,
+    setNewPassword,
     post,
     vote,
     report,
@@ -386,6 +514,8 @@ export function useCommunity(
     changeEmail: () => {
       setSentEmail('');
       setCode('');
+      setPendingAuth(null);
+      setPasswordSetupReady(false);
       setNotice('');
     },
     retry: () =>

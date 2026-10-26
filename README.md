@@ -197,15 +197,15 @@ npm test
 - Time, cost, supplies, savings, and difficulty
 - Essentials, reconsiderations, and practical alternatives
 - Safety boundaries and when to get professional help
-- Saved guides stored on-device
+- Saved guides available offline, with optional account sync across devices
 - Offline-first content with optional Supabase updates
-- No account, advertising, or tracking
+- Optional accounts; no advertising or behavioral tracking
 
 The content is educational and does not replace individualized medical or
 dental advice.
 
-## Community comments and email codes
+## Private accounts and community recipes
 
-Mobile and web now support Supabase email-code sign-in, shared product comments, upvotes, reports, and owner deletion, without public profiles. Product discussions also support community recipe submissions, optional photos, up/down votes, and administrator review before publication. See [recipe moderation](docs/recipe-moderation.md). Guests can read; a confirmed email is required to contribute. The database enforces one vote per account/comment and account-level rate limits.
+Browsing and device-local saves work without an account. Email-and-password accounts sync saved guides and unlock recipe submissions and votes. Each account has a public username and optional short bio; approved recipes display that profile, while email and saved guides remain private. There are no comment feeds. Recipe submissions and optional photos are reviewed before publication; votes express preference, not safety. See [recipe moderation](docs/recipe-moderation.md).
 
-Activation requires the one-time `supabase/community.sql` migration, the OTP email template, and a working Supabase project with SMTP configured. See [community setup](docs/community-setup.md) for exact instructions and moderation queries. The legacy device-only preview comments are not automatically uploaded.
+Profiles and private account sync require `supabase/private-account-hub.sql` after the existing community safeguards and recipe migrations. Configure Supabase Auth to require email confirmation and a minimum ten-character password; the sign-up confirmation template must send a token code. See [community setup](docs/community-setup.md) for the current backend setup. Legacy comment records are not shown in the app and remain only for account deletion and historical retention.

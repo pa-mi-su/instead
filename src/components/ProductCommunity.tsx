@@ -5,10 +5,12 @@ export function ProductCommunity({
   productId,
   community,
   onSignInRequest,
+  onOpenProfile,
 }: {
   productId: string;
   community: ReturnType<typeof useCommunity>;
   onSignInRequest: () => void;
+  onOpenProfile: (username: string) => void;
 }) {
   return (
     <ProductCommunityAccess
@@ -25,6 +27,7 @@ export function ProductCommunity({
           canManage={c.canManage}
           onBlock={id => c.block('recipe', id)}
           onSignInRequest={signIn}
+          onOpenProfile={onOpenProfile}
         />
       )}
     />
