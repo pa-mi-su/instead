@@ -57,7 +57,10 @@ jobs:
               -f status=success \
               -F per_page=100 \
               --jq ".workflow_runs[] | select(.id < ${RUN_ID}) | .head_sha" \
-              | head -n 1)"
+              | head -n 1 || true)"
+            if [[ -z "$BASE_SHA" ]]; then
+              BASE_SHA="$(git rev-parse "${HEAD_SHA}^1" 2>/dev/null || true)"
+            fi
             if [[ -z "$BASE_SHA" ]]; then
               node scripts/detect-platform-changes.mjs --all
             else
