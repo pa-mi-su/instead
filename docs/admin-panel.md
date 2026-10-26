@@ -20,7 +20,7 @@ Queues, accounts, and the activity log use 20-record pagination. Signed photo UR
 
 ## Setup and verification
 
-1. Ensure supabase/directory-topics.sql and supabase/recipe-voting.sql are installed after community-safeguards.sql. `supabase/recipe-comments.sql` is legacy compatibility only; the app does not accept or display comments. Apply supabase/admin-panel.sql, then supabase/builtin-recipe-admin.sql. The final migration adds the protected editor and public recipe-catalog read RPC. None of these migrations grants admin membership.
+1. Follow the migration order in [the Supabase SQL guide](../supabase/README.md). `supabase/recipe-comments.sql` remains for legacy compatibility; the app does not accept or display comments. Apply `supabase/admin-panel.sql`, `supabase/builtin-recipe-admin.sql`, and `supabase/recipe-saves-and-admin-users.sql` after their listed prerequisites. These migrations do not grant admin membership.
 2. As the Supabase project owner, grant exactly the confirmed verified account a community_admins row. Do not grant based on a client-supplied email, JWT metadata, or public signup. There is no client role-management endpoint. Keep owner email and Auth UUID out of public source.
 3. After CI passes on main, GitHub Actions builds and publishes website/dist to the dedicated website bucket and invalidates CloudFront automatically. The build uses the production environment's public SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY. The builder rejects service-role and unknown key types. Check the CI deployment job if the live panel does not update.
 4. Verify that anonymous and ordinary verified users cannot access the admin RPC or pending photos; verify the authorized owner can sign in. Never include a service-role key in the static site.

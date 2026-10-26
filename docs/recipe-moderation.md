@@ -28,7 +28,7 @@ For reports, join `recipe_reports` to `community_recipes` in the owner dashboard
 
 Both native and web provide title, ingredients with quantities, instructions, storage/shelf life, cautions, optional credit, and optional photos with previews/removal. Text limits and photo counts are checked in clients and SQL/bucket policy. Browser photos are re-encoded and resized before upload; native photos use the system library picker with bounded dimensions and no extra EXIF metadata requested. Users should still avoid faces, addresses and private information in image pixels. Native picker requires rebuilding the app; iOS Pods are installed and the photo-library usage description is configured.
 
-`supabase/recipes.test.sql` runs only in a disposable local database. It tests moderation visibility, private-photo RLS, foreign ownership, product separation, vote changes and idempotency, withdrawal and submission rate limits. Client tests cover field/photo limits, submission state, and cleanup after failure. Real-device photo selection and a real signed-in user upload still require an end-to-end device/browser check.
+`supabase/tests/recipes.test.sql` runs only in a disposable local database. It tests moderation visibility, private-photo RLS, foreign ownership, product separation, vote changes and idempotency, withdrawal and submission rate limits. Client tests cover field/photo limits, submission state, and cleanup after failure. Real-device photo selection and a real signed-in user upload still require an end-to-end device/browser check.
 
 ## Current safeguards
 

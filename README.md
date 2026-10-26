@@ -151,8 +151,9 @@ At a high level, the community database is assembled from one-time base migratio
 6. `private-account-hub.sql` — repeatable profiles, private saves, and account hub functions.
 7. `simplify-admin-review.sql` — repeatable review-field cleanup after safeguards and the admin schema.
 8. `builtin-recipe-admin.sql` — repeatable built-in recipe editor after the recipe registry, voting, and admin schema.
+9. `recipe-saves-and-admin-users.sql` — repeatable per-recipe saves and the MFA-protected admin user directory, after all migrations listed in its header.
 
-The exact migration headers and the linked runbooks take precedence if an existing project is at a different migration state. `schema.sql` and `seed.sql` are separate guide-catalog setup for a new project; do not rerun one-time scripts on an existing database. Apply only the migration that is actually missing or changed, and never run the `*.test.sql` fixtures against a hosted/production database: they are designed for a disposable local PostgreSQL test database.
+The [Supabase SQL guide](supabase/README.md), exact migration headers, and linked runbooks explain dependencies and take precedence if an existing project is at a different migration state. `schema.sql` and `seed.sql` are separate guide-catalog setup for a new project; do not rerun one-time scripts on an existing database. Apply only the migration that is actually missing or changed. SQL test fixtures live in `supabase/tests/` and must never be run against a hosted/production database; `python3 scripts/test-community-db.py` runs them against a disposable local PostgreSQL database.
 
 Deploy the `delete-account` Edge Function as documented in the release runbook. Its `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` secrets belong only in the Supabase Edge Function environment. Admin membership is an explicit owner-managed database grant; migrations do not make a signup an administrator.
 

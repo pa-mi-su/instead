@@ -17,7 +17,7 @@ Recipe submissions and photos are held for moderation before publication. Users 
 
 ## Backend deployment
 
-Apply in order: community.sql (once), recipes.sql (once), directory-topics.sql (repeatable), community-safeguards.sql (repeatable), recipe-comments.sql (repeatable legacy compatibility), recipe-voting.sql (repeatable), and private-account-hub.sql (repeatable). Apply `recipe-voting.sql` again after adding built-in recipes so every displayed recipe is registered for vote writes. Do not re-run the one-time scripts on an existing project. New safeguards hold old comments and previously approved recipes without review records; no content is deleted by the migration. The app and admin panel do not display or accept comments.
+Follow the complete dependency order in [the Supabase SQL guide](../supabase/README.md): it includes the admin panel, built-in recipe editor, review cleanup, private account hub, per-recipe saves, and admin user directory migrations. Apply `recipe-voting.sql` again after adding built-in recipes so every displayed recipe is registered for vote writes. Do not re-run the one-time scripts on an existing project. New safeguards hold old comments and previously approved recipes without review records; no content is deleted by the migration. The app and admin panel do not display or accept comments.
 
 Deploy `supabase/functions/delete-account/index.ts` as `delete-account`. Keep platform JWT verification enabled when compatible with the project's signing keys; the handler independently verifies the bearer token against Supabase Auth on every call. It accepts no target account ID and requires a recorded self-deletion request. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY remain Edge Function secrets supplied by Supabase, never app variables. If asymmetric JWTs require an alternative platform configuration, retain authoritative Auth validation; do not turn this into an anonymous deletion handler.
 
@@ -27,7 +27,7 @@ The deletion handler removes both legacy and opaque-folder recipe photos through
 
 - `npm run verify` and `npm run safety:test`
 - `npm run web:test`
-- Apply safeguards twice in a disposable PostgreSQL database and run `supabase/safeguards.test.sql`; the fixtures must never run on production.
+- Apply safeguards twice in a disposable PostgreSQL database and run `supabase/tests/safeguards.test.sql`; the fixtures must never run on production.
 - Signed-in end-to-end tests require explicit tester agreement. Never accept legal terms or delete a real account on the owner's behalf for testing.
 - The first-use receipt is local. Contributions additionally require account-linked, server-timestamped acceptance of policy version 2026-10-16.2. Keep the SQL version and src/policies.ts synchronized.
 
