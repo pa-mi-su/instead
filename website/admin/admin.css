@@ -132,6 +132,16 @@ nav,
   gap: 10px;
   align-items: end;
 }
+#user-filters {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin: 22px 0;
+}
+#user-filters label { grid-column: 1 / -1; font-weight: 750; }
+#user-filters input,
+#user-filters button { min-height: 46px; padding: 10px 14px; border: 1px solid #a2aa9c; border-radius: 8px; font: inherit; }
+#user-filters input { width: 100%; }
 #filters label {
   grid-row: 1;
 }
@@ -216,6 +226,7 @@ footer {
   #filters {
     display: block;
   }
+  #user-filters { display: block; }
   .card {
     padding: 16px;
   }

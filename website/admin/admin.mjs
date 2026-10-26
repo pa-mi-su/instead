@@ -134,6 +134,16 @@ async function builtinRpc(action, payload = {}) {
     await token(),
   );
 }
+async function usersRpc(search, pageOffset) {
+  return request(
+    '/rest/v1/rpc/community_admin_users',
+    {
+      p_search: search,
+      p_offset: pageOffset,
+    },
+    await token(),
+  );
+}
 function armIdleTimer() {
   clearTimeout(idleTimer);
   if (!session) return;
@@ -367,9 +377,7 @@ function restrictButton(user, suspended, reason) {
 }
 function renderContent(item) {
   const card = element('article', undefined, 'card');
-  card.append(
-    element('h2', item.title),
-  );
+  card.append(element('h2', item.title));
   card.append(
     element(
       'p',
@@ -568,6 +576,45 @@ function renderContent(item) {
   card.append(review);
   return card;
 }
+function renderUser(item) {
+  const card = element('article', undefined, 'card user-card');
+  card.append(element('h2', item.email || 'Verified account'));
+  card.append(
+    element(
+      'p',
+      `${item.username ? `@${item.username} · ` : ''}${
+        item.suspended ? 'RESTRICTED' : 'Active'
+      }`,
+      'meta',
+    ),
+  );
+  card.append(element('p', `Account ${item.user_id}`, 'meta'));
+  card.append(
+    element(
+      'p',
+      `Joined ${
+        item.created_at
+          ? new Date(item.created_at).toLocaleString()
+          : 'date unavailable'
+      } · Last sign-in ${
+        item.last_sign_in_at
+          ? new Date(item.last_sign_in_at).toLocaleString()
+          : 'not recorded'
+      }`,
+      'meta',
+    ),
+  );
+  details(card, 'Submitted community recipes', `${item.recipes} recipe(s)`);
+  const reason = field(
+    card,
+    item.suspended
+      ? 'Reason for restoring access'
+      : 'Reason for restricting access',
+    true,
+  );
+  card.append(restrictButton(item.user_id, item.suspended, reason));
+  return card;
+}
 async function loadBuiltinSeeds() {
   if (builtinSeeds) return builtinSeeds;
   let response;
@@ -696,7 +743,10 @@ function renderBuiltinEditor(item, products) {
         await load();
         status(successMessage);
       } catch (error) {
-        status(`${successMessage} The list could not refresh: ${error.message}`, true);
+        status(
+          `${successMessage} The list could not refresh: ${error.message}`,
+          true,
+        );
       }
     }),
   );
@@ -791,15 +841,17 @@ function renderBuiltinItems() {
               active: !item.is_active,
               note: note.trim(),
             });
-            const successMessage =
-              item.is_active
-                ? 'Recipe archived from the app.'
-                : 'Recipe restored to the app.';
+            const successMessage = item.is_active
+              ? 'Recipe archived from the app.'
+              : 'Recipe restored to the app.';
             try {
               await load();
               status(successMessage);
             } catch (error) {
-              status(`${successMessage} The list could not refresh: ${error.message}`, true);
+              status(
+                `${successMessage} The list could not refresh: ${error.message}`,
+                true,
+              );
             }
           },
           item.is_active,
@@ -889,6 +941,8 @@ async function load() {
       });
     }
     data = { items: builtinItems };
+  } else if (view === 'users') {
+    data = await usersRpc($('user-search').value.trim(), offset);
   } else {
     data = await rpc(view === 'recipe' ? 'queue' : view, {
       kind: view,
@@ -917,7 +971,9 @@ async function load() {
   }
   const isContent = view === 'recipe';
   const isBuiltin = view === 'builtin';
+  const isUsers = view === 'users';
   $('filters').hidden = !isContent;
+  $('user-filters').hidden = !isUsers;
   $('builtin-tools').hidden = !isBuiltin;
   $('pagination').hidden = isBuiltin;
   $('items').replaceChildren();
@@ -927,6 +983,7 @@ async function load() {
   }
   for (const item of isBuiltin ? [] : data.items) {
     if (isContent) $('items').append(renderContent(item));
+    else if (isUsers) $('items').append(renderUser(item));
     else if (view === 'accounts') {
       const card = element('article', undefined, 'card');
       card.append(
@@ -936,11 +993,7 @@ async function load() {
         ),
       );
       card.append(element('p', `Account ${item.user_id}`, 'meta'));
-      details(
-        card,
-        'Contributions',
-        `${item.recipes} recipe(s)`,
-      );
+      details(card, 'Contributions', `${item.recipes} recipe(s)`);
       if (item.deletion_requested_at)
         details(
           card,
@@ -1042,6 +1095,11 @@ for (const navButton of document.querySelectorAll('[data-view]'))
     load().catch(error => status(error.message, true));
   });
 $('filters').addEventListener('submit', event => {
+  event.preventDefault();
+  offset = 0;
+  load().catch(error => status(error.message, true));
+});
+$('user-filters').addEventListener('submit', event => {
   event.preventDefault();
   offset = 0;
   load().catch(error => status(error.message, true));

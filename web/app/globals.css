@@ -1152,6 +1152,13 @@ a:focus-visible {
 .recipe-photos img { max-width: 100%; width: 220px; height: 180px; object-fit: contain; }
 .product-recipes label { display: grid; gap: 8px; }
 .product-recipes textarea { min-height: 90px; }
+.recipe-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.recipe-title-row h3, .recipe-title-row h4 { flex: 1; min-width: 0; }
+.recipe-save { flex: 0 0 auto; min-height: 40px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 24px; background: var(--paper); color: var(--ink); font: inherit; font-size: 12px; font-weight: 850; letter-spacing: .04em; cursor: pointer; }
+.recipe-save.active { background: var(--lime); border-color: var(--ink); }
+.builtin-recipe-card { padding: 20px; margin: 18px 0; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+.saved-recipes { margin-top: 32px; }
+@media (max-width: 540px) { .recipe-title-row { flex-wrap: wrap; } }
 
 .community-access,
 .account-section,
@@ -1172,6 +1179,8 @@ a:focus-visible {
 .account-section button:disabled { opacity: .5; cursor: default; }
 .account-recipe small { color: var(--muted); font-weight: 850; letter-spacing: .08em; }
 .account-recipe h3 { margin-bottom: 4px; }
+.account-saved-recipe { width: 100%; display: block; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.account-saved-recipe h4 { margin: 0 0 6px; }
 
 .ack-shell { max-width: 720px; margin: 0 auto; padding: 36px 22px 60px; color: var(--ink); }
 .ack-shell h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.1; }

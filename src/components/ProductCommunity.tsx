@@ -6,11 +6,15 @@ export function ProductCommunity({
   community,
   onSignInRequest,
   onOpenProfile,
+  savedRecipeIds,
+  onSaveRecipe,
 }: {
   productId: string;
   community: ReturnType<typeof useCommunity>;
   onSignInRequest: () => void;
   onOpenProfile: (username: string) => void;
+  savedRecipeIds: string[];
+  onSaveRecipe: (recipeId: string, title: string) => void;
 }) {
   return (
     <ProductCommunityAccess
@@ -28,6 +32,8 @@ export function ProductCommunity({
           onBlock={id => c.block('recipe', id)}
           onSignInRequest={signIn}
           onOpenProfile={onOpenProfile}
+          savedRecipeIds={savedRecipeIds}
+          onSaveRecipe={onSaveRecipe}
         />
       )}
     />

@@ -13,6 +13,7 @@ import { RecipePhotoGallery } from '../components/RecipePhotoGallery';
 import { useCommunity } from '../hooks/useCommunity';
 import { supabase } from '../lib/supabase';
 import { rankRecipes } from '../lib/recipeRanking';
+import { savedRecipeKey } from '../lib/savedRecipes';
 
 type RecipeRating = {
   score: number;
@@ -29,23 +30,63 @@ const emptyRating: RecipeRating = {
 };
 const noRecipes: NonNullable<Guide['recipes']> = [];
 
+function RecipeSaveButton({
+  saved,
+  onPress,
+  title,
+}: {
+  saved: boolean;
+  onPress: () => void;
+  title: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.recipeSaveButton,
+        saved && styles.recipeSaveButtonActive,
+        pressed && styles.pressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`${saved ? 'Remove saved' : 'Save'} recipe ${title}`}
+      accessibilityState={{ selected: saved }}
+      hitSlop={8}
+    >
+      <Bookmark
+        size={17}
+        color={COLORS.ink}
+        fill={saved ? COLORS.ink : 'transparent'}
+      />
+      <Text style={styles.recipeSaveText}>{saved ? 'SAVED' : 'SAVE'}</Text>
+    </Pressable>
+  );
+}
+
 export function GuideDetailScreen({
   guide,
+  initialRecipeId,
   isSaved,
+  savedRecipeIds,
   onBack,
   onSave,
+  onSaveRecipe,
   onOpenProfile,
   bottomInset,
 }: {
   guide: Guide;
+  initialRecipeId?: string;
   isSaved: boolean;
+  savedRecipeIds: string[];
   onBack: () => void;
   onSave: () => void;
+  onSaveRecipe: (recipeId: string, title: string) => void;
   onOpenProfile: (username: string) => void;
   bottomInset: number;
 }) {
   const scrollRef = useRef<ScrollView>(null);
   const communityY = useRef(0);
+  const recipeSectionY = useRef(0);
+  const recipeListY = useRef(0);
   const [recipeRatings, setRecipeRatings] = useState<
     Record<string, RecipeRating>
   >({});
@@ -146,26 +187,30 @@ export function GuideDetailScreen({
         <View style={styles.detailWordmarkWrap}>
           <BrandLogo />
         </View>
-        <Pressable
-          onPress={onSave}
-          style={({ pressed }) => [
-            styles.iconButton,
-            isSaved && styles.iconButtonSaved,
-            pressed && styles.pressed,
-          ]}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={
-            isSaved ? 'Remove from saved guides' : 'Save this guide'
-          }
-          accessibilityState={{ selected: isSaved }}
-        >
-          <Bookmark
-            size={21}
-            color={COLORS.ink}
-            fill={isSaved ? COLORS.ink : 'transparent'}
-          />
-        </Pressable>
+        {recipes.length === 0 ? (
+          <Pressable
+            onPress={onSave}
+            style={({ pressed }) => [
+              styles.iconButton,
+              isSaved && styles.iconButtonSaved,
+              pressed && styles.pressed,
+            ]}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isSaved ? 'Remove saved guide' : 'Save this guide'
+            }
+            accessibilityState={{ selected: isSaved }}
+          >
+            <Bookmark
+              size={21}
+              color={COLORS.ink}
+              fill={isSaved ? COLORS.ink : 'transparent'}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.iconButton} />
+        )}
       </View>
 
       <ScrollView
@@ -195,11 +240,51 @@ export function GuideDetailScreen({
 
         <ExpandableSafety key={guide.id} guide={guide} />
         {guide.recipes?.length ? (
-          <DetailSection number="01" title="RECIPES">
-            <View style={styles.optionList}>
+          <DetailSection
+            number="01"
+            title="RECIPES"
+            onLayout={event => {
+              recipeSectionY.current = event.nativeEvent.layout.y;
+            }}
+          >
+            <View
+              style={styles.optionList}
+              onLayout={event => {
+                recipeListY.current = event.nativeEvent.layout.y;
+              }}
+            >
               {rankedRecipes.map(recipe => (
-                <View key={recipe.name} style={styles.optionCard}>
-                  <Text style={styles.optionName}>{recipe.name}</Text>
+                <View
+                  key={recipe.id}
+                  style={styles.optionCard}
+                  onLayout={event => {
+                    if (recipe.id === initialRecipeId)
+                      requestAnimationFrame(() =>
+                        scrollRef.current?.scrollTo({
+                          y: Math.max(
+                            0,
+                            recipeSectionY.current +
+                              recipeListY.current +
+                              event.nativeEvent.layout.y -
+                              24,
+                          ),
+                          animated: false,
+                        }),
+                      );
+                  }}
+                >
+                  <View style={styles.recipeCardHeader}>
+                    <Text style={[styles.optionName, styles.recipeCardTitle]}>
+                      {recipe.name}
+                    </Text>
+                    <RecipeSaveButton
+                      saved={savedRecipeIds.includes(
+                        savedRecipeKey(guide.id, recipe.id),
+                      )}
+                      onPress={() => onSaveRecipe(recipe.id, recipe.name)}
+                      title={recipe.name}
+                    />
+                  </View>
                   {recipe.photos?.length ? (
                     <RecipePhotoGallery
                       photos={recipe.photos}
@@ -257,6 +342,17 @@ export function GuideDetailScreen({
         <DetailSection
           onLayout={event => {
             communityY.current = event.nativeEvent.layout.y;
+            if (
+              initialRecipeId &&
+              !recipes.some(recipe => recipe.id === initialRecipeId)
+            ) {
+              requestAnimationFrame(() =>
+                scrollRef.current?.scrollTo({
+                  y: Math.max(0, communityY.current - 16),
+                  animated: false,
+                }),
+              );
+            }
           }}
           number={guide.recipes?.length ? '02' : '01'}
           title="COMMUNITY RECIPES & ACCOUNT"
@@ -267,6 +363,8 @@ export function GuideDetailScreen({
             community={community}
             onSignInRequest={requestSignIn}
             onOpenProfile={onOpenProfile}
+            savedRecipeIds={savedRecipeIds}
+            onSaveRecipe={onSaveRecipe}
           />
         </DetailSection>
         <Text style={styles.disclaimer}>

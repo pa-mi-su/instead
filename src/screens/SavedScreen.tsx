@@ -5,17 +5,24 @@ import { GuideCard } from '../components/GuideCard';
 import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';
 import { useScrollRestoration } from '../hooks/useScrollRestoration';
+import type { SavedRecipeReference } from '../lib/savedRecipes';
 
 export function SavedScreen({
   guides,
+  catalog,
+  savedRecipes,
   onOpen,
+  onOpenRecipe,
   onExplore,
   bottomInset,
   scrollOffset,
   onScrollOffsetChange,
 }: {
   guides: Guide[];
+  catalog: Guide[];
+  savedRecipes: (SavedRecipeReference & { key: string; title: string })[];
   onOpen: (id: string) => void;
+  onOpenRecipe: (productId: string, recipeId: string) => void;
   onExplore: () => void;
   bottomInset: number;
   scrollOffset: number;
@@ -40,7 +47,8 @@ export function SavedScreen({
         <Text style={styles.pageEyebrow}>YOUR SHORTLIST</Text>
         <Text style={styles.pageTitle}>Saved for later.</Text>
         <Text style={styles.pageBody}>
-          Your saved guides live on this device and stay available offline.
+          Save an individual recipe or a recipe-free guide. Signed-in saves sync
+          across your devices.
         </Text>
       </View>
 
@@ -55,14 +63,17 @@ export function SavedScreen({
             />
           ))}
         </View>
-      ) : (
+      ) : savedRecipes.length === 0 ? (
         <View style={styles.savedEmpty}>
           <View style={styles.savedEmptyIcon}>
             <Bookmark size={30} color={COLORS.ink} />
           </View>
-          <Text style={styles.emptyTitle}>No saved guides.</Text>
+          <Text style={styles.emptyTitle}>
+            {savedRecipes.length ? 'No saved guides.' : 'Nothing saved yet.'}
+          </Text>
           <Text style={styles.emptyBody}>
-            Bookmark guides you want to find quickly.
+            Save an individual recipe or a guide without recipes to find it
+            quickly.
           </Text>
           <Pressable
             onPress={onExplore}
@@ -77,7 +88,35 @@ export function SavedScreen({
             <ArrowRight size={18} color={COLORS.ink} />
           </Pressable>
         </View>
-      )}
+      ) : null}
+      {savedRecipes.length ? (
+        <View style={styles.guideList}>
+          <Text style={styles.pageEyebrow}>SAVED RECIPES</Text>
+          {savedRecipes.map((recipe, index) => {
+            const guide = catalog.find(item => item.id === recipe.productId);
+            return (
+              <Pressable
+                key={recipe.key}
+                onPress={() => onOpenRecipe(recipe.productId, recipe.recipeId)}
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  pressed && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Open saved recipe ${recipe.title}`}
+              >
+                <Text style={styles.optionLabel}>{`RECIPE ${String(
+                  index + 1,
+                ).padStart(2, '0')}`}</Text>
+                <Text style={styles.optionName}>{recipe.title}</Text>
+                <Text style={styles.optionDetail}>
+                  {guide?.title ?? recipe.productId}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Bookmark } from 'lucide-react-native';
 import { RecipeVoteButtons } from './RecipeVoteButtons';
 import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
@@ -11,6 +12,7 @@ import type { Recipe, RecipePhoto } from '../lib/recipes';
 import { reportReasons } from '../lib/community';
 import { supabase } from '../lib/supabase';
 import { styles } from '../styles';
+import { savedRecipeKey } from '../lib/savedRecipes';
 
 export function ProductRecipes({
   productId,
@@ -20,6 +22,8 @@ export function ProductRecipes({
   onBlock,
   onSignInRequest,
   onOpenProfile,
+  savedRecipeIds,
+  onSaveRecipe,
 }: {
   productId: string;
   userId?: string;
@@ -28,6 +32,8 @@ export function ProductRecipes({
   onBlock: (id: string) => unknown;
   onSignInRequest: () => void;
   onOpenProfile: (username: string) => void;
+  savedRecipeIds: string[];
+  onSaveRecipe: (recipeId: string, title: string) => void;
 }) {
   const r = useRecipes(supabase, productId, userId);
   const [open, setOpen] = useState(false);
@@ -108,7 +114,48 @@ export function ProductRecipes({
             : 'COMMUNITY SUBMISSION'}
           {recipe.mine ? ' · YOUR SUBMISSION' : ''}
         </Text>
-        <Text style={styles.optionName}>{recipe.title}</Text>
+        <View style={styles.recipeCardHeader}>
+          <Text style={[styles.optionName, styles.recipeCardTitle]}>
+            {recipe.title}
+          </Text>
+          {recipe.status === 'approved' && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${
+                savedRecipeIds.includes(savedRecipeKey(productId, recipe.id))
+                  ? 'Remove saved'
+                  : 'Save'
+              } recipe ${recipe.title}`}
+              accessibilityState={{
+                selected: savedRecipeIds.includes(
+                  savedRecipeKey(productId, recipe.id),
+                ),
+              }}
+              onPress={() => onSaveRecipe(recipe.id, recipe.title)}
+              style={({ pressed }) => [
+                styles.recipeSaveButton,
+                savedRecipeIds.includes(savedRecipeKey(productId, recipe.id)) &&
+                  styles.recipeSaveButtonActive,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Bookmark
+                size={17}
+                color="#173d34"
+                fill={
+                  savedRecipeIds.includes(savedRecipeKey(productId, recipe.id))
+                    ? '#173d34'
+                    : 'transparent'
+                }
+              />
+              <Text style={styles.recipeSaveText}>
+                {savedRecipeIds.includes(savedRecipeKey(productId, recipe.id))
+                  ? 'SAVED'
+                  : 'SAVE'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
         {!!recipe.author_username && (
           <Pressable
             accessibilityRole="button"

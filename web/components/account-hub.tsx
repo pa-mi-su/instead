@@ -19,14 +19,23 @@ export function AccountHub({
   community,
   guides,
   savedGuides,
+  savedRecipes,
   syncStatus,
   onOpenGuide,
+  onOpenRecipe,
 }: {
   community: ReturnType<typeof useCommunity>;
   guides: Guide[];
   savedGuides: Guide[];
+  savedRecipes: {
+    key: string;
+    productId: string;
+    recipeId: string;
+    title: string;
+  }[];
   syncStatus: 'local' | 'syncing' | 'synced' | 'error';
   onOpenGuide: (id: string) => void;
+  onOpenRecipe: (productId: string, recipeId: string) => void;
 }) {
   const [recipes, setRecipes] = useState<AccountRecipe[]>([]);
   const [loading, setLoading] = useState(false);
@@ -128,6 +137,25 @@ export function AccountHub({
           </div>
         ) : (
           <p>No saved guides yet.</p>
+        )}
+        {!!savedRecipes.length && (
+          <div className="saved-recipes">
+            <h3>Saved recipes</h3>
+            {savedRecipes.map(recipe => (
+              <button
+                type="button"
+                className="account-recipe account-saved-recipe"
+                key={recipe.key}
+                onClick={() => onOpenRecipe(recipe.productId, recipe.recipeId)}
+              >
+                <h4>{recipe.title}</h4>
+                <p>
+                  {guides.find(guide => guide.id === recipe.productId)?.title ??
+                    recipe.productId}
+                </p>
+              </button>
+            ))}
+          </div>
         )}
       </section>
       {userId && (

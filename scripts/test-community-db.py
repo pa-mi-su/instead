@@ -16,7 +16,7 @@ try:
  fixture=base/'fixture.sql'
  fixture.write_text('''create role anon; create role authenticated; create role service_role;
 create schema auth;
-create table auth.users(id uuid primary key, email text, email_confirmed_at timestamptz, is_anonymous boolean default false,banned_until timestamptz);
+create table auth.users(id uuid primary key, email text, email_confirmed_at timestamptz, created_at timestamptz default now(), last_sign_in_at timestamptz, is_anonymous boolean default false,banned_until timestamptz);
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb) $$;
 create table auth.mfa_factors(id uuid primary key,user_id uuid references auth.users on delete cascade,factor_type text,status text);
@@ -59,6 +59,8 @@ insert into public.community_comments(id,product_id,user_id,body,moderation_stat
  values('99000000-0000-0000-0000-000000000003','natural-glass-cleaner','99000000-0000-0000-0000-000000000001','Legacy rejected comment','rejected',jsonb_build_object('qualifications','legacy','sources','legacy'));"""])
  run(psql+['-f',str(root/'supabase/simplify-admin-review.sql')])
  run(psql+['-f',str(root/'supabase/simplify-admin-review.sql')])
+ run(psql+['-f',str(root/'supabase/recipe-saves-and-admin-users.sql')])
+ run(psql+['-f',str(root/'supabase/recipe-saves-and-admin-users.sql')])
  run(psql+['-c',"""do $$ begin
 if exists(select 1 from information_schema.columns where table_schema='public' and table_name='community_moderation_audit' and column_name in ('qualifications','sources')) then raise exception 'Obsolete moderation audit columns remain'; end if;
 if not exists(select 1 from public.community_recipes where id='99000000-0000-0000-0000-000000000002' and admin_removed_at is not null and not review_record ? 'qualifications' and not review_record ? 'sources') then raise exception 'Legacy rejected recipe was not cleaned into Trash'; end if;
@@ -66,6 +68,7 @@ if not exists(select 1 from public.community_comments where id='99000000-0000-00
 end $$;"""])
  run(psql+['-c',"delete from auth.users where id='99000000-0000-0000-0000-000000000001';"])
  print(run(psql+['-f',str(root/'supabase/admin-panel.test.sql')])[-800:])
+ print(run(psql+['-f',str(root/'supabase/recipe-saves-and-admin-users.test.sql')])[-800:])
  print(run(psql+['-f',str(root/'supabase/recipe-voting.test.sql')])[-500:])
  print(run(psql+['-f',str(root/'supabase/builtin-recipe-admin.test.sql')])[-500:])
 finally:
