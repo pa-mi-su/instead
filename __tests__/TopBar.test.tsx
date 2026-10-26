@@ -3,8 +3,23 @@ import { TopBar } from '../src/components/TopBar';
 
 jest.mock('react-native/Libraries/Modal/Modal', () => ({
   __esModule: true,
-  default: ({ visible, children }: { visible: boolean; children: unknown }) =>
-    visible ? children : null,
+  default: function MockModal({
+    visible,
+    children,
+    onDismiss,
+  }: {
+    visible: boolean;
+    children: unknown;
+    onDismiss?: () => void;
+  }) {
+    const { useEffect, useRef } = require('react');
+    const wasVisible = useRef(visible);
+    useEffect(() => {
+      if (wasVisible.current && !visible) onDismiss?.();
+      wasVisible.current = visible;
+    }, [visible, onDismiss]);
+    return visible ? children : null;
+  },
 }));
 jest.mock('lucide-react-native', () => ({
   Bookmark: () => null,
@@ -61,5 +76,19 @@ test('selecting a destination navigates and closes the drawer', async () => {
   );
 
   expect(screen.props.onAccount).toHaveBeenCalledTimes(1);
+  expect(screen.screen.queryByText('Your spaces')).toBeNull();
+});
+
+test('selecting Saved guides completes navigation after the drawer dismisses', async () => {
+  const screen = await renderTopBar();
+
+  await fireEvent.press(
+    screen.screen.getByRole('button', { name: 'Open navigation menu' }),
+  );
+  await fireEvent.press(
+    screen.screen.getByRole('button', { name: 'Saved guides, 2 saved' }),
+  );
+
+  expect(screen.props.onSaved).toHaveBeenCalledTimes(1);
   expect(screen.screen.queryByText('Your spaces')).toBeNull();
 });

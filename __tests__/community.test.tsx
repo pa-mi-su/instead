@@ -45,11 +45,25 @@ function mockClient(session: CommunitySession | null = null) {
       : null) as unknown,
     error: null as unknown,
   }));
-  const client = { auth, rpc } as unknown as CommunityClient;
+  const storage = {
+    from: jest.fn(() => ({
+      upload: jest.fn(async () => ({ error: null })),
+      remove: jest.fn(async () => ({ error: null })),
+      getPublicUrl: jest.fn((path: string) => ({
+        data: { publicUrl: `https://storage.example.invalid/${path}` },
+      })),
+      createSignedUrl: jest.fn(async (path: string) => ({
+        data: { signedUrl: `https://storage.example.invalid/${path}` },
+        error: null,
+      })),
+    })),
+  };
+  const client = { auth, rpc, storage } as unknown as CommunityClient;
   return {
     client,
     auth,
     rpc,
+    storage,
     emit: (next: CommunitySession | null) => listener('SIGNED_IN', next),
   };
 }
@@ -183,6 +197,22 @@ test('returns an existing email to sign-in instead of waiting for a code that wa
   expect(hook.result.current.notice).toMatch(/no confirmation code was sent/i);
   hook.unmount();
 });
+test('shows explicit local password validation before trying account creation', async () => {
+  const m = mockClient();
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(() => hook.result.current.setAuthMode('signup'));
+  await act(() => hook.result.current.setEmail('person@example.com'));
+  await act(() => hook.result.current.setUsername('RecipeMaker'));
+  await act(() => hook.result.current.setPassword('short'));
+  await act(() => hook.result.current.setPasswordConfirmation('short'));
+  await act(() => hook.result.current.signUp());
+  expect(hook.result.current.errorSource).toBe('validation');
+  expect(hook.result.current.error).toMatch(/at least 10 characters/i);
+  expect(m.auth.signUp).not.toHaveBeenCalled();
+  hook.unmount();
+});
 test('wrong code retains the sent email for retry', async () => {
   const m = mockClient();
   m.auth.verifyOtp.mockResolvedValue({ error: { message: 'expired' } });
@@ -226,6 +256,63 @@ test('unverified sessions cannot contribute', async () => {
     useCommunity(m.client, 'natural-shampoo'),
   );
   expect(hook.result.current.canContribute).toBe(false);
+});
+test('account safeguard failures stop loading, explain the state, and can be retried', async () => {
+  const m = mockClient(member);
+  const original = m.rpc.getMockImplementation()!;
+  let fail = true;
+  m.rpc.mockImplementation(async (name, args) =>
+    name === 'community_account_state' && fail
+      ? { data: null, error: { code: 'PGRST202', message: 'missing' } }
+      : original(name, args),
+  );
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() => expect(hook.result.current.accountLoading).toBe(false));
+  expect(hook.result.current.accountReady).toBe(false);
+  expect(hook.result.current.accountLoadError).toMatch(
+    /setup is not complete/i,
+  );
+  expect(hook.result.current.canEditProfile).toBe(true);
+  fail = false;
+  await act(() => hook.result.current.retryAccount());
+  await waitFor(() => expect(hook.result.current.accountReady).toBe(true));
+  hook.unmount();
+});
+test('updates profile details and avatar without depending on account safeguards', async () => {
+  const m = mockClient(member);
+  const original = m.rpc.getMockImplementation()!;
+  m.rpc.mockImplementation(async (name, args) =>
+    name === 'community_account_state'
+      ? { data: null, error: { code: 'PGRST202', message: 'missing' } }
+      : original(name, args),
+  );
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() => expect(hook.result.current.accountLoading).toBe(false));
+  await act(() => hook.result.current.setUsername('ProfileOwner'));
+  await act(() => hook.result.current.setBio('A short public bio.'));
+  const uploaded = {
+    bytes: new ArrayBuffer(8),
+    contentType: 'image/jpeg' as const,
+  };
+  let saved = false;
+  await act(async () => {
+    saved = await hook.result.current.saveProfile(uploaded);
+  });
+  expect(saved).toBe(true);
+  expect(m.storage.from).toHaveBeenCalledWith('profile-avatars');
+  expect(m.rpc).toHaveBeenCalledWith('community_profile_set', {
+    p_username: 'ProfileOwner',
+    p_bio: 'A short public bio.',
+  });
+  expect(m.rpc).toHaveBeenCalledWith('community_profile_avatar_set', {
+    p_avatar_path: 'member/avatar.jpeg',
+  });
+  expect(hook.result.current.notice).toMatch(/profile updated/i);
+  hook.unmount();
 });
 test('setup errors are actionable and unexpected errors do not expose backend details', () => {
   expect(communityError({ code: 'PGRST202' })).toMatch(/setup is not complete/);

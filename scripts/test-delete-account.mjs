@@ -25,7 +25,7 @@ function fixture({
   authFail = false,
 } = {}) {
   const calls = [];
-  let batches = 0;
+  let photoBatches = 0;
   const handler = createDeletionHandler(
     { url: 'https://supabase.example.invalid', serviceKey: 'test-service-key' },
     async (url, options = {}) => {
@@ -46,11 +46,13 @@ function fixture({
       if (url.includes('/object/list/'))
         return storageFail
           ? data({}, 503)
-          : data(
-              batches++ === 0
+          : url.endsWith('/object/list/recipe-photos')
+          ? data(
+              photoBatches++ === 0
                 ? [{ name: maliciousPath ? '../other/file.jpg' : 'photo.jpg' }]
                 : [],
-            );
+            )
+          : data([{ name: 'avatar.jpeg' }]);
       return data({});
     },
   );
@@ -88,12 +90,19 @@ test('only deletes the authenticated owner, removes photos first, and ignores ca
   const response = await m.handler(m.request());
   assert.equal(response.status, 200);
   const deletes = m.calls.filter(call => call.method === 'DELETE');
-  assert.equal(deletes.length, 2);
+  assert.equal(deletes.length, 3);
   assert.deepEqual(JSON.parse(deletes[0].body).prefixes, [
     `${owner}/photo.jpg`,
   ]);
   assert.equal(
     deletes[1].url,
+    'https://supabase.example.invalid/storage/v1/object/profile-avatars',
+  );
+  assert.deepEqual(JSON.parse(deletes[1].body).prefixes, [
+    `${owner}/avatar.jpeg`,
+  ]);
+  assert.equal(
+    deletes[2].url,
     `https://supabase.example.invalid/auth/v1/admin/users/${owner}`,
   );
   assert.ok(m.calls.every(call => !call.url.includes(victim)));

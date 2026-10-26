@@ -29,7 +29,7 @@ create table storage.objects(id uuid primary key default gen_random_uuid(),bucke
 alter table storage.objects enable row level security;
 grant usage on schema storage to anon,authenticated;
 grant select on storage.objects to anon;
-grant select,insert,delete on storage.objects to authenticated;
+grant select,insert,update,delete on storage.objects to authenticated;
 ''')
  run(psql+['-f',str(fixture)])
  run(psql+['-f',str(root/'supabase/community.sql')])
@@ -50,6 +50,9 @@ grant select,insert,delete on storage.objects to authenticated;
  run(psql+['-f',str(root/'supabase/private-account-hub.sql')])
  run(psql+['-f',str(root/'supabase/private-account-hub.sql')])
  print(run(psql+['-f',str(root/'supabase/tests/private-account-hub.test.sql')])[-500:])
+ run(psql+['-f',str(root/'supabase/profile-avatars.sql')])
+ run(psql+['-f',str(root/'supabase/profile-avatars.sql')])
+ print(run(psql+['-f',str(root/'supabase/tests/profile-avatars.test.sql')])[-500:])
  run(psql+['-c',"""alter table public.community_moderation_audit add column qualifications text;
 alter table public.community_moderation_audit add column sources text;
 insert into auth.users(id,email,email_confirmed_at) values('99000000-0000-0000-0000-000000000001','legacy-rejection@example.invalid',now());

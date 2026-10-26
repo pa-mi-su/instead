@@ -26,8 +26,19 @@ export function CommunityAccountControls({
   );
   return (
     <View style={styles.optionList}>
-      {!c.accountReady ? (
+      {c.accountLoading ? (
         <Text>Loading account safeguards…</Text>
+      ) : !c.accountReady ? (
+        <View style={local.loadFailure}>
+          <Text accessibilityRole="alert">
+            Could not load account safeguards. Contributions stay paused until
+            the account status is confirmed.
+          </Text>
+          <Text>
+            {c.accountLoadError || 'Check your connection and try again.'}
+          </Text>
+          {button('Retry account check', c.retryAccount, c.busy)}
+        </View>
       ) : c.account?.deletion_requested_at ? (
         <Text>
           Deletion requested. Your public contributions are hidden. Permanent
@@ -115,3 +126,7 @@ export function CommunityAccountControls({
     </View>
   );
 }
+
+const local = {
+  loadFailure: { gap: 10 },
+};

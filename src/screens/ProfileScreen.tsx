@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Image, ScrollView, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { communityError, communityRpc } from '../lib/community';
 import type { PublicProfile } from '../lib/recipes';
@@ -67,6 +67,17 @@ export function ProfileScreen({
         <>
           <View style={styles.savedHero}>
             <Text style={styles.pageEyebrow}>COMMUNITY PROFILE</Text>
+            {profile.avatar_path && supabase && (
+              <Image
+                accessibilityLabel={`Avatar for ${profile.username}`}
+                source={{
+                  uri: supabase.storage
+                    .from('profile-avatars')
+                    .getPublicUrl(profile.avatar_path).data.publicUrl,
+                }}
+                style={local.avatar}
+              />
+            )}
             <Text style={styles.pageTitle}>@{profile.username}</Text>
             {!!profile.bio && (
               <Text style={styles.pageBody}>{profile.bio}</Text>
@@ -93,3 +104,7 @@ export function ProfileScreen({
     </ScrollView>
   );
 }
+
+const local = {
+  avatar: { width: 88, height: 88, borderRadius: 44, marginBottom: 18 },
+};

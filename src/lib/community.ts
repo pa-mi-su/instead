@@ -7,6 +7,21 @@ export type CommunitySession = {
   };
 };
 export type CommunityClient = {
+  storage: {
+    from: (bucket: string) => {
+      upload: (
+        path: string,
+        body: ArrayBuffer,
+        options: { contentType: string; upsert: boolean },
+      ) => Promise<{ error: unknown }>;
+      remove: (paths: string[]) => Promise<{ error: unknown }>;
+      getPublicUrl: (path: string) => { data: { publicUrl: string } };
+      createSignedUrl: (
+        path: string,
+        expiresIn: number,
+      ) => Promise<{ data: { signedUrl: string } | null; error: unknown }>;
+    };
+  };
   functions?: {
     invoke: (name: string) => Promise<{ data: unknown; error: unknown }>;
   };
@@ -52,6 +67,11 @@ export type CommunityClient = {
 export type CommunityProfile = {
   username: string;
   bio: string;
+  avatar_path?: string | null;
+};
+export type AvatarUpload = {
+  bytes: ArrayBuffer;
+  contentType: 'image/jpeg' | 'image/png' | 'image/webp';
 };
 export const COMMENT_LIMIT = 1000;
 export type CommunityComment = {
@@ -85,6 +105,8 @@ export function communityError(error: unknown) {
     'bio must be 280 characters or fewer.',
     'enter the code from your email.',
     'complete account setup before editing your profile.',
+    'verify your email before updating your profile.',
+    'profile photos are not configured yet.',
   ];
   if (localMessages.includes(message)) return value.message!;
   if (value?.code === '23505')

@@ -46,6 +46,7 @@ export function PublicProfile({ username }: { username: string }) {
         <>
           <section className="saved-intro">
             <p>COMMUNITY PROFILE</p>
+            {profile.avatar_path && communityClient && <span className="public-profile-avatar" role="img" aria-label={`Avatar for ${profile.username}`} style={{ backgroundImage: `url("${communityClient.storage.from('profile-avatars').getPublicUrl(profile.avatar_path).data.publicUrl}")` }} />}
             <h1>@{profile.username}</h1>
             {profile.bio && <span>{profile.bio}</span>}
           </section>
