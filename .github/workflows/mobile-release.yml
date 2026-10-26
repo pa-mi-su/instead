@@ -11,7 +11,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
   contents: read
 
 concurrency:
@@ -44,23 +43,12 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-          RUN_ID: ${{ github.event.workflow_run.id || '' }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
             node scripts/detect-platform-changes.mjs --all
           else
-            BASE_SHA="$(gh api \
-              "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
-              -f branch=main \
-              -f status=success \
-              -F per_page=100 \
-              --jq ".workflow_runs[] | select(.id < ${RUN_ID}) | .head_sha" \
-              | head -n 1 || true)"
-            if [[ -z "$BASE_SHA" ]]; then
-              BASE_SHA="$(git rev-parse "${HEAD_SHA}^1" 2>/dev/null || true)"
-            fi
+            BASE_SHA="$(git rev-parse "${HEAD_SHA}^1" 2>/dev/null || true)"
             if [[ -z "$BASE_SHA" ]]; then
               node scripts/detect-platform-changes.mjs --all
             else
