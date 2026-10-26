@@ -1,6 +1,13 @@
-import { Bookmark, UserRound } from 'lucide-react-native';
-import { Text, useWindowDimensions, View } from 'react-native';
-import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import { Bookmark, Info, Menu, UserRound, X } from 'lucide-react-native';
+import { type ReactNode, useState } from 'react';
+import {
+  Modal,
+  Pressable,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BrandLogo } from './BrandLogo';
 import type { ViewName } from '../navigation/types';
 import { COLORS, styles } from '../styles';
@@ -20,84 +27,167 @@ export function TopBar({
   onAccount: () => void;
   onInfo: () => void;
 }) {
-  const compact = useWindowDimensions().width < 520;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  const drawerWidth = Math.min(useWindowDimensions().width * 0.86, 360);
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
+  function chooseDestination(destination: () => void) {
+    closeMenu();
+    destination();
+  }
 
   return (
-    <View style={[styles.topBar, compact && styles.topBarCompact]}>
-      <Pressable
-        onPress={onHome}
-        style={({ pressed }) => [
-          styles.wordmarkWrap,
-          compact && styles.wordmarkWrapCompact,
-          pressed && styles.pressed,
-        ]}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="Go to home"
-      >
-        <BrandLogo />
-      </Pressable>
-      <View
-        style={[styles.topBarActions, compact && styles.topBarActionsCompact]}
-      >
+    <>
+      <View style={styles.topBar}>
         <Pressable
-          onPress={onAccount}
+          onPress={onHome}
           style={({ pressed }) => [
-            styles.savedButton,
-            compact && styles.savedButtonCompact,
-            activeView === 'account' && styles.savedButtonActive,
+            styles.wordmarkWrap,
             pressed && styles.pressed,
           ]}
-          hitSlop={8}
+          hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Open My INSTEAD account"
-          accessibilityState={{ selected: activeView === 'account' }}
+          accessibilityLabel="Go to home"
         >
-          <UserRound size={17} color={COLORS.ink} />
-          <Text style={styles.savedButtonText}>ME</Text>
+          <BrandLogo />
         </Pressable>
         <Pressable
-          onPress={onInfo}
-          accessibilityRole="button"
-          accessibilityLabel="Info and Safety"
-          accessibilityState={{ selected: activeView === 'info' }}
+          onPress={() => setMenuOpen(true)}
           style={({ pressed }) => [
-            styles.savedButton,
-            compact && styles.savedButtonCompact,
-            activeView === 'info' && styles.savedButtonActive,
+            styles.menuTrigger,
             pressed && styles.pressed,
           ]}
-        >
-          <Text style={styles.savedButtonText}>INFO</Text>
-        </Pressable>
-        <Pressable
-          onPress={onSaved}
-          style={({ pressed }) => [
-            styles.savedButton,
-            compact && styles.savedButtonCompact,
-            activeView === 'saved' && styles.savedButtonActive,
-            pressed && styles.pressed,
-          ]}
-          hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`Open saved items${
-            savedCount ? `, ${savedCount} saved` : ''
-          }`}
-          accessibilityState={{ selected: activeView === 'saved' }}
+          accessibilityLabel="Open navigation menu"
+          accessibilityState={{ expanded: menuOpen }}
         >
-          <Bookmark
-            size={17}
-            color={COLORS.ink}
-            fill={activeView === 'saved' ? COLORS.ink : 'transparent'}
-          />
-          <Text style={styles.savedButtonText}>SAVED</Text>
-          {savedCount > 0 ? (
-            <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>{savedCount}</Text>
-            </View>
-          ) : null}
+          <Menu size={23} color={COLORS.ink} strokeWidth={2.3} />
         </Pressable>
       </View>
-    </View>
+
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeMenu}
+        statusBarTranslucent
+      >
+        <View style={styles.menuOverlay} accessibilityViewIsModal>
+          <Pressable
+            style={styles.menuScrim}
+            onPress={closeMenu}
+            accessibilityRole="button"
+            accessibilityLabel="Close navigation menu"
+          />
+          <View
+            style={[
+              styles.menuDrawer,
+              {
+                width: drawerWidth,
+                paddingTop: insets.top + 16,
+                paddingBottom: insets.bottom + 16,
+              },
+            ]}
+          >
+            <View style={styles.menuHeader}>
+              <View>
+                <Text style={styles.menuEyebrow}>INSTEAD</Text>
+                <Text style={styles.menuTitle}>Your spaces</Text>
+              </View>
+              <Pressable
+                onPress={closeMenu}
+                style={({ pressed }) => [
+                  styles.menuCloseButton,
+                  pressed && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Close menu"
+              >
+                <X size={21} color={COLORS.ink} />
+              </Pressable>
+            </View>
+
+            <View style={styles.menuItems}>
+              <MenuItem
+                label="My INSTEAD"
+                detail="Profile and your recipes"
+                active={activeView === 'account'}
+                onPress={() => chooseDestination(onAccount)}
+                icon={<UserRound size={21} color={COLORS.ink} />}
+              />
+              <MenuItem
+                label="Saved guides"
+                detail="Your bookmarked alternatives"
+                active={activeView === 'saved'}
+                onPress={() => chooseDestination(onSaved)}
+                icon={<Bookmark size={21} color={COLORS.ink} />}
+                count={savedCount}
+              />
+              <MenuItem
+                label="Info & safety"
+                detail="How INSTEAD works"
+                active={activeView === 'info'}
+                onPress={() => chooseDestination(onInfo)}
+                icon={<Info size={21} color={COLORS.ink} />}
+              />
+            </View>
+
+            <View style={styles.menuFooter}>
+              <View style={styles.menuFooterRule} />
+              <Text style={styles.menuFooterText}>
+                Simple ingredients. Everyday alternatives.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+function MenuItem({
+  label,
+  detail,
+  active,
+  onPress,
+  icon,
+  count,
+}: {
+  label: string;
+  detail: string;
+  active: boolean;
+  onPress: () => void;
+  icon: ReactNode;
+  count?: number;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.menuItem,
+        active && styles.menuItemActive,
+        pressed && styles.pressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}${count ? `, ${count} saved` : ''}`}
+      accessibilityState={{ selected: active }}
+    >
+      <View style={[styles.menuIconWrap, active && styles.menuIconWrapActive]}>
+        {icon}
+      </View>
+      <View style={styles.menuItemCopy}>
+        <Text style={styles.menuItemLabel}>{label}</Text>
+        <Text style={styles.menuItemDetail}>{detail}</Text>
+      </View>
+      {count ? (
+        <View style={styles.menuCountBadge}>
+          <Text style={styles.menuCountText}>{count}</Text>
+        </View>
+      ) : null}
+    </Pressable>
   );
 }
