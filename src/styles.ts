@@ -26,8 +26,30 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    rowGap: 8,
+  },
+  topBarCompact: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+    paddingVertical: 10,
+    rowGap: 10,
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  topBarActionsCompact: {
+    width: '100%',
+  },
+  wordmarkWrapCompact: {
+    alignSelf: 'center',
+  },
+  savedButtonCompact: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
   },
   wordmarkWrap: {
     minHeight: 42,
