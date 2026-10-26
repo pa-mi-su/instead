@@ -61,6 +61,7 @@ export default function HomeClient({
 
   useEffect(() => {
     let saved: string[] | null = null;
+    let savedTitles: Record<string, string> | null = null;
 
     try {
       const stored = window.localStorage.getItem(SAVED_KEY);
@@ -75,8 +76,14 @@ export default function HomeClient({
       const titles = window.localStorage.getItem(RECIPE_TITLES_KEY);
       if (titles) {
         const parsed: unknown = JSON.parse(titles);
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
-          setRecipeTitles(parsed as Record<string, string>);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          savedTitles = Object.fromEntries(
+            Object.entries(parsed).filter(
+              (entry): entry is [string, string] =>
+                typeof entry[1] === 'string',
+            ),
+          );
+        }
       }
     } catch {
       // The site remains usable if browser storage is unavailable.
@@ -84,6 +91,7 @@ export default function HomeClient({
 
     const timeout = window.setTimeout(() => {
       if (saved) setSavedIds(saved);
+      if (savedTitles) setRecipeTitles(savedTitles);
       setFavoritesReady(true);
     }, 0);
 
