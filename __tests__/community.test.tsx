@@ -15,9 +15,9 @@ function mockClient(session: CommunitySession | null = null) {
       return { data: { subscription: { unsubscribe: jest.fn() } } };
     }),
     signInWithOtp: jest.fn(async () => ({ error: null })),
-    signInWithPassword: jest.fn(async () => ({ error: null })),
+    signInWithPassword: jest.fn(async () => ({ error: null as unknown })),
     signUp: jest.fn(async () => ({
-      data: { session: null },
+      data: { session: null, user: { identities: [{ id: 'new-user' }] } },
       error: null as unknown,
     })),
     verifyOtp: jest.fn(async () => ({ error: null as unknown })),
@@ -107,6 +107,23 @@ test('signs in with a normalized email and password', async () => {
   expect(hook.result.current.notice).toMatch(/signed in/i);
   hook.unmount();
 });
+test('marks sign-in failures as authentication errors and clears them when changing modes', async () => {
+  const m = mockClient();
+  m.auth.signInWithPassword.mockResolvedValue({
+    error: { code: 'invalid_credentials' },
+  });
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(() => hook.result.current.setEmail('person@example.com'));
+  await act(() => hook.result.current.setPassword('wrong-password'));
+  await act(() => hook.result.current.signIn());
+  expect(hook.result.current.errorSource).toBe('auth');
+  expect(hook.result.current.error).toMatch(/email or password is incorrect/i);
+  await act(() => hook.result.current.setAuthMode('signup'));
+  expect(hook.result.current.error).toBe('');
+  hook.unmount();
+});
 test('creates an account and stores the public profile only after email confirmation', async () => {
   const m = mockClient();
   const hook = await renderHook(() =>
@@ -140,6 +157,30 @@ test('creates an account and stores the public profile only after email confirma
     p_bio: '',
   });
   expect(hook.result.current.notice).toMatch(/account is ready/i);
+  hook.unmount();
+});
+test('returns an existing email to sign-in instead of waiting for a code that was not sent', async () => {
+  const m = mockClient();
+  m.auth.signUp.mockResolvedValue({
+    data: { session: null, user: { identities: [] } },
+    error: null,
+  });
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(() => hook.result.current.setAuthMode('signup'));
+  await act(() => hook.result.current.setEmail('person@example.com'));
+  await act(() => hook.result.current.setUsername('RecipeMaker'));
+  await act(() => hook.result.current.setPassword('long-enough-password'));
+  await act(() =>
+    hook.result.current.setPasswordConfirmation('long-enough-password'),
+  );
+  await act(() => hook.result.current.signUp());
+  expect(hook.result.current.authMode).toBe('signin');
+  expect(hook.result.current.pendingAuth).toBeNull();
+  expect(hook.result.current.sentEmail).toBe('');
+  expect(hook.result.current.password).toBe('');
+  expect(hook.result.current.notice).toMatch(/no confirmation code was sent/i);
   hook.unmount();
 });
 test('wrong code retains the sent email for retry', async () => {
@@ -191,6 +232,28 @@ test('setup errors are actionable and unexpected errors do not expose backend de
   expect(
     communityError({ message: 'private database information' }),
   ).not.toMatch(/private database/);
+});
+
+test('authentication errors explain the next step without exposing service details', () => {
+  expect(communityError({ code: 'invalid_credentials' })).toMatch(
+    /email or password is incorrect.*forgot or set password/i,
+  );
+  expect(communityError({ code: 'user_already_exists' })).toMatch(
+    /already has an account.*sign in/i,
+  );
+  expect(communityError({ code: 'email_not_confirmed' })).toMatch(
+    /confirm your email/i,
+  );
+  expect(communityError({ code: 'weak_password' })).toMatch(/10 characters/i);
+  expect(communityError({ code: 'over_email_send_rate_limit' })).toMatch(
+    /wait a few minutes/i,
+  );
+  expect(communityError(new TypeError('Network request failed'))).toMatch(
+    /could not reach the sign-in service/i,
+  );
+  expect(communityError(new Error('Enter your password.'))).toBe(
+    'Enter your password.',
+  );
 });
 
 test('does not send a vote request for an owned comment', async () => {

@@ -30,9 +30,9 @@ export function useCommunity(
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [profile, setProfile] = useState<CommunityProfile | null>(null);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'recovery'>(
-    'signin',
-  );
+  const [authMode, setAuthModeState] = useState<
+    'signin' | 'signup' | 'recovery'
+  >('signin');
   const [pendingAuth, setPendingAuth] = useState<'signup' | 'recovery' | null>(
     null,
   );
@@ -45,6 +45,7 @@ export function useCommunity(
   const [loaded, setLoaded] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState('');
+  const [errorSource, setErrorSource] = useState<'auth' | 'other'>('other');
   const [notice, setNotice] = useState('');
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
@@ -120,7 +121,10 @@ export function useCommunity(
       .getSession()
       .then(({ data: auth, error: issue }) => {
         if (active) {
-          if (issue) setError(communityError(issue));
+          if (issue) {
+            setError(communityError(issue));
+            setErrorSource('auth');
+          }
           if (!receivedAuthEvent) setSession(auth.session);
           setAuthReady(true);
         }
@@ -128,6 +132,7 @@ export function useCommunity(
       .catch(issue => {
         if (active) {
           setError(communityError(issue));
+          setErrorSource('auth');
           setAuthReady(true);
         }
       });
@@ -144,14 +149,20 @@ export function useCommunity(
     setComments([]);
     setLoaded(false);
     refresh().catch(issue => {
-      if (active) setError(communityError(issue));
+      if (active) {
+        setError(communityError(issue));
+        setErrorSource('other');
+      }
     });
     setAccount(null);
     setAccountUserId(undefined);
     setBlocks([]);
     if (userId)
       loadAccount().catch(issue => {
-        if (active) setError(communityError(issue));
+        if (active) {
+          setError(communityError(issue));
+          setErrorSource('other');
+        }
       });
     return () => {
       active = false;
@@ -164,7 +175,10 @@ export function useCommunity(
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [sentEmail]);
-  async function run(task: () => Promise<void>) {
+  async function run(
+    task: () => Promise<void>,
+    source: 'auth' | 'other' = 'other',
+  ) {
     if (lock.current) return;
     lock.current = true;
     setBusy(true);
@@ -174,10 +188,16 @@ export function useCommunity(
       await task();
     } catch (issue) {
       setError(communityError(issue));
+      setErrorSource(source);
     } finally {
       lock.current = false;
       setBusy(false);
     }
+  }
+  function changeAuthMode(mode: 'signin' | 'signup' | 'recovery') {
+    setAuthModeState(mode);
+    setError('');
+    setNotice('');
   }
   const verified = Boolean(
     userId && session?.user.email_confirmed_at && !session.user.is_anonymous,
@@ -243,6 +263,7 @@ export function useCommunity(
       const address = (sentEmail || email).trim().toLowerCase();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
         setError('Enter a valid email address.');
+        setErrorSource('auth');
         return;
       }
       if (!client || Date.now() < resendAt) return;
@@ -257,7 +278,7 @@ export function useCommunity(
       setResendAt(Date.now() + 60000);
       setNow(Date.now());
       setNotice('Check your email for a password setup code.');
-    });
+    }, 'auth');
   }
   function signIn() {
     return run(async () => {
@@ -272,7 +293,7 @@ export function useCommunity(
       if (issue) throw issue;
       setPassword('');
       setNotice('You are signed in.');
-    });
+    }, 'auth');
   }
   function signUp() {
     return run(async () => {
@@ -294,6 +315,21 @@ export function useCommunity(
         password,
       });
       if (issue) throw issue;
+      if (
+        !data?.session &&
+        Array.isArray(data?.user?.identities) &&
+        data.user.identities.length === 0
+      ) {
+        setAuthModeState('signin');
+        setPendingAuth(null);
+        setSentEmail('');
+        setPassword('');
+        setPasswordConfirmation('');
+        setNotice(
+          'No confirmation code was sent. Try signing in, or use “Forgot or set password” to set a password for an earlier email-code account.',
+        );
+        return;
+      }
       if (data?.session) {
         await communityRpc(client, 'community_profile_set', {
           p_username: username.trim(),
@@ -309,7 +345,7 @@ export function useCommunity(
         setCode('');
         setNotice('Enter the confirmation code sent to your email.');
       }
-    });
+    }, 'auth');
   }
   function saveProfile() {
     return run(async () => {
@@ -327,6 +363,7 @@ export function useCommunity(
     return run(async () => {
       if (!client || !/^\d{6,10}$/.test(code.trim())) {
         setError('Enter the code from your email.');
+        setErrorSource('auth');
         return;
       }
       const { error: issue } = await client.auth.verifyOtp({
@@ -338,6 +375,7 @@ export function useCommunity(
         setError(
           'That code is invalid or expired. Try again or request a new code.',
         );
+        setErrorSource('auth');
         return;
       }
       setCode('');
@@ -355,7 +393,7 @@ export function useCommunity(
         setPasswordSetupReady(true);
         setNotice('Email verified. Choose a new password.');
       }
-    });
+    }, 'auth');
   }
   function setNewPassword() {
     return run(async () => {
@@ -372,7 +410,7 @@ export function useCommunity(
       setPendingAuth(null);
       setEmail('');
       setNotice('Password saved. You are signed in.');
-    });
+    }, 'auth');
   }
   function post() {
     return run(async () => {
@@ -400,7 +438,7 @@ export function useCommunity(
         return;
       }
       if (!canContribute) {
-        setNotice('Sign in with an email code to vote.');
+        setNotice('Sign in to vote.');
         return;
       }
       await communityRpc(client, 'community_vote', {
@@ -483,7 +521,7 @@ export function useCommunity(
     setBio,
     profile,
     authMode,
-    setAuthMode,
+    setAuthMode: changeAuthMode,
     pendingAuth,
     passwordSetupReady,
     sentEmail,
@@ -495,6 +533,7 @@ export function useCommunity(
     loading,
     loaded,
     error,
+    errorSource,
     notice,
     canContribute,
     resendSeconds: Math.max(0, Math.ceil((resendAt - now) / 1000)),

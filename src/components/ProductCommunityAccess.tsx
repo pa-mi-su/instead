@@ -21,21 +21,58 @@ export function ProductCommunityAccess({
 }) {
   const signupCode = c.pendingAuth === 'signup' && c.sentEmail;
   const recoveryCode = c.pendingAuth === 'recovery' && c.sentEmail;
-  const button = (label: string, action: () => unknown, disabled = c.busy) => (
+  const button = (
+    label: string,
+    action: () => unknown,
+    disabled = c.busy,
+    primary = false,
+  ) => (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={action}
       style={({ pressed }) => [
-        styles.chip,
+        local.authButton,
+        primary && local.authButtonPrimary,
         disabled && local.disabled,
         pressed && styles.pressed,
       ]}
     >
-      <Text style={styles.chipText}>{label}</Text>
+      <Text
+        style={[local.authButtonText, primary && local.authButtonTextPrimary]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
+  const link = (label: string, url: string) => (
+    <Pressable
+      accessibilityRole="link"
+      key={label}
+      onPress={() => Linking.openURL(url).catch(() => undefined)}
+      style={({ pressed }) => [local.policyLink, pressed && styles.pressed]}
+    >
+      <Text style={local.policyLinkText}>{label}</Text>
+    </Pressable>
+  );
+  const modeTab = (label: string, mode: 'signin' | 'signup') => {
+    const selected = c.authMode === mode;
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        onPress={() => c.setAuthMode(mode)}
+        style={[local.modeTab, selected && local.modeTabSelected]}
+      >
+        <Text
+          style={[local.modeTabText, selected && local.modeTabTextSelected]}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
   const field = (
     label: string,
     value: string,
@@ -84,9 +121,20 @@ export function ProductCommunityAccess({
           : 'Sign in to vote or share a recipe. Your public username identifies approved recipes; your email stays private.'}
       </Text>
       {!c.configured && <Text>Community features are not configured yet.</Text>}
-      {!!c.error && <Text accessibilityRole="alert">{c.error}</Text>}
-      {!!c.notice && <Text accessibilityLiveRegion="polite">{c.notice}</Text>}
-      {!!c.error && button('Retry', c.retry)}
+      {!!c.error && (
+        <View style={local.errorBox}>
+          <Text accessibilityRole="alert" style={local.errorText}>
+            {c.error}
+          </Text>
+          {c.errorSource !== 'auth' &&
+            button('Reload account and community', c.retry, false)}
+        </View>
+      )}
+      {!!c.notice && (
+        <Text accessibilityLiveRegion="polite" style={local.noticeText}>
+          {c.notice}
+        </Text>
+      )}
       {c.configured &&
         c.authReady &&
         !c.session &&
@@ -101,24 +149,24 @@ export function ProductCommunityAccess({
                 : 'Sign in to INSTEAD'}
             </Text>
             <Text style={styles.optionDetail}>
-              Email and password sign-in. New accounts confirm their email. Use
-              password recovery if you used an email code in an earlier version.
+              {c.authMode === 'signup'
+                ? 'Create a profile to share recipes and keep saved guides in sync. Your email stays private.'
+                : c.authMode === 'recovery'
+                ? 'Get an email code to set or reset your account password.'
+                : 'Use your email and password. Your email stays private; your public username appears with approved recipes.'}
             </Text>
-            {button(
-              'Terms',
-              () =>
-                Linking.openURL('https://insteadtry.com/terms').catch(
-                  () => undefined,
-                ),
-              false,
-            )}
-            {button(
-              'Privacy Policy',
-              () =>
-                Linking.openURL('https://insteadtry.com/privacy').catch(
-                  () => undefined,
-                ),
-              false,
+            <View style={local.policyLinks}>
+              {link('Terms of Use', 'https://insteadtry.com/terms')}
+              {link('Privacy Policy', 'https://insteadtry.com/privacy')}
+            </View>
+            {c.authMode !== 'recovery' && (
+              <View
+                style={local.modeSwitch}
+                accessibilityLabel="Account options"
+              >
+                {modeTab('Sign in', 'signin')}
+                {modeTab('Create account', 'signup')}
+              </View>
             )}
             {c.authMode === 'signup' ? (
               <>
@@ -148,12 +196,18 @@ export function ProductCommunityAccess({
                   multiline: true,
                   maxLength: 280,
                 })}
-                {button(
-                  c.busy ? 'Creating account…' : 'Create account',
-                  c.signUp,
-                  c.busy,
-                )}
-                {button('Back to sign in', () => c.setAuthMode('signin'))}
+                <View style={local.actionStack}>
+                  {button(
+                    c.busy
+                      ? 'Creating account…'
+                      : c.errorSource === 'auth'
+                      ? 'Try creating account again'
+                      : 'Create account',
+                    c.signUp,
+                    c.busy,
+                    true,
+                  )}
+                </View>
               </>
             ) : c.authMode === 'recovery' ? (
               <>
@@ -163,12 +217,15 @@ export function ProductCommunityAccess({
                   keyboard: 'email-address',
                   maxLength: 254,
                 })}
-                {button(
-                  c.busy ? 'Sending…' : 'Email recovery code',
-                  c.sendCode,
-                  c.busy || !c.email.trim(),
-                )}
-                {button('Back to sign in', () => c.setAuthMode('signin'))}
+                <View style={local.actionStack}>
+                  {button(
+                    c.busy ? 'Sending…' : 'Email recovery code',
+                    c.sendCode,
+                    c.busy || !c.email.trim(),
+                    true,
+                  )}
+                  {button('Back to sign in', () => c.setAuthMode('signin'))}
+                </View>
               </>
             ) : (
               <>
@@ -182,15 +239,21 @@ export function ProductCommunityAccess({
                   password: true,
                   autocomplete: 'current-password',
                 })}
-                {button(
-                  c.busy ? 'Signing in…' : 'Sign in',
-                  c.signIn,
-                  c.busy || !c.email.trim() || !c.password,
-                )}
-                {button('Create account', () => c.setAuthMode('signup'))}
-                {button('Forgot or set password', () =>
-                  c.setAuthMode('recovery'),
-                )}
+                <View style={local.actionStack}>
+                  {button(
+                    c.busy
+                      ? 'Signing in…'
+                      : c.errorSource === 'auth'
+                      ? 'Try signing in again'
+                      : 'Sign in',
+                    c.signIn,
+                    c.busy || !c.email.trim() || !c.password,
+                    true,
+                  )}
+                  {button('Forgot or set password', () =>
+                    c.setAuthMode('recovery'),
+                  )}
+                </View>
               </>
             )}
           </View>
@@ -211,20 +274,23 @@ export function ProductCommunityAccess({
               maxLength: 10,
             },
           )}
-          {button(
-            signupCode ? 'Verify and create profile' : 'Verify code',
-            c.verifyCode,
-            c.busy || !c.code.trim(),
-          )}
-          {recoveryCode &&
-            button(
-              c.resendSeconds
-                ? `Resend in ${c.resendSeconds}s`
-                : 'Resend recovery code',
-              c.sendCode,
-              c.busy || c.resendSeconds > 0,
+          <View style={local.actionStack}>
+            {button(
+              signupCode ? 'Verify and create profile' : 'Verify code',
+              c.verifyCode,
+              c.busy || !c.code.trim(),
+              true,
             )}
-          {button('Cancel', c.changeEmail)}
+            {recoveryCode &&
+              button(
+                c.resendSeconds
+                  ? `Resend in ${c.resendSeconds}s`
+                  : 'Resend recovery code',
+                c.sendCode,
+                c.busy || c.resendSeconds > 0,
+              )}
+            {button('Cancel', c.changeEmail)}
+          </View>
         </View>
       )}
       {c.passwordSetupReady && (
@@ -240,7 +306,9 @@ export function ProductCommunityAccess({
             c.setPasswordConfirmation,
             { password: true, autocomplete: 'new-password' },
           )}
-          {button('Save password', c.setNewPassword, c.busy)}
+          <View style={local.actionStack}>
+            {button('Save password', c.setNewPassword, c.busy, true)}
+          </View>
         </View>
       )}
       {!!c.session && !c.passwordSetupReady && (
@@ -279,6 +347,72 @@ export function ProductCommunityAccess({
 
 const local = StyleSheet.create({
   disabled: { opacity: 0.5 },
+  errorBox: {
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#FFF0EB',
+    borderWidth: 1,
+    borderColor: '#E7B9AC',
+  },
+  errorText: { color: '#8A2F20', fontSize: 14, lineHeight: 20 },
+  noticeText: { color: COLORS.ink, fontSize: 14, lineHeight: 20 },
+  policyLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 22,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  policyLink: { paddingVertical: 6 },
+  policyLinkText: {
+    color: COLORS.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  modeSwitch: {
+    flexDirection: 'row',
+    gap: 6,
+    padding: 5,
+    marginBottom: 4,
+    borderRadius: 16,
+    backgroundColor: '#F0F2E9',
+  },
+  modeTab: {
+    flex: 1,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+  },
+  modeTabSelected: {
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.ink,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  modeTabText: { color: COLORS.muted, fontSize: 13, fontWeight: '700' },
+  modeTabTextSelected: { color: COLORS.ink, fontWeight: '900' },
+  actionStack: { gap: 10, marginTop: 16 },
+  authButton: {
+    width: '100%',
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: 16,
+    backgroundColor: COLORS.white,
+  },
+  authButtonPrimary: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
+  authButtonText: { color: COLORS.ink, fontSize: 15, fontWeight: '800' },
+  authButtonTextPrimary: { color: COLORS.white },
   authInput: {
     width: '100%',
     minHeight: 54,

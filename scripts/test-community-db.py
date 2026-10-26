@@ -34,11 +34,11 @@ grant select,insert,delete on storage.objects to authenticated;
  run(psql+['-f',str(fixture)])
  run(psql+['-f',str(root/'supabase/community.sql')])
  run(psql+['-f',str(root/'supabase/recipes.sql')])
- print(run(psql+['-f',str(root/'supabase/community.test.sql')])[-200:])
- print(run(psql+['-f',str(root/'supabase/recipes.test.sql')])[-1500:])
+ print(run(psql+['-f',str(root/'supabase/tests/community.test.sql')])[-200:])
+ print(run(psql+['-f',str(root/'supabase/tests/recipes.test.sql')])[-1500:])
  run(psql+['-f',str(root/'supabase/community-safeguards.sql')])
  run(psql+['-f',str(root/'supabase/community-safeguards.sql')])
- print(run(psql+['-f',str(root/'supabase/safeguards.test.sql')])[-500:])
+ print(run(psql+['-f',str(root/'supabase/tests/safeguards.test.sql')])[-500:])
  run(psql+['-f',str(root/'supabase/recipe-comments.sql')])
  run(psql+['-f',str(root/'supabase/recipe-comments.sql')])
  run(psql+['-f',str(root/'supabase/admin-panel.sql')])
@@ -49,7 +49,7 @@ grant select,insert,delete on storage.objects to authenticated;
  run(psql+['-f',str(root/'supabase/builtin-recipe-admin.sql')])
  run(psql+['-f',str(root/'supabase/private-account-hub.sql')])
  run(psql+['-f',str(root/'supabase/private-account-hub.sql')])
- print(run(psql+['-f',str(root/'supabase/private-account-hub.test.sql')])[-500:])
+ print(run(psql+['-f',str(root/'supabase/tests/private-account-hub.test.sql')])[-500:])
  run(psql+['-c',"""alter table public.community_moderation_audit add column qualifications text;
 alter table public.community_moderation_audit add column sources text;
 insert into auth.users(id,email,email_confirmed_at) values('99000000-0000-0000-0000-000000000001','legacy-rejection@example.invalid',now());
@@ -67,10 +67,10 @@ if not exists(select 1 from public.community_recipes where id='99000000-0000-000
 if not exists(select 1 from public.community_comments where id='99000000-0000-0000-0000-000000000003' and admin_removed_at is not null and hidden and not review_record ? 'qualifications' and not review_record ? 'sources') then raise exception 'Legacy rejected comment was not cleaned into Trash'; end if;
 end $$;"""])
  run(psql+['-c',"delete from auth.users where id='99000000-0000-0000-0000-000000000001';"])
- print(run(psql+['-f',str(root/'supabase/admin-panel.test.sql')])[-800:])
- print(run(psql+['-f',str(root/'supabase/recipe-saves-and-admin-users.test.sql')])[-800:])
- print(run(psql+['-f',str(root/'supabase/recipe-voting.test.sql')])[-500:])
- print(run(psql+['-f',str(root/'supabase/builtin-recipe-admin.test.sql')])[-500:])
+ print(run(psql+['-f',str(root/'supabase/tests/admin-panel.test.sql')])[-800:])
+ print(run(psql+['-f',str(root/'supabase/tests/recipe-saves-and-admin-users.test.sql')])[-800:])
+ print(run(psql+['-f',str(root/'supabase/tests/recipe-voting.test.sql')])[-500:])
+ print(run(psql+['-f',str(root/'supabase/tests/builtin-recipe-admin.test.sql')])[-500:])
 finally:
  if started: run([str(bin/'pg_ctl'),'-D',str(base/'data'),'-m','immediate','stop'])
  shutil.rmtree(base)
