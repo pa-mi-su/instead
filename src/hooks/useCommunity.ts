@@ -9,6 +9,7 @@ import type {
   CommunityAccountState,
   BlockedContributor,
   CommunityProfile,
+  AvatarUpload,
 } from '../lib/community';
 
 export function useCommunity(
@@ -23,6 +24,10 @@ export function useCommunity(
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [account, setAccount] = useState<CommunityAccountState | null>(null);
   const [accountUserId, setAccountUserId] = useState<string>();
+  const [accountLoadStatus, setAccountLoadStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >('idle');
+  const [accountLoadError, setAccountLoadError] = useState('');
   const [blocks, setBlocks] = useState<BlockedContributor[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +35,7 @@ export function useCommunity(
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [profile, setProfile] = useState<CommunityProfile | null>(null);
+  const [profileLoadError, setProfileLoadError] = useState('');
   const [authMode, setAuthModeState] = useState<
     'signin' | 'signup' | 'recovery'
   >('signin');
@@ -45,7 +51,9 @@ export function useCommunity(
   const [loaded, setLoaded] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState('');
-  const [errorSource, setErrorSource] = useState<'auth' | 'other'>('other');
+  const [errorSource, setErrorSource] = useState<
+    'auth' | 'other' | 'validation'
+  >('other');
   const [notice, setNotice] = useState('');
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
@@ -55,20 +63,54 @@ export function useCommunity(
   const accountGeneration = useRef(0);
   const loadAccount = useCallback(async () => {
     const version = ++accountGeneration.current;
-    if (!userId) return;
-    const [rows, blocked, profiles] = await Promise.all([
-      communityRpc<CommunityAccountState[]>(client, 'community_account_state'),
-      communityRpc<BlockedContributor[]>(client, 'community_blocks_list'),
-      communityRpc<CommunityProfile[]>(client, 'community_profile_me'),
-    ]);
-    if (version === accountGeneration.current) {
-      setAccount(rows[0] ?? null);
-      setBlocks(blocked);
-      setProfile(profiles[0] ?? null);
-      setUsername(profiles[0]?.username ?? '');
-      setBio(profiles[0]?.bio ?? '');
-      setAccountUserId(userId);
+    if (!userId) {
+      setAccountLoadStatus('idle');
+      setAccountLoadError('');
+      setAccountUserId(undefined);
+      return true;
     }
+    setAccountLoadStatus('loading');
+    setAccountLoadError('');
+    setProfileLoadError('');
+    const [stateResult, blocksResult, profileResult] = await Promise.allSettled(
+      [
+        communityRpc<CommunityAccountState[]>(
+          client,
+          'community_account_state',
+        ),
+        communityRpc<BlockedContributor[]>(client, 'community_blocks_list'),
+        communityRpc<CommunityProfile[]>(client, 'community_profile_me'),
+      ],
+    );
+    if (version !== accountGeneration.current) return false;
+
+    if (stateResult.status === 'fulfilled' && stateResult.value[0]) {
+      setAccount(stateResult.value[0]);
+      setAccountUserId(userId);
+      setAccountLoadStatus('ready');
+    } else {
+      const issue =
+        stateResult.status === 'rejected'
+          ? stateResult.reason
+          : new Error('Account safeguards are unavailable.');
+      setAccount(null);
+      setAccountUserId(userId);
+      setAccountLoadStatus('error');
+      setAccountLoadError(communityError(issue));
+    }
+
+    if (blocksResult.status === 'fulfilled') setBlocks(blocksResult.value);
+    else setBlocks([]);
+
+    if (profileResult.status === 'fulfilled') {
+      const nextProfile = profileResult.value[0] ?? null;
+      setProfile(nextProfile);
+      setUsername(nextProfile?.username ?? '');
+      setBio(nextProfile?.bio ?? '');
+    } else {
+      setProfileLoadError(communityError(profileResult.reason));
+    }
+    return stateResult.status === 'fulfilled' && Boolean(stateResult.value[0]);
   }, [client, userId]);
   const refresh = useCallback(async () => {
     const version = ++generation.current;
@@ -156,12 +198,16 @@ export function useCommunity(
     });
     setAccount(null);
     setAccountUserId(undefined);
+    setAccountLoadStatus(userId ? 'loading' : 'idle');
+    setAccountLoadError('');
+    setProfile(null);
+    setProfileLoadError('');
     setBlocks([]);
     if (userId)
       loadAccount().catch(issue => {
         if (active) {
-          setError(communityError(issue));
-          setErrorSource('other');
+          setAccountLoadStatus('error');
+          setAccountLoadError(communityError(issue));
         }
       });
     return () => {
@@ -178,17 +224,19 @@ export function useCommunity(
   async function run(
     task: () => Promise<void>,
     source: 'auth' | 'other' = 'other',
-  ) {
-    if (lock.current) return;
+  ): Promise<boolean> {
+    if (lock.current) return false;
     lock.current = true;
     setBusy(true);
     setError('');
     setNotice('');
     try {
       await task();
+      return true;
     } catch (issue) {
       setError(communityError(issue));
       setErrorSource(source);
+      return false;
     } finally {
       lock.current = false;
       setBusy(false);
@@ -205,10 +253,12 @@ export function useCommunity(
   const canManage = Boolean(
     verified &&
       accountUserId === userId &&
+      accountLoadStatus === 'ready' &&
       account &&
       !account.suspended &&
       !account.deletion_requested_at,
   );
+  const canEditProfile = Boolean(verified && !account?.deletion_requested_at);
   const canContribute = Boolean(canManage && account?.policy_accepted);
   function acceptPolicy() {
     return run(async () => {
@@ -296,20 +346,27 @@ export function useCommunity(
     }, 'auth');
   }
   function signUp() {
+    const address = email.trim().toLowerCase();
+    const validationError =
+      !client || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)
+        ? 'Enter a valid email address.'
+        : !/^[A-Za-z0-9_]{3,20}$/.test(username.trim())
+        ? 'Choose a username with 3–20 letters, numbers, or underscores.'
+        : password.length < 10
+        ? 'Use a password with at least 10 characters.'
+        : password !== passwordConfirmation
+        ? 'The passwords do not match.'
+        : bio.length > 280
+        ? 'Bio must be 280 characters or fewer.'
+        : '';
+    if (validationError) {
+      setError(validationError);
+      setErrorSource('validation');
+      setNotice('');
+      return Promise.resolve(false);
+    }
     return run(async () => {
-      const address = email.trim().toLowerCase();
-      if (!client || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address))
-        throw new Error('Enter a valid email address.');
-      if (!/^[A-Za-z0-9_]{3,20}$/.test(username.trim()))
-        throw new Error(
-          'Choose a username with 3–20 letters, numbers, or underscores.',
-        );
-      if (password.length < 10)
-        throw new Error('Use a password with at least 10 characters.');
-      if (password !== passwordConfirmation)
-        throw new Error('The passwords do not match.');
-      if (bio.length > 280)
-        throw new Error('Bio must be 280 characters or fewer.');
+      if (!client) throw new Error('Account service is not available.');
       const { data, error: issue } = await client.auth.signUp({
         email: address,
         password,
@@ -347,16 +404,56 @@ export function useCommunity(
       }
     }, 'auth');
   }
-  function saveProfile() {
+  function saveProfile(avatar?: AvatarUpload, removeAvatar = false) {
     return run(async () => {
-      if (!profile)
-        throw new Error('Complete account setup before editing your profile.');
-      await communityRpc(client, 'community_profile_set', {
-        p_username: username.trim(),
-        p_bio: bio.trim(),
-      });
-      setProfile({ username: username.trim(), bio: bio.trim() });
-      setNotice('Profile saved.');
+      if (!client || !userId || !canEditProfile)
+        throw new Error('Verify your email before updating your profile.');
+      const handle = username.trim();
+      const about = bio.trim();
+      if (!/^[A-Za-z0-9_]{3,20}$/.test(handle))
+        throw new Error(
+          'Choose a username with 3–20 letters, numbers, or underscores.',
+        );
+      if (about.length > 280)
+        throw new Error('Bio must be 280 characters or fewer.');
+
+      const previousPath = profile?.avatar_path ?? null;
+      let nextPath = previousPath;
+      let storage = client.storage?.from('profile-avatars');
+      if ((avatar || removeAvatar) && !storage)
+        throw new Error('Profile photos are not configured yet.');
+      if (avatar) {
+        const extension = avatar.contentType.split('/')[1];
+        nextPath = `${userId}/avatar.${extension}`;
+        const { error: uploadError } = await storage!.upload(
+          nextPath,
+          avatar.bytes,
+          { contentType: avatar.contentType, upsert: true },
+        );
+        if (uploadError) throw uploadError;
+      } else if (removeAvatar) {
+        nextPath = null;
+      }
+
+      try {
+        await communityRpc(client, 'community_profile_set', {
+          p_username: handle,
+          p_bio: about,
+        });
+        if (avatar || removeAvatar)
+          await communityRpc(client, 'community_profile_avatar_set', {
+            p_avatar_path: nextPath,
+          });
+      } catch (issue) {
+        if (avatar && nextPath && nextPath !== previousPath)
+          await storage?.remove([nextPath]).catch(() => undefined);
+        throw issue;
+      }
+
+      if (previousPath && nextPath !== previousPath)
+        await storage?.remove([previousPath]).catch(() => undefined);
+      setProfile({ username: handle, bio: about, avatar_path: nextPath });
+      setNotice('Profile updated.');
     });
   }
   function verifyCode() {
@@ -396,12 +493,20 @@ export function useCommunity(
     }, 'auth');
   }
   function setNewPassword() {
+    const validationError =
+      password.length < 10
+        ? 'Use a password with at least 10 characters.'
+        : password !== passwordConfirmation
+        ? 'The passwords do not match.'
+        : '';
+    if (validationError) {
+      setError(validationError);
+      setErrorSource('validation');
+      setNotice('');
+      return Promise.resolve(false);
+    }
     return run(async () => {
       if (!client || !passwordSetupReady) return;
-      if (password.length < 10)
-        throw new Error('Use a password with at least 10 characters.');
-      if (password !== passwordConfirmation)
-        throw new Error('The passwords do not match.');
       const { error: issue } = await client.auth.updateUser({ password });
       if (issue) throw issue;
       setPassword('');
@@ -495,6 +600,10 @@ export function useCommunity(
       setHasMore(rows.length === 50);
     });
   }
+  const avatarUrl = profile?.avatar_path
+    ? client?.storage?.from('profile-avatars').getPublicUrl(profile.avatar_path)
+        .data.publicUrl
+    : null;
   return {
     configured: Boolean(client),
     session,
@@ -502,7 +611,11 @@ export function useCommunity(
     comments,
     publicCount: comments[0]?.public_count ?? 0,
     account: accountUserId === userId ? account : null,
-    accountReady: accountUserId === userId && !!account,
+    accountReady:
+      accountUserId === userId && accountLoadStatus === 'ready' && !!account,
+    accountLoading: accountUserId !== userId || accountLoadStatus === 'loading',
+    accountLoadError,
+    retryAccount: loadAccount,
     canManage,
     blocks: accountUserId === userId ? blocks : [],
     acceptPolicy,
@@ -520,6 +633,9 @@ export function useCommunity(
     bio,
     setBio,
     profile,
+    avatarUrl,
+    profileLoadError,
+    canEditProfile,
     authMode,
     setAuthMode: changeAuthMode,
     pendingAuth,

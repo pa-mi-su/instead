@@ -84,6 +84,7 @@ export type Recipe = {
 export type PublicProfile = {
   username: string;
   bio: string;
+  avatar_path?: string | null;
   recipes: {
     id: string;
     title: string;

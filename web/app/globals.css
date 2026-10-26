@@ -1172,6 +1172,24 @@ a:focus-visible {
 .community-access form { display: grid; gap: 10px; max-width: 520px; margin: 16px 0; }
 .community-access input,
 .account-section input { min-height: 48px; padding: 10px 12px; font: inherit; border: 1px solid var(--ink); border-radius: 8px; }
+.community-password-field { display: grid; gap: 6px; }
+.community-password-row { display: flex; align-items: stretch; gap: 8px; }
+.community-password-row input { flex: 1; min-width: 0; }
+.community-password-row button { flex: 0 0 auto; margin: 0; }
+.password-hint { color: #8a2f20; font-size: .92rem; }
+.profile-summary { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 12px; margin: 18px 0; }
+.profile-avatar-image, .profile-avatar-placeholder { display: block; width: 64px; height: 64px; border-radius: 50%; background-position: center; background-size: cover; }
+.profile-avatar-placeholder { display: grid; place-items: center; background-color: var(--line); color: var(--ink); font-size: 1.5rem; font-weight: 850; }
+.profile-summary > div { min-width: 0; }
+.profile-summary p { margin: 4px 0; color: var(--muted); }
+.profile-summary > button, .profile-summary > [role="alert"] { grid-column: 1 / -1; }
+.profile-editor-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgb(24 59 50 / 52%); }
+.profile-editor { width: min(100%, 620px); max-height: min(90vh, 900px); overflow: auto; padding: 24px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); box-shadow: 0 20px 60px rgb(0 0 0 / 20%); }
+.profile-editor-close { float: right; }
+.profile-editor form { clear: both; display: grid; gap: 10px; margin-top: 18px; }
+.profile-editor textarea { min-height: 120px; padding: 12px; font: inherit; border: 1px solid var(--ink); border-radius: 8px; }
+.profile-editor-avatar { display: block; width: 112px; height: 112px; border-radius: 50%; background-position: center; background-size: cover; }
+.public-profile-avatar { display: block; width: 88px; height: 88px; margin: 16px 0; border-radius: 50%; background-position: center; background-size: cover; }
 .community-access button,
 .account-section button,
 .account-recipe button { min-height: 42px; margin: 6px 8px 0 0; padding: 9px 14px; border: 1px solid var(--ink); border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 750; cursor: pointer; }

@@ -1,7 +1,16 @@
 import { CommunityAccountControls } from './CommunityAccountControls';
-import type { ReactNode } from 'react';
-import { Linking, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Eye, EyeOff } from 'lucide-react-native';
+import {
+  Image,
+  Linking,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import { ProfileEditor } from './ProfileEditor';
 import type { useCommunity } from '../hooks/useCommunity';
 import { COLORS, styles } from '../styles';
 
@@ -19,6 +28,10 @@ export function ProductCommunityAccess({
   onSignInRequest: () => void;
   purpose?: 'community' | 'account';
 }) {
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<
+    Record<string, boolean>
+  >({});
   const signupCode = c.pendingAuth === 'signup' && c.sentEmail;
   const recoveryCode = c.pendingAuth === 'recovery' && c.sentEmail;
   const button = (
@@ -89,10 +102,41 @@ export function ProductCommunityAccess({
         | 'new-password'
         | 'one-time-code';
       keyboard?: 'email-address' | 'default' | 'number-pad';
+      passwordKey?: string;
     } = {},
   ) => (
     <View>
-      <Text style={local.fieldLabel}>{label}</Text>
+      <View style={local.fieldHeader}>
+        <Text style={local.fieldLabel}>{label}</Text>
+        {options.password && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${
+              visiblePasswords[options.passwordKey ?? label] ? 'Hide' : 'Show'
+            } ${label.toLowerCase()}`}
+            accessibilityState={{
+              selected: Boolean(visiblePasswords[options.passwordKey ?? label]),
+            }}
+            onPress={() =>
+              setVisiblePasswords(current => ({
+                ...current,
+                [options.passwordKey ?? label]:
+                  !current[options.passwordKey ?? label],
+              }))
+            }
+            style={local.passwordVisibility}
+          >
+            {visiblePasswords[options.passwordKey ?? label] ? (
+              <EyeOff size={20} color={COLORS.ink} />
+            ) : (
+              <Eye size={20} color={COLORS.ink} />
+            )}
+            <Text style={local.passwordVisibilityText}>
+              {visiblePasswords[options.passwordKey ?? label] ? 'Hide' : 'Show'}
+            </Text>
+          </Pressable>
+        )}
+      </View>
       <TextInput
         accessibilityLabel={label}
         value={value}
@@ -104,7 +148,9 @@ export function ProductCommunityAccess({
         autoCorrect={!options.email && !options.password}
         autoComplete={options.autocomplete}
         keyboardType={options.keyboard ?? 'default'}
-        secureTextEntry={options.password}
+        secureTextEntry={
+          options.password && !visiblePasswords[options.passwordKey ?? label]
+        }
         multiline={options.multiline}
         maxLength={options.maxLength}
         editable={!c.busy}
@@ -178,14 +224,31 @@ export function ProductCommunityAccess({
                 })}
                 {field('Password (10+ characters)', c.password, c.setPassword, {
                   password: true,
+                  passwordKey: 'signup-password',
                   autocomplete: 'new-password',
                 })}
+                {c.password.length > 0 && c.password.length < 10 && (
+                  <Text accessibilityRole="alert" style={local.inlineError}>
+                    Password needs 10 characters. Add {10 - c.password.length}{' '}
+                    more.
+                  </Text>
+                )}
                 {field(
                   'Confirm password',
                   c.passwordConfirmation,
                   c.setPasswordConfirmation,
-                  { password: true, autocomplete: 'new-password' },
+                  {
+                    password: true,
+                    passwordKey: 'signup-confirm',
+                    autocomplete: 'new-password',
+                  },
                 )}
+                {!!c.passwordConfirmation &&
+                  c.passwordConfirmation !== c.password && (
+                    <Text accessibilityRole="alert" style={local.inlineError}>
+                      The passwords do not match.
+                    </Text>
+                  )}
                 {field(
                   'Public username (3–20 characters)',
                   c.username,
@@ -237,6 +300,7 @@ export function ProductCommunityAccess({
                 })}
                 {field('Password', c.password, c.setPassword, {
                   password: true,
+                  passwordKey: 'signin-password',
                   autocomplete: 'current-password',
                 })}
                 <View style={local.actionStack}>
@@ -298,14 +362,30 @@ export function ProductCommunityAccess({
           <Text style={styles.optionName}>Choose a password</Text>
           {field('New password (10+ characters)', c.password, c.setPassword, {
             password: true,
+            passwordKey: 'recovery-password',
             autocomplete: 'new-password',
           })}
+          {c.password.length > 0 && c.password.length < 10 && (
+            <Text accessibilityRole="alert" style={local.inlineError}>
+              Password needs 10 characters. Add {10 - c.password.length} more.
+            </Text>
+          )}
           {field(
             'Confirm new password',
             c.passwordConfirmation,
             c.setPasswordConfirmation,
-            { password: true, autocomplete: 'new-password' },
+            {
+              password: true,
+              passwordKey: 'recovery-confirm',
+              autocomplete: 'new-password',
+            },
           )}
+          {!!c.passwordConfirmation &&
+            c.passwordConfirmation !== c.password && (
+              <Text accessibilityRole="alert" style={local.inlineError}>
+                The passwords do not match.
+              </Text>
+            )}
           <View style={local.actionStack}>
             {button('Save password', c.setNewPassword, c.busy, true)}
           </View>
@@ -318,17 +398,48 @@ export function ProductCommunityAccess({
             . Your email is private.
           </Text>
           {purpose === 'account' && (
-            <>
-              {field('Public username', c.username, c.setUsername, {
-                autocomplete: 'username',
-                maxLength: 20,
-              })}
-              {field('Short bio (optional)', c.bio, c.setBio, {
-                multiline: true,
-                maxLength: 280,
-              })}
-              {button('Save profile', c.saveProfile, c.busy || !c.accountReady)}
-            </>
+            <View style={local.profileSummary}>
+              {c.avatarUrl ? (
+                <Image
+                  source={{ uri: c.avatarUrl }}
+                  style={local.profileAvatar}
+                />
+              ) : (
+                <View style={local.profileAvatarPlaceholder}>
+                  <Text style={local.profileAvatarInitial}>
+                    {(c.profile?.username ??
+                      c.username ??
+                      '?')[0]?.toUpperCase() ?? '?'}
+                  </Text>
+                </View>
+              )}
+              <View style={local.profileCopy}>
+                <Text style={local.profileUsername}>
+                  {c.profile?.username
+                    ? `@${c.profile.username}`
+                    : 'Set your username'}
+                </Text>
+                <Text style={styles.optionDetail}>
+                  {c.profile?.bio || 'Add a short bio if you like.'}
+                </Text>
+              </View>
+              {button(
+                'Update profile',
+                () => setEditingProfile(true),
+                c.busy || !c.canEditProfile,
+              )}
+              {!!c.profileLoadError && (
+                <Text accessibilityRole="alert" style={local.inlineError}>
+                  Could not load your profile. You can still update it here.
+                </Text>
+              )}
+              {editingProfile && (
+                <ProfileEditor
+                  community={c}
+                  onClose={() => setEditingProfile(false)}
+                />
+              )}
+            </View>
           )}
           {button('Sign out', c.signOut)}
           <CommunityAccountControls community={c} />
@@ -346,6 +457,43 @@ export function ProductCommunityAccess({
 }
 
 const local = StyleSheet.create({
+  fieldHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  passwordVisibility: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginTop: 10,
+  },
+  passwordVisibilityText: {
+    color: COLORS.ink,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  inlineError: { color: '#8A2F20', fontSize: 14, lineHeight: 20, marginTop: 6 },
+  profileSummary: { alignItems: 'flex-start', gap: 10, paddingTop: 12 },
+  profileAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.line,
+  },
+  profileAvatarPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.sage,
+  },
+  profileAvatarInitial: { color: COLORS.ink, fontSize: 25, fontWeight: '800' },
+  profileCopy: { gap: 4 },
+  profileUsername: { color: COLORS.ink, fontSize: 17, fontWeight: '800' },
   disabled: { opacity: 0.5 },
   errorBox: {
     gap: 10,
