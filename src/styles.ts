@@ -52,7 +52,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   menuScrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(12, 32, 27, 0.42)',
   },
   menuDrawer: {
