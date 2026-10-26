@@ -1,8 +1,9 @@
 import { Bookmark, Info, Menu, UserRound, X } from 'lucide-react-native';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
+  Platform,
   Text,
   useWindowDimensions,
   View,
@@ -28,6 +29,7 @@ export function TopBar({
   onInfo: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pendingDestination = useRef<(() => void) | null>(null);
   const insets = useSafeAreaInsets();
   const drawerWidth = Math.min(useWindowDimensions().width * 0.86, 360);
 
@@ -36,8 +38,19 @@ export function TopBar({
   }
 
   function chooseDestination(destination: () => void) {
+    if (Platform.OS === 'ios') {
+      pendingDestination.current = destination;
+      closeMenu();
+      return;
+    }
     closeMenu();
     destination();
+  }
+
+  function finishMenuDismissal() {
+    const destination = pendingDestination.current;
+    pendingDestination.current = null;
+    destination?.();
   }
 
   return (
@@ -74,6 +87,7 @@ export function TopBar({
         transparent
         animationType="fade"
         onRequestClose={closeMenu}
+        onDismiss={finishMenuDismissal}
         statusBarTranslucent
       >
         <View style={styles.menuOverlay} accessibilityViewIsModal>
