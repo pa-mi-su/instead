@@ -8,6 +8,7 @@ import type { useCommunity } from '../hooks/useCommunity';
 import { supabase } from '../lib/supabase';
 import { styles } from '../styles';
 import type { Guide } from '../types';
+import type { SavedRecipeReference } from '../lib/savedRecipes';
 
 type AccountRecipe = {
   id: string;
@@ -22,15 +23,19 @@ export function AccountScreen({
   community,
   guides,
   savedGuideIds,
+  savedRecipes,
   syncStatus,
   onOpenGuide,
+  onOpenRecipe,
   bottomInset,
 }: {
   community: ReturnType<typeof useCommunity>;
   guides: Guide[];
   savedGuideIds: string[];
+  savedRecipes: (SavedRecipeReference & { key: string; title: string })[];
   syncStatus: 'local' | 'syncing' | 'synced' | 'error';
   onOpenGuide: (id: string) => void;
+  onOpenRecipe: (productId: string, recipeId: string) => void;
   bottomInset: number;
 }) {
   const [recipes, setRecipes] = useState<AccountRecipe[]>([]);
@@ -129,6 +134,29 @@ export function AccountScreen({
           </View>
         ) : (
           <Text style={styles.optionDetail}>No saved guides yet.</Text>
+        )}
+        {!!savedRecipes.length && (
+          <>
+            <Text style={styles.optionName}>Saved recipes</Text>
+            {savedRecipes.map(recipe => (
+              <Pressable
+                key={recipe.key}
+                accessibilityRole="button"
+                accessibilityLabel={`Open saved recipe ${recipe.title}`}
+                onPress={() => onOpenRecipe(recipe.productId, recipe.recipeId)}
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.optionName}>{recipe.title}</Text>
+                <Text style={styles.optionDetail}>
+                  {guides.find(guide => guide.id === recipe.productId)?.title ??
+                    recipe.productId}
+                </Text>
+              </Pressable>
+            ))}
+          </>
         )}
         {userId && (
           <>

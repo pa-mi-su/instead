@@ -1000,6 +1000,38 @@ export const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  recipeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 8,
+  },
+  recipeCardTitle: {
+    flex: 1,
+  },
+  recipeSaveButton: {
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: 20,
+    paddingHorizontal: 11,
+    backgroundColor: COLORS.paper,
+  },
+  recipeSaveButtonActive: {
+    backgroundColor: COLORS.lime,
+    borderColor: COLORS.ink,
+  },
+  recipeSaveText: {
+    color: COLORS.ink,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
   optionLabel: {
     alignSelf: 'flex-start',
     color: COLORS.ink,

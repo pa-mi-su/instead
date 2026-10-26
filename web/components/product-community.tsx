@@ -1,16 +1,26 @@
-"use client";
+'use client';
 
-import { useCommunity } from "../../src/hooks/useCommunity";
-import { communityClient } from "../lib/community-client";
-import { CommunityAccess } from "./community-access";
-import { ProductRecipes } from "./product-recipes";
+import { useCommunity } from '../../src/hooks/useCommunity';
+import { communityClient } from '../lib/community-client';
+import { CommunityAccess } from './community-access';
+import { ProductRecipes } from './product-recipes';
 
-export function ProductCommunity({ productId }: { productId: string }) {
+export function ProductCommunity({
+  productId,
+  savedRecipeIds,
+  onSaveRecipe,
+  initialRecipeId,
+}: {
+  productId: string;
+  savedRecipeIds: string[];
+  onSaveRecipe: (recipeId: string, title: string) => void;
+  initialRecipeId?: string;
+}) {
   const community = useCommunity(
     communityClient,
     productId,
     undefined,
-    "helpful",
+    'helpful',
     false,
   );
 
@@ -18,12 +28,17 @@ export function ProductCommunity({ productId }: { productId: string }) {
     <>
       <CommunityAccess community={community} purpose="community" />
       <ProductRecipes
-        key={`${productId}:${community.session?.user.id ?? "guest"}:${community.blocks.map((block) => block.id).join(",")}`}
+        key={`${productId}:${
+          community.session?.user.id ?? 'guest'
+        }:${community.blocks.map(block => block.id).join(',')}`}
         productId={productId}
         userId={community.session?.user.id}
         canContribute={community.canContribute}
         canManage={community.canManage}
-        onBlock={(id) => community.block("recipe", id)}
+        onBlock={id => community.block('recipe', id)}
+        savedRecipeIds={savedRecipeIds}
+        onSaveRecipe={onSaveRecipe}
+        initialRecipeId={initialRecipeId}
       />
     </>
   );

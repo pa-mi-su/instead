@@ -43,16 +43,22 @@ export function AppNavigator() {
     'helpful',
     false,
   );
-  const { favorites, toggleFavorite, syncStatus } = useFavorites(
-    community.session?.user.id,
-  );
+  const {
+    favorites,
+    savedRecipes,
+    toggleFavorite,
+    toggleRecipeFavorite,
+    syncStatus,
+  } = useFavorites(community.session?.user.id);
   const [view, setView] = useState<ViewName>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const history = useRef<
     {
       view: ViewName;
       selectedId: string | null;
+      selectedRecipeId: string | null;
       selectedProfile: string | null;
     }[]
   >([]);
@@ -83,21 +89,51 @@ export function AppNavigator() {
   }, [catalog, category, query]);
 
   function navigate(nextView: ViewName, nextSelectedId = selectedId) {
-    history.current.push({ view, selectedId, selectedProfile });
+    history.current.push({
+      view,
+      selectedId,
+      selectedRecipeId,
+      selectedProfile,
+    });
     setSelectedId(nextSelectedId);
+    setSelectedRecipeId(null);
     if (nextView !== 'profile') setSelectedProfile(null);
     setView(nextView);
   }
 
   function openGuide(id: string) {
-    history.current.push({ view, selectedId, selectedProfile });
+    history.current.push({
+      view,
+      selectedId,
+      selectedRecipeId,
+      selectedProfile,
+    });
     setSelectedId(id);
+    setSelectedRecipeId(null);
+    setSelectedProfile(null);
+    setView('detail');
+  }
+
+  function openRecipe(productId: string, recipeId: string) {
+    history.current.push({
+      view,
+      selectedId,
+      selectedRecipeId,
+      selectedProfile,
+    });
+    setSelectedId(productId);
+    setSelectedRecipeId(recipeId);
     setSelectedProfile(null);
     setView('detail');
   }
 
   function openProfile(username: string) {
-    history.current.push({ view, selectedId, selectedProfile });
+    history.current.push({
+      view,
+      selectedId,
+      selectedRecipeId,
+      selectedProfile,
+    });
     setSelectedProfile(username);
     setView('profile');
   }
@@ -105,6 +141,7 @@ export function AppNavigator() {
   function goHome() {
     history.current = [];
     setSelectedId(null);
+    setSelectedRecipeId(null);
     setSelectedProfile(null);
     setView('home');
   }
@@ -112,6 +149,7 @@ export function AppNavigator() {
   function goBack() {
     const previous = history.current.pop();
     setSelectedId(previous?.selectedId ?? null);
+    setSelectedRecipeId(previous?.selectedRecipeId ?? null);
     setSelectedProfile(previous?.selectedProfile ?? null);
     setView(previous?.view ?? 'home');
   }
@@ -235,9 +273,14 @@ export function AppNavigator() {
       ) : view === 'detail' && selected ? (
         <GuideDetailScreen
           guide={selected}
+          initialRecipeId={selectedRecipeId ?? undefined}
           isSaved={favorites.includes(selected.id)}
+          savedRecipeIds={favorites}
           onBack={goBack}
           onSave={() => toggleFavorite(selected.id)}
+          onSaveRecipe={(recipeId, title) =>
+            toggleRecipeFavorite(selected.id, recipeId, title)
+          }
           onOpenProfile={openProfile}
           bottomInset={insets.bottom}
         />
@@ -258,8 +301,10 @@ export function AppNavigator() {
               community={community}
               guides={catalog}
               savedGuideIds={favorites}
+              savedRecipes={savedRecipes}
               syncStatus={syncStatus}
               onOpenGuide={openGuide}
+              onOpenRecipe={openRecipe}
               bottomInset={insets.bottom}
             />
           ) : view === 'profile' ? (
@@ -291,7 +336,10 @@ export function AppNavigator() {
           ) : view === 'saved' ? (
             <SavedScreen
               guides={saved}
+              catalog={catalog}
+              savedRecipes={savedRecipes}
               onOpen={openGuide}
+              onOpenRecipe={openRecipe}
               onExplore={goHome}
               bottomInset={insets.bottom}
               scrollOffset={savedScrollOffset.current}

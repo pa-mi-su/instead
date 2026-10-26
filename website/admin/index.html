@@ -106,8 +106,14 @@
           ><button data-view="builtin" aria-pressed="false">Built-in recipes</button
           ><button data-view="accounts" aria-pressed="false">
             Restricted accounts & deletion requests</button
+          ><button data-view="users" aria-pressed="false">Users</button
           ><button data-view="audit" aria-pressed="false">Activity log</button>
         </nav>
+        <form id="user-filters" hidden>
+          <label for="user-search">Search users by email, username, or account ID</label>
+          <input id="user-search" maxlength="100" placeholder="Search users" />
+          <button type="submit">Search users</button>
+        </form>
         <form id="filters">
           <label for="filter">Queue</label
           ><select id="filter">

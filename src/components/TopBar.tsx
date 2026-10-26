@@ -80,7 +80,7 @@ export function TopBar({
           ]}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`Open saved guides${
+          accessibilityLabel={`Open saved items${
             savedCount ? `, ${savedCount} saved` : ''
           }`}
           accessibilityState={{ selected: activeView === 'saved' }}
