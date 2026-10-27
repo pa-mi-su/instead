@@ -11,3 +11,14 @@ GHSA-vfj7-8cjw-p6xm affects braces through 3.0.3 and has no published patch. In 
 `scripts/audit-native.mjs` accepts only that exact advisory, package location, version, and severity until October 30, 2026. Every other leaf advisory still fails, including new findings in braces. Audit network/report failures fail closed. Parent package summaries are represented by their underlying advisory findings. The exception must be removed when an upstream patch is available, or explicitly reviewed before expiry. It does not mean the dependency has been patched or that the native audit has zero findings.
 
 Sources: https://github.com/advisories/GHSA-vfj7-8cjw-p6xm and the dependency/API inspection recorded above.
+
+
+## Patched deepmerge advisory — October 27, 2026
+
+GHSA-gcqx-w48m-w2h4 affects deepmerge 4.2.0 through 4.3.1; no patched release is published. React Native CLI configuration and Jest use 4.3.1. The advisory is included in npm's production tree through React Native's tooling peer dependency. It is not used to merge user recipes or photo data.
+
+`patches/deepmerge+4.3.1.patch` defines merged keys as own data properties in the source, CommonJS, and UMD builds. This prevents an own `__proto__` key from invoking the prototype setter, including malicious target objects and null-prototype targets. Existing nested configuration, arrays, custom merges, and symbol-key behavior are regression tested. The malicious-input tests fail before this patch and pass after it.
+
+Because npm audit recognizes published versions rather than local patches, the audit gate accepts only this exact low-severity advisory at the top-level deepmerge 4.3.1 location until November 3, 2026, and only when all three installed patched files match their recorded SHA-256 hashes. Missing or modified patches, new advisories, changed severity, nested copies, and audit failures continue to fail CI. Replace the patch and this exact exception when an upstream release is available; otherwise review before expiry.
+
+Source: https://github.com/advisories/GHSA-gcqx-w48m-w2h4
