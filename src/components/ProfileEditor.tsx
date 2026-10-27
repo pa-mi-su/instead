@@ -60,11 +60,16 @@ export function ProfileEditor({
     }
   }
 
+  function dismiss() {
+    c.clearProfileError();
+    onClose();
+  }
+
   async function save() {
     setSaving(true);
     const saved = await c.saveProfile(avatar ?? undefined, removeAvatar);
     setSaving(false);
-    if (saved) onClose();
+    if (saved) dismiss();
   }
 
   const photoUri = previewUri ?? (!removeAvatar ? c.avatarUrl : null);
@@ -74,7 +79,7 @@ export function ProfileEditor({
   return (
     <Modal
       visible
-      onRequestClose={onClose}
+      onRequestClose={dismiss}
       animationType="slide"
       presentationStyle="pageSheet"
     >
@@ -88,7 +93,8 @@ export function ProfileEditor({
             <Text style={styles.pageEyebrow}>YOUR INSTEAD</Text>
             <Text style={styles.pageTitle}>Update your profile</Text>
             <Text style={styles.optionDetail}>
-              Your username and optional bio appear with your approved recipes.
+              Your avatar, username, and optional bio appear with your approved
+              recipes.
             </Text>
 
             <View style={local.avatarArea}>
@@ -184,7 +190,7 @@ export function ProfileEditor({
               )}
             </View>
 
-            {!!c.error && (
+            {!!c.error && c.errorSource === 'profile' && (
               <Text accessibilityRole="alert" style={local.fieldError}>
                 {c.error}
               </Text>
@@ -221,7 +227,7 @@ export function ProfileEditor({
               <Pressable
                 accessibilityRole="button"
                 disabled={saving || c.busy}
-                onPress={onClose}
+                onPress={dismiss}
                 style={({ pressed }) => [
                   styles.actionButton,
                   pressed && styles.pressed,

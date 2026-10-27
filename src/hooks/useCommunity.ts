@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { POLICY_VERSION } from '../policies';
-import { communityError, communityRpc } from '../lib/community';
+import { communityError, communityRpc, profileError } from '../lib/community';
 import type {
   CommunityClient,
   CommunitySession,
@@ -52,7 +52,7 @@ export function useCommunity(
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState('');
   const [errorSource, setErrorSource] = useState<
-    'auth' | 'other' | 'validation'
+    'auth' | 'other' | 'validation' | 'profile'
   >('other');
   const [notice, setNotice] = useState('');
   const [resendAt, setResendAt] = useState(0);
@@ -223,7 +223,7 @@ export function useCommunity(
   }, [sentEmail]);
   async function run(
     task: () => Promise<void>,
-    source: 'auth' | 'other' = 'other',
+    source: 'auth' | 'other' | 'profile' = 'other',
   ): Promise<boolean> {
     if (lock.current) return false;
     lock.current = true;
@@ -234,7 +234,9 @@ export function useCommunity(
       await task();
       return true;
     } catch (issue) {
-      setError(communityError(issue));
+      setError(
+        source === 'profile' ? profileError(issue) : communityError(issue),
+      );
       setErrorSource(source);
       return false;
     } finally {
@@ -454,7 +456,7 @@ export function useCommunity(
         await storage?.remove([previousPath]).catch(() => undefined);
       setProfile({ username: handle, bio: about, avatar_path: nextPath });
       setNotice('Profile updated.');
-    });
+    }, 'profile');
   }
   function verifyCode() {
     return run(async () => {
@@ -659,6 +661,9 @@ export function useCommunity(
     signIn,
     signUp,
     saveProfile,
+    clearProfileError: () => {
+      if (errorSource === 'profile') setError('');
+    },
     setNewPassword,
     post,
     vote,

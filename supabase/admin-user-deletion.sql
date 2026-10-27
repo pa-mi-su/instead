@@ -1,4 +1,4 @@
--- Repeatable. Apply after recipe-saves-and-admin-users.sql.
+-- Repeatable. Apply after profile-avatars.sql and recipe-saves-and-admin-users.sql.
 -- Authorizes deletion only; the Edge Function removes storage before Auth.
 begin;
 create or replace function public.community_admin_prepare_deletion(p_user uuid,p_email text,p_note text)
@@ -33,14 +33,14 @@ grant execute on function public.community_admin_prepare_deletion(uuid,text,text
 drop policy if exists profile_avatars_owner_insert on storage.objects;
 create policy profile_avatars_owner_insert on storage.objects for insert to authenticated
  with check(bucket_id='profile-avatars'
-  and split_part(name,'/',1)=public.community_require_user()::text
+  and split_part(name,'/',1)=public.community_avatar_owner()::text
   and split_part(name,'/',2) ~ '^avatar\.(jpeg|png|webp)$'
   and name not like '%/%/%');
 drop policy if exists profile_avatars_owner_update on storage.objects;
 create policy profile_avatars_owner_update on storage.objects for update to authenticated
- using(bucket_id='profile-avatars' and split_part(name,'/',1)=public.community_require_user()::text)
+ using(bucket_id='profile-avatars' and split_part(name,'/',1)=public.community_avatar_owner()::text)
  with check(bucket_id='profile-avatars'
-  and split_part(name,'/',1)=public.community_require_user()::text
+  and split_part(name,'/',1)=public.community_avatar_owner()::text
   and split_part(name,'/',2) ~ '^avatar\.(jpeg|png|webp)$'
   and name not like '%/%/%');
 notify pgrst,'reload schema';

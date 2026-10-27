@@ -56,3 +56,74 @@ test('audit gate rejects new findings, unexpected locations, and registry errors
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('deepmerge audit acceptance requires the exact installed security patch', async () => {
+  const dir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'instead-deepmerge-audit-'),
+  );
+  const project = path.join(dir, 'project');
+  try {
+    await fs.mkdir(project);
+    await fs.writeFile(
+      path.join(dir, 'npm'),
+      '#!/usr/bin/env node\nprocess.stdout.write(process.env.AUDIT_FIXTURE); process.exit(1);\n',
+      { mode: 0o700 },
+    );
+    const files = ['index.js', 'dist/cjs.js', 'dist/umd.js'];
+    for (const file of files) {
+      const target = path.join(project, 'node_modules/deepmerge', file);
+      await fs.mkdir(path.dirname(target), { recursive: true });
+      await fs.copyFile(path.join('node_modules/deepmerge', file), target);
+    }
+    await fs.writeFile(
+      path.join(project, 'package-lock.json'),
+      JSON.stringify({
+        packages: { 'node_modules/deepmerge': { version: '4.3.1' } },
+      }),
+    );
+    const report = {
+      metadata: {},
+      vulnerabilities: {
+        deepmerge: {
+          nodes: ['node_modules/deepmerge'],
+          via: [
+            {
+              severity: 'low',
+              url: 'https://github.com/advisories/GHSA-gcqx-w48m-w2h4',
+            },
+          ],
+        },
+      },
+    };
+    const run = value =>
+      spawnSync(process.execPath, [path.resolve('scripts/audit-native.mjs')], {
+        cwd: project,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: dir + path.delimiter + process.env.PATH,
+          AUDIT_FIXTURE: JSON.stringify(value),
+        },
+      });
+    assert.equal(run(report).status, 0);
+    const severity = structuredClone(report);
+    severity.vulnerabilities.deepmerge.via[0].severity = 'high';
+    assert.equal(run(severity).status, 1);
+    const nested = structuredClone(report);
+    nested.vulnerabilities.deepmerge.nodes = [
+      'node_modules/other/node_modules/deepmerge',
+    ];
+    assert.equal(run(nested).status, 1);
+    for (const file of files) {
+      const target = path.join(project, 'node_modules/deepmerge', file);
+      const content = await fs.readFile(target);
+      await fs.appendFile(target, '\n// patch changed\n');
+      assert.equal(run(report).status, 1, `changed ${file} must fail`);
+      await fs.writeFile(target, content);
+    }
+    await fs.rm(path.join(project, 'node_modules/deepmerge/dist/cjs.js'));
+    assert.equal(run(report).status, 1, 'missing patch must fail');
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

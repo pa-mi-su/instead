@@ -74,3 +74,24 @@ test('short signup password shows the minimum beside the field', async () => {
     await screen.findByText('Password needs 10 characters. Add 5 more.'),
   ).toBeTruthy();
 });
+
+function ErrorScopeHarness({ source }: { source: 'profile' | 'other' }) {
+  const community = useCommunity(client, 'natural-toothpaste');
+  return (
+    <ProductCommunityAccess
+      community={{
+        ...community,
+        error: 'Profile photo failed',
+        errorSource: source,
+      }}
+      onSignInRequest={() => undefined}
+    />
+  );
+}
+
+test('profile editor failures do not leak onto the account page', async () => {
+  const screen = await render(<ErrorScopeHarness source="profile" />);
+  expect(screen.queryByText('Profile photo failed')).toBeNull();
+  await screen.rerender(<ErrorScopeHarness source="other" />);
+  expect(screen.getByText('Profile photo failed')).toBeTruthy();
+});

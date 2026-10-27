@@ -149,6 +149,30 @@ export function communityError(error: unknown) {
     return value.message ?? 'This action is unavailable.';
   return 'We could not complete that request. Please try again.';
 }
+export function profileError(error: unknown) {
+  const value = error as {
+    code?: string;
+    message?: string;
+    status?: number;
+    statusCode?: string | number;
+  };
+  const message = value?.message?.toLowerCase() ?? '';
+  if (
+    value?.code === 'NoSuchBucket' ||
+    message.includes('bucket not found') ||
+    (value?.code === 'PGRST202' && message.includes('avatar'))
+  )
+    return 'Profile photos are temporarily unavailable. You can update your profile without a photo, or try again later.';
+  if (value?.status === 413 || Number(value?.statusCode) === 413)
+    return 'Choose a profile photo smaller than 2 MB.';
+  if (message.includes('network') || message.includes('failed to fetch'))
+    return 'Your profile could not be saved. Check your connection and try again.';
+  const mapped = communityError(error);
+  return mapped === 'We could not complete that request. Please try again.'
+    ? 'Your profile could not be saved. Please try again.'
+    : mapped;
+}
+
 export async function communityRpc<T>(
   client: CommunityClient | null,
   name: string,

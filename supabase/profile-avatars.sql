@@ -12,23 +12,33 @@ on conflict(id) do update set
  file_size_limit=excluded.file_size_limit,
  allowed_mime_types=excluded.allowed_mime_types;
 
+-- Policy callers cannot execute the private account guard directly.
+create or replace function public.community_avatar_owner() returns uuid
+language sql security definer set search_path='' as $$
+ select public.community_require_user();
+$$;
+revoke all on function public.community_avatar_owner() from public,anon,authenticated;
+grant execute on function public.community_avatar_owner() to authenticated;
+
 drop policy if exists profile_avatars_public_read on storage.objects;
 create policy profile_avatars_public_read on storage.objects for select to anon,authenticated
  using(bucket_id='profile-avatars');
 drop policy if exists profile_avatars_owner_insert on storage.objects;
 create policy profile_avatars_owner_insert on storage.objects for insert to authenticated
  with check(bucket_id='profile-avatars'
-  and split_part(name,'/',1)=auth.uid()::text
-  and split_part(name,'/',2) ~ '^avatar\.(jpeg|png|webp)$');
+  and split_part(name,'/',1)=public.community_avatar_owner()::text
+  and split_part(name,'/',2) ~ '^avatar\.(jpeg|png|webp)$'
+  and name not like '%/%/%');
 drop policy if exists profile_avatars_owner_update on storage.objects;
 create policy profile_avatars_owner_update on storage.objects for update to authenticated
- using(bucket_id='profile-avatars' and split_part(name,'/',1)=auth.uid()::text)
+ using(bucket_id='profile-avatars' and split_part(name,'/',1)=public.community_avatar_owner()::text)
  with check(bucket_id='profile-avatars'
-  and split_part(name,'/',1)=auth.uid()::text
-  and split_part(name,'/',2) ~ '^avatar\.(jpeg|png|webp)$');
+  and split_part(name,'/',1)=public.community_avatar_owner()::text
+  and split_part(name,'/',2) ~ '^avatar\.(jpeg|png|webp)$'
+  and name not like '%/%/%');
 drop policy if exists profile_avatars_owner_delete on storage.objects;
 create policy profile_avatars_owner_delete on storage.objects for delete to authenticated
- using(bucket_id='profile-avatars' and split_part(name,'/',1)=auth.uid()::text);
+ using(bucket_id='profile-avatars' and split_part(name,'/',1)=public.community_avatar_owner()::text);
 
 create or replace function public.community_profile_avatar_set(p_avatar_path text)
 returns void language plpgsql security definer set search_path='' as $$
