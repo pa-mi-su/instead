@@ -258,19 +258,22 @@ export function GuideDetailScreen({
                   key={recipe.id}
                   style={styles.optionCard}
                   onLayout={event => {
-                    if (recipe.id === initialRecipeId)
+                    if (recipe.id === initialRecipeId) {
+                      // Native events are cleared after the layout handler returns.
+                      const recipeY = event.nativeEvent.layout.y;
                       requestAnimationFrame(() =>
                         scrollRef.current?.scrollTo({
                           y: Math.max(
                             0,
                             recipeSectionY.current +
                               recipeListY.current +
-                              event.nativeEvent.layout.y -
+                              recipeY -
                               24,
                           ),
                           animated: false,
                         }),
                       );
+                    }
                   }}
                 >
                   <View style={styles.recipeCardHeader}>

@@ -1,4 +1,4 @@
-// Authenticated self-deletion only. No account id is accepted from the caller.
+// Self-deletion, or explicit admin deletion authorized by an MFA-protected RPC.
 // Storage is removed through the Storage API before Auth cascades database rows.
 export function createDeletionHandler(
   config: { url: string; serviceKey: string },
@@ -46,6 +46,46 @@ export function createDeletionHandler(
         !/^[0-9a-f-]{36}$/i.test(user.id)
       )
         return reply(403, 'A verified account is required.');
+
+      // A target id alone never changes the self-deletion path.
+      const body = await request.json().catch(() => ({}));
+      if (body?.action === 'admin-delete') {
+        if (
+          typeof body.user_id !== 'string' ||
+          !/^[0-9a-f-]{36}$/i.test(body.user_id) ||
+          typeof body.email !== 'string' ||
+          typeof body.reason !== 'string'
+        )
+          return reply(
+            400,
+            'A target account, confirmation email, and reason are required.',
+          );
+        const authorized = await fetcher(
+          `${config.url}/rest/v1/rpc/community_admin_prepare_deletion`,
+          {
+            method: 'POST',
+            headers: { ...adminHeaders, Authorization: authorization },
+            body: JSON.stringify({
+              p_user: body.user_id,
+              p_email: body.email,
+              p_note: body.reason,
+            }),
+          },
+        );
+        if (!authorized.ok)
+          return reply(
+            authorized.status >= 500
+              ? 503
+              : authorized.status === 403 || authorized.status === 401
+              ? 403
+              : 409,
+            'Deletion was not authorized. Check admin MFA, the account email, and the reason. Admin accounts cannot be deleted here.',
+          );
+        const target = await authorized.json();
+        if (target !== body.user_id || target === user.id)
+          return reply(403, 'Invalid deletion authorization.');
+        user.id = target;
+      }
 
       const state = await fetcher(
         `${

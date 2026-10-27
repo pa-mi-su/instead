@@ -607,12 +607,69 @@ function renderUser(item) {
   details(card, 'Submitted community recipes', `${item.recipes} recipe(s)`);
   const reason = field(
     card,
-    item.suspended
-      ? 'Reason for restoring access'
-      : 'Reason for restricting access',
+    'Reason for account action (at least 3 characters)',
     true,
   );
   card.append(restrictButton(item.user_id, item.suspended, reason));
+  const confirmation = field(
+    card,
+    'Type this account email to permanently delete it',
+  );
+  confirmation.autocomplete = 'off';
+  card.append(
+    element(
+      'p',
+      'Permanent deletion removes the login, profile, recipes, comments, votes, cloud saves, avatar, and uploaded photos. Audit records and existing backups remain; copies on other devices cannot be erased.',
+      'meta',
+    ),
+  );
+  card.append(
+    button(
+      'Permanently delete user',
+      async () => {
+        if (reason.value.trim().length < 3)
+          throw new Error('Enter a deletion reason of at least 3 characters.');
+        if (
+          !item.email ||
+          confirmation.value.trim().toLowerCase() !== item.email.toLowerCase()
+        )
+          throw new Error(
+            'Type the account email exactly to confirm deletion.',
+          );
+        if (
+          !window.confirm(
+            `Permanently delete ${item.email} and their account data? This cannot be undone.`,
+          )
+        )
+          return;
+        const generation = epoch;
+        status('Deleting account and uploaded files…');
+        await request(
+          '/functions/v1/delete-account',
+          {
+            action: 'admin-delete',
+            user_id: item.user_id,
+            email: confirmation.value.trim(),
+            reason: reason.value.trim(),
+          },
+          await token(),
+        );
+        if (generation !== epoch) return;
+        // Remove the deleted account even if refreshing the list fails.
+        card.remove();
+        try {
+          await load();
+          status('Account permanently deleted.');
+        } catch (error) {
+          status(
+            `Account permanently deleted. Could not refresh the user list: ${error.message}`,
+            true,
+          );
+        }
+      },
+      true,
+    ),
+  );
   return card;
 }
 async function loadBuiltinSeeds() {
@@ -1000,7 +1057,7 @@ async function load() {
           'Pending deletion',
           `${new Date(
             item.deletion_requested_at,
-          ).toLocaleString()}. Investigate failed photo cleanup in Supabase; restoring contribution access does not cancel this request. Account deletion must verify the requesting owner.`,
+          ).toLocaleString()}. Investigate failed photo cleanup in Supabase; restoring contribution access does not cancel this request. Retry permanent deletion from Users with the account email and a reason.`,
         );
       const reason = field(card, 'Reason for restoring account access', true);
       if (item.suspended)
