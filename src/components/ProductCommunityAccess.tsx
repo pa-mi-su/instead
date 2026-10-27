@@ -46,14 +46,17 @@ export function ProductCommunityAccess({
       disabled={disabled}
       onPress={action}
       style={({ pressed }) => [
-        local.authButton,
+        styles.actionButton,
         primary && local.authButtonPrimary,
         disabled && local.disabled,
         pressed && styles.pressed,
       ]}
     >
       <Text
-        style={[local.authButtonText, primary && local.authButtonTextPrimary]}
+        style={[
+          styles.actionButtonText,
+          primary && local.authButtonTextPrimary,
+        ]}
       >
         {label}
       </Text>
@@ -163,8 +166,8 @@ export function ProductCommunityAccess({
     <View style={styles.optionList}>
       <Text style={styles.optionDetail}>
         {purpose === 'account'
-          ? 'Create a profile to share recipes, keep saved guides in sync, and manage your submissions. Your email stays private.'
-          : 'Sign in to vote or share a recipe. Your public username identifies approved recipes; your email stays private.'}
+          ? 'Create a profile to share recipes, save recipes and guides, and manage your submissions.'
+          : 'Sign in to vote or share a recipe. Your public username identifies approved recipes.'}
       </Text>
       {!c.configured && <Text>Community features are not configured yet.</Text>}
       {!!c.error && (
@@ -196,10 +199,10 @@ export function ProductCommunityAccess({
             </Text>
             <Text style={styles.optionDetail}>
               {c.authMode === 'signup'
-                ? 'Create a profile to share recipes and keep saved guides in sync. Your email stays private.'
+                ? 'Create a profile to share recipes and save recipes and guides.'
                 : c.authMode === 'recovery'
                 ? 'Get an email code to set or reset your account password.'
-                : 'Use your email and password. Your email stays private; your public username appears with approved recipes.'}
+                : 'Use your email and password. Your public username appears with approved recipes.'}
             </Text>
             <View style={local.policyLinks}>
               {link('Terms of Use', 'https://insteadtry.com/terms')}
@@ -395,7 +398,7 @@ export function ProductCommunityAccess({
         <View style={styles.optionCard}>
           <Text>
             Signed in{c.session.user.email ? ` as ${c.session.user.email}` : ''}
-            . Your email is private.
+            .
           </Text>
           {purpose === 'account' && (
             <View style={local.profileSummary}>

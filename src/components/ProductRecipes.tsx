@@ -1,3 +1,4 @@
+import { imageContentType } from '../lib/imageUpload';
 import { useState } from 'react';
 import { Bookmark } from 'lucide-react-native';
 import { RecipeVoteButtons } from './RecipeVoteButtons';
@@ -52,12 +53,12 @@ export function ProductRecipes({
       disabled={disabled}
       onPress={action}
       style={({ pressed }) => [
-        styles.chip,
+        styles.actionButton,
         disabled && local.disabled,
         pressed && styles.pressed,
       ]}
     >
-      <Text style={styles.chipText}>{label}</Text>
+      <Text style={styles.actionButtonText}>{label}</Text>
     </Pressable>
   );
   async function choose() {
@@ -72,7 +73,6 @@ export function ProductRecipes({
         maxHeight: 1600,
         quality: 0.8,
         assetRepresentationMode: 'compatible',
-        restrictMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
       });
       if (result.didCancel) return;
       if (result.errorCode)
@@ -82,10 +82,11 @@ export function ProductRecipes({
       const picked: RecipePhoto[] = (result.assets ?? []).map(asset => {
         if (!asset.base64 || !asset.uri)
           throw new Error('Could not read this photo.');
+        const bytes = decode(asset.base64);
         const photo: RecipePhoto = {
           uri: asset.uri,
-          bytes: decode(asset.base64),
-          contentType: asset.type as RecipePhoto['contentType'],
+          bytes,
+          contentType: imageContentType(bytes),
         };
         validatePhoto(photo);
         return photo;
@@ -249,9 +250,9 @@ export function ProductRecipes({
     <View style={styles.optionList}>
       <Text style={styles.optionName}>Community recipes</Text>
       <Text style={styles.optionDetail}>
-        Approved recipes show your public username and optional bio. Your email
-        stays private. Submissions and photos are checked before publishing;
-        publication and votes do not establish safety or effectiveness.
+        Approved recipes show your public username and optional bio. Submissions
+        and photos are checked before publishing; publication and votes do not
+        establish safety or effectiveness.
       </Text>
       {!canContribute && (
         <Text>
@@ -268,7 +269,13 @@ export function ProductRecipes({
         <View style={styles.optionCard}>
           {recipeFields.map(field => (
             <View key={field.key}>
-              <Text>{field.label}</Text>
+              <Text style={styles.formFieldLabel}>{field.label}</Text>
+              <Text style={styles.optionDetail}>
+                {field.key === 'source'
+                  ? `Optional · maximum ${field.max} characters`
+                  : `Required · minimum 3 characters, maximum ${field.max} characters`}
+                {` · ${r.draft[field.key].trim().length}/${field.max}`}
+              </Text>
               <TextInput
                 accessibilityLabel={field.label}
                 multiline={field.key !== 'title'}

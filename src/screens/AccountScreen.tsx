@@ -101,8 +101,8 @@ export function AccountScreen({
         <Text style={styles.pageEyebrow}>YOUR INSTEAD</Text>
         <Text style={styles.pageTitle}>My account.</Text>
         <Text style={styles.pageBody}>
-          Keep your saved guides in sync and manage the recipes you share. Your
-          email stays private.
+          Keep your saved recipes and guides in sync and manage the recipes you
+          share.
         </Text>
       </View>
       <ProductCommunityAccess
@@ -111,29 +111,33 @@ export function AccountScreen({
         onSignInRequest={() => undefined}
       />
       <View style={styles.optionList}>
-        <Text style={styles.optionName}>Saved guides</Text>
-        <Text style={styles.optionDetail}>
-          {userId
-            ? syncStatus === 'syncing'
-              ? 'Syncing your saved guides…'
-              : syncStatus === 'error'
-              ? 'Cloud sync is unavailable. Your device copy is still available.'
-              : 'Saved guides sync across your signed-in devices. Device-local saves remain available offline.'
-            : 'Saved guides are available on this device. Sign in to sync them across devices.'}
-        </Text>
-        {savedGuides.length ? (
-          <View style={styles.guideList}>
-            {savedGuides.map((guide, index) => (
-              <GuideCard
-                key={guide.id}
-                guide={guide}
-                index={index + 1}
-                onPress={() => onOpenGuide(guide.id)}
-              />
-            ))}
-          </View>
-        ) : (
-          <Text style={styles.optionDetail}>No saved guides yet.</Text>
+        {!!savedGuides.length && (
+          <>
+            <Text style={styles.optionName}>Saved guides</Text>
+            <Text style={styles.optionDetail}>
+              {userId
+                ? syncStatus === 'syncing'
+                  ? 'Syncing your saved guides…'
+                  : syncStatus === 'error'
+                  ? 'Cloud sync is unavailable. Your device copy is still available.'
+                  : 'Use Save guide below the title of any topic page to save the whole guide. These saves sync across your signed-in devices and remain available offline.'
+                : 'Saved guides are available on this device. Sign in to sync them across devices.'}
+            </Text>
+            {savedGuides.length ? (
+              <View style={styles.guideList}>
+                {savedGuides.map((guide, index) => (
+                  <GuideCard
+                    key={guide.id}
+                    guide={guide}
+                    index={index + 1}
+                    onPress={() => onOpenGuide(guide.id)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.optionDetail}>No saved guides yet.</Text>
+            )}
+          </>
         )}
         {!!savedRecipes.length && (
           <>
@@ -207,12 +211,12 @@ export function AccountScreen({
                     )
                   }
                   style={({ pressed }) => [
-                    styles.chip,
+                    styles.actionButton,
                     removing === recipe.id && { opacity: 0.5 },
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={styles.chipText}>
+                  <Text style={styles.actionButtonText}>
                     {removing === recipe.id ? 'Removing…' : 'Remove my recipe'}
                   </Text>
                 </Pressable>
@@ -222,9 +226,12 @@ export function AccountScreen({
               accessibilityRole="button"
               disabled={loading}
               onPress={() => refresh()}
-              style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.actionButton,
+                pressed && styles.pressed,
+              ]}
             >
-              <Text style={styles.chipText}>Refresh submissions</Text>
+              <Text style={styles.actionButtonText}>Refresh submissions</Text>
             </Pressable>
           </>
         )}
