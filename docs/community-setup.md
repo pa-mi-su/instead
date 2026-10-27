@@ -48,3 +48,10 @@ The account hub's saved-guide and recipe-list RPCs verify the authenticated acco
 After the original community, recipes, and directory-topics migrations, apply the repeatable `supabase/community-safeguards.sql`. It adds account-linked policy acceptance, pre-publication moderation, contributor blocking, suspension and deletion controls, and opaque photo folders. Deploy the `delete-account` Edge Function. These safeguards and the function were applied October 16, 2026. See `docs/moderation-runbook.md` for current review procedures and `docs/release-safety.md` for release requirements. The original SQL tests target the original schema; run `supabase/tests/safeguards.test.sql` after the safeguards in a disposable database.
 
 After `supabase/community-safeguards.sql` and `supabase/admin-panel.sql`, apply `supabase/simplify-admin-review.sql` to existing projects. It removes the obsolete qualification and evidence-source audit fields, clears those legacy keys from review records, and moves previously rejected entries into Trash. Rejection in the admin panel now sends content directly to Trash.
+
+
+## Profile photo deployment check
+
+Apply `supabase/profile-avatars.sql` to the hosted database before shipping profile photos on either Android or iOS. This repeatable migration creates the avatar column, public avatar bucket, protected upload policies, and avatar save/read RPCs. A code release alone does not apply it. Newly verified accounts can upload JPEG, PNG, and WebP avatars up to 2 MB; suspended and deletion-pending accounts cannot upload.
+
+Run `node --env-file=.env scripts/check-profile-avatars.mjs` after deployment. The check uses only the publishable/anon key, verifies that the bucket exists, and confirms that anonymous avatar updates are denied. It does not upload a photo or sign into an account. Both mobile release jobs now run this check before building, so missing backend setup blocks releases.

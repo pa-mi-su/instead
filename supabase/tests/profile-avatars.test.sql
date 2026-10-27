@@ -22,4 +22,21 @@ do $$ begin
  if exists(select 1 from public.community_profile_me() where avatar_path is not null) then raise exception 'Avatar removal should clear the profile path'; end if;
  if has_function_privilege('anon','public.community_profile_avatar_set(text)','execute') then raise exception 'Anonymous users must not update profile avatars'; end if;
 end $$;
+-- All supported image types work for a newly created, verified account.
+insert into storage.objects(bucket_id,name) values
+ ('profile-avatars','76000000-0000-0000-0000-000000000001/avatar.png'),
+ ('profile-avatars','76000000-0000-0000-0000-000000000001/avatar.webp');
+select public.community_profile_avatar_set('76000000-0000-0000-0000-000000000001/avatar.png');
+select public.community_profile_avatar_set('76000000-0000-0000-0000-000000000001/avatar.webp');
+select pg_temp.must_reject($q$insert into storage.objects(bucket_id,name) values('profile-avatars','76000000-0000-0000-0000-000000000001/avatar.jpeg/extra')$q$);
+reset role;
+insert into public.community_account_controls(user_id,suspended) values
+ ('76000000-0000-0000-0000-000000000001',true)
+ on conflict(user_id) do update set suspended=true;
+set local role authenticated;
+select pg_temp.must_reject($q$insert into storage.objects(bucket_id,name) values('profile-avatars','76000000-0000-0000-0000-000000000001/avatar.jpeg')$q$);
+reset role;
+do $$ begin
+ if not exists(select 1 from storage.buckets where id='profile-avatars' and public and file_size_limit=2097152 and allowed_mime_types @> array['image/jpeg','image/png','image/webp']) then raise exception 'Avatar bucket is missing its mobile upload configuration'; end if;
+end $$;
 rollback;

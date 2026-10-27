@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useCommunity } from '../src/hooks/useCommunity';
 import type { CommunityClient, CommunitySession } from '../src/lib/community';
-import { communityError } from '../src/lib/community';
+import { communityError, profileError } from '../src/lib/community';
 
 function mockClient(session: CommunitySession | null = null) {
   let listener: (
@@ -47,7 +47,7 @@ function mockClient(session: CommunitySession | null = null) {
   }));
   const storage = {
     from: jest.fn(() => ({
-      upload: jest.fn(async () => ({ error: null })),
+      upload: jest.fn(async () => ({ error: null as unknown })),
       remove: jest.fn(async () => ({ error: null })),
       getPublicUrl: jest.fn((path: string) => ({
         data: { publicUrl: `https://storage.example.invalid/${path}` },
@@ -464,4 +464,53 @@ test('recipe discussions read and post only to the selected recipe', async () =>
     false,
   );
   await hook.unmount();
+});
+
+test('a missing avatar bucket gives a profile-scoped error and closing clears it', async () => {
+  const m = mockClient(member);
+  const bucket = m.storage.from();
+  bucket.upload.mockResolvedValue({
+    error: { code: 'NoSuchBucket', message: 'Bucket not found' },
+  });
+  m.storage.from.mockReturnValue(bucket);
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() => expect(hook.result.current.accountLoading).toBe(false));
+  await act(() => hook.result.current.setUsername('NewPhotoUser'));
+  let saved = true;
+  await act(async () => {
+    saved = await hook.result.current.saveProfile({
+      bytes: new ArrayBuffer(8),
+      contentType: 'image/png',
+    });
+  });
+  expect(saved).toBe(false);
+  expect(hook.result.current.errorSource).toBe('profile');
+  expect(hook.result.current.error).toMatch(
+    /profile photos are temporarily unavailable/i,
+  );
+  expect(m.rpc).not.toHaveBeenCalledWith(
+    'community_profile_set',
+    expect.anything(),
+  );
+  await act(() => hook.result.current.clearProfileError());
+  expect(hook.result.current.error).toBe('');
+  hook.unmount();
+});
+
+test('profile errors explain missing avatar setup and do not expose backend details', () => {
+  expect(
+    profileError({
+      code: 'PGRST202',
+      message: 'Could not find community_profile_avatar_set',
+    }),
+  ).toMatch(/profile photos are temporarily unavailable/i);
+  expect(profileError({ message: 'Network request failed' })).toMatch(
+    /check your connection/i,
+  );
+  expect(profileError({ statusCode: '413' })).toMatch(/2 MB/);
+  expect(profileError({ message: 'private backend information' })).toBe(
+    'Your profile could not be saved. Please try again.',
+  );
 });

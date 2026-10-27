@@ -33,6 +33,8 @@ set local role anon;
 select pg_temp.must_reject($q$select public.community_admin_prepare_deletion('aa000000-0000-0000-0000-000000000002','delete-target@example.invalid','Delete test account')$q$);
 set local role authenticated;
 select set_config('request.jwt.claim.sub','aa000000-0000-0000-0000-000000000002',true);
+-- A normal verified account must still be able to upload after this migration.
+insert into storage.objects(bucket_id,name) values('profile-avatars','aa000000-0000-0000-0000-000000000002/avatar.png');
 select pg_temp.must_reject($q$select public.community_admin_prepare_deletion('aa000000-0000-0000-0000-000000000002','delete-target@example.invalid','Delete test account')$q$);
 select set_config('request.jwt.claim.sub','aa000000-0000-0000-0000-000000000001',true);
 select set_config('request.jwt.claims','{"aal":"aal1"}',true);

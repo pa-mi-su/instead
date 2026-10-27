@@ -170,7 +170,7 @@ export function ProductCommunityAccess({
           : 'Sign in to vote or share a recipe. Your public username identifies approved recipes.'}
       </Text>
       {!c.configured && <Text>Community features are not configured yet.</Text>}
-      {!!c.error && (
+      {!!c.error && c.errorSource !== 'profile' && (
         <View style={local.errorBox}>
           <Text accessibilityRole="alert" style={local.errorText}>
             {c.error}
