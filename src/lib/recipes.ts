@@ -26,9 +26,9 @@ export function validateRecipe(draft: RecipeDraft) {
   for (const field of recipeFields) {
     const length = draft[field.key].trim().length;
     if (length > field.max || (field.key !== 'source' && length < 3))
-      return `${field.label}: enter ${field.key === 'source' ? 'up to' : '3–'}${
-        field.max
-      } characters.`;
+      return field.key === 'source'
+        ? `${field.label}: use no more than ${field.max} characters.`
+        : `${field.label}: enter at least 3 characters and no more than ${field.max} characters.`;
   }
   return null;
 }

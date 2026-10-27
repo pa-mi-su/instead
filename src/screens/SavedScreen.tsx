@@ -47,7 +47,7 @@ export function SavedScreen({
         <Text style={styles.pageEyebrow}>YOUR SHORTLIST</Text>
         <Text style={styles.pageTitle}>Saved for later.</Text>
         <Text style={styles.pageBody}>
-          Save an individual recipe or a recipe-free guide. Signed-in saves sync
+          Save a whole guide or an individual recipe. Signed-in saves sync
           across your devices.
         </Text>
       </View>
@@ -72,8 +72,8 @@ export function SavedScreen({
             {savedRecipes.length ? 'No saved guides.' : 'Nothing saved yet.'}
           </Text>
           <Text style={styles.emptyBody}>
-            Save an individual recipe or a guide without recipes to find it
-            quickly.
+            Use Save guide on a topic page or Save on an individual recipe to
+            find it here.
           </Text>
           <Pressable
             onPress={onExplore}

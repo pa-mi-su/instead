@@ -392,7 +392,7 @@ export function useCommunity(
           p_username: username.trim(),
           p_bio: bio.trim(),
         });
-        setNotice('Account created. Your email stays private.');
+        setNotice('Account created.');
         setProfile({ username: username.trim(), bio: bio.trim() });
         setPassword('');
         setPasswordConfirmation('');

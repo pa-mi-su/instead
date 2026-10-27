@@ -1,3 +1,4 @@
+import { imageContentType } from '../lib/imageUpload';
 import { useState } from 'react';
 import { Image, Modal, ScrollView, Text, TextInput, View } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -34,7 +35,6 @@ export function ProfileEditor({
         maxHeight: 512,
         quality: 0.8,
         assetRepresentationMode: 'compatible',
-        restrictMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
       });
       if (result.didCancel) return;
       if (result.errorCode)
@@ -44,14 +44,8 @@ export function ProfileEditor({
       const selected = result.assets?.[0];
       if (!selected?.uri || !selected.base64)
         throw new Error('Could not read that photo. Please choose another.');
-      const type = selected.type;
-      if (
-        type !== 'image/jpeg' &&
-        type !== 'image/png' &&
-        type !== 'image/webp'
-      )
-        throw new Error('Choose a JPEG, PNG, or WebP image.');
       const bytes = decode(selected.base64);
+      const type = imageContentType(bytes);
       if (bytes.byteLength > 2 * 1024 * 1024)
         throw new Error('Choose an image smaller than 2 MB.');
       setAvatar({ bytes, contentType: type });
@@ -95,7 +89,6 @@ export function ProfileEditor({
             <Text style={styles.pageTitle}>Update your profile</Text>
             <Text style={styles.optionDetail}>
               Your username and optional bio appear with your approved recipes.
-              Your email stays private.
             </Text>
 
             <View style={local.avatarArea}>
@@ -113,11 +106,11 @@ export function ProfileEditor({
                 disabled={selecting || saving}
                 onPress={chooseAvatar}
                 style={({ pressed }) => [
-                  styles.chip,
+                  styles.actionButton,
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.chipText}>
+                <Text style={styles.actionButtonText}>
                   {selecting
                     ? 'Opening photos…'
                     : photoUri
@@ -135,15 +128,15 @@ export function ProfileEditor({
                     setRemoveAvatar(true);
                   }}
                   style={({ pressed }) => [
-                    styles.chip,
+                    styles.actionButton,
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={styles.chipText}>Remove avatar</Text>
+                  <Text style={styles.actionButtonText}>Remove avatar</Text>
                 </Pressable>
               )}
               <Text style={styles.optionDetail}>
-                JPEG, PNG, or WebP · up to 2 MB
+                Choose a photo · automatically optimized · up to 2 MB
               </Text>
               {!!photoError && (
                 <Text accessibilityRole="alert" style={local.fieldError}>
@@ -230,11 +223,11 @@ export function ProfileEditor({
                 disabled={saving || c.busy}
                 onPress={onClose}
                 style={({ pressed }) => [
-                  local.secondary,
+                  styles.actionButton,
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={local.secondaryText}>Cancel</Text>
+                <Text style={styles.actionButtonText}>Cancel</Text>
               </Pressable>
             </View>
           </View>

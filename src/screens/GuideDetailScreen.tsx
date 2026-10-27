@@ -187,30 +187,7 @@ export function GuideDetailScreen({
         <View style={styles.detailWordmarkWrap}>
           <BrandLogo />
         </View>
-        {recipes.length === 0 ? (
-          <Pressable
-            onPress={onSave}
-            style={({ pressed }) => [
-              styles.iconButton,
-              isSaved && styles.iconButtonSaved,
-              pressed && styles.pressed,
-            ]}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isSaved ? 'Remove saved guide' : 'Save this guide'
-            }
-            accessibilityState={{ selected: isSaved }}
-          >
-            <Bookmark
-              size={21}
-              color={COLORS.ink}
-              fill={isSaved ? COLORS.ink : 'transparent'}
-            />
-          </Pressable>
-        ) : (
-          <View style={styles.iconButton} />
-        )}
+        <View style={styles.detailHeaderSpacer} />
       </View>
 
       <ScrollView
@@ -228,6 +205,29 @@ export function GuideDetailScreen({
           </Text>
           <Text style={styles.detailTitle}>{guide.title}</Text>
           <Text style={styles.detailPrompt}>{guide.prompt}</Text>
+          <Pressable
+            onPress={onSave}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isSaved ? 'Remove saved guide' : 'Save this guide'
+            }
+            accessibilityState={{ selected: isSaved }}
+            style={({ pressed }) => [
+              styles.actionButton,
+              styles.guideSaveButton,
+              isSaved && styles.iconButtonSaved,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Bookmark
+              size={20}
+              color={COLORS.ink}
+              fill={isSaved ? COLORS.ink : 'transparent'}
+            />
+            <Text style={styles.actionButtonText}>
+              {isSaved ? 'Guide saved' : 'Save guide'}
+            </Text>
+          </Pressable>
         </View>
 
         <View style={styles.answerCard}>
