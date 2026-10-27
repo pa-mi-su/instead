@@ -23,6 +23,8 @@ function fixture({
   storageFail = false,
   maliciousPath = false,
   authFail = false,
+  adminStatus = 200,
+  adminTarget = victim,
 } = {}) {
   const calls = [];
   let photoBatches = 0;
@@ -40,6 +42,8 @@ function fixture({
               email_confirmed_at: confirmed ? '2026-10-16' : null,
               is_anonymous: false,
             });
+      if (url.endsWith('/rpc/community_admin_prepare_deletion'))
+        return data(adminTarget, adminStatus);
       if (url.includes('/community_photo_folders')) return data([]);
       if (url.includes('/rest/v1/'))
         return data(requested ? [{ deletion_requested_at: '2026-10-16' }] : []);
@@ -116,4 +120,71 @@ test('never deletes auth account when photo cleanup fails or a path escapes its 
       !m.calls.some(call => call.url.includes('/auth/v1/admin/users/')),
     );
   }
+});
+
+const adminRequest = (overrides = {}) =>
+  new Request('https://function.example.invalid', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test-admin-token' },
+    body: JSON.stringify({
+      action: 'admin-delete',
+      user_id: victim,
+      email: 'target@example.invalid',
+      reason: 'Account removal requested',
+      ...overrides,
+    }),
+  });
+test('admin deletion uses caller authorization before any cleanup and deletes only the authorized target', async () => {
+  const f = fixture();
+  assert.equal((await f.handler(adminRequest())).status, 200);
+  const authorize = f.calls.find(call =>
+    call.url.endsWith('/rpc/community_admin_prepare_deletion'),
+  );
+  assert.equal(authorize.headers.Authorization, 'Bearer test-admin-token');
+  assert.equal(JSON.parse(authorize.body).p_user, victim);
+  const deletes = f.calls.filter(call => call.method === 'DELETE');
+  assert.deepEqual(JSON.parse(deletes[0].body).prefixes, [
+    `${victim}/photo.jpg`,
+  ]);
+  assert.deepEqual(JSON.parse(deletes[1].body).prefixes, [
+    `${victim}/avatar.jpeg`,
+  ]);
+  assert.ok(deletes[2].url.endsWith(`/auth/v1/admin/users/${victim}`));
+  assert.deepEqual(JSON.parse(deletes[2].body), { should_soft_delete: false });
+  assert.ok(
+    !f.calls.some(call => call.url.includes(`/auth/v1/admin/users/${owner}`)),
+  );
+});
+test('denied or mismatched admin authorization never reaches storage or Auth deletion', async () => {
+  for (const config of [
+    { adminStatus: 403 },
+    { adminStatus: 409 },
+    { adminStatus: 500 },
+    { adminTarget: owner },
+    { adminTarget: 'unexpected' },
+  ]) {
+    const f = fixture(config);
+    assert.ok((await f.handler(adminRequest())).status >= 400);
+    assert.ok(
+      !f.calls.some(
+        call => call.url.includes('/storage/') || call.method === 'DELETE',
+      ),
+    );
+  }
+});
+test('malformed target requests are rejected before admin RPC or cleanup', async () => {
+  for (const body of [
+    { user_id: '../other' },
+    { email: null },
+    { reason: null },
+  ]) {
+    const f = fixture();
+    assert.equal((await f.handler(adminRequest(body))).status, 400);
+    assert.equal(f.calls.length, 1);
+  }
+});
+test('admin cleanup failures preserve Auth for retry', async () => {
+  const f = fixture({ storageFail: true });
+  assert.equal((await f.handler(adminRequest())).status, 503);
+  assert.ok(!f.calls.some(call => call.url.includes('/auth/v1/admin/users/')));
 });
