@@ -1,5 +1,6 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { notifyCommunityChanged, useCommunityRevision } from '../../src/lib/communityUpdates';
 import type { useCommunity } from '../../src/hooks/useCommunity';
 import { communityError, communityRpc } from '../../src/lib/community';
 import type { Guide } from '../../src/types';
@@ -42,31 +43,38 @@ export function AccountHub({
   const [error, setError] = useState('');
   const [removing, setRemoving] = useState<string | null>(null);
   const userId = community.session?.user.id;
+  const revision = useCommunityRevision();
+  const requestVersion = useRef(0);
   const refresh = useCallback(async () => {
+    const version = ++requestVersion.current;
     if (!userId || !communityClient) {
       setRecipes([]);
+      setLoading(false);
       return;
     }
     setLoading(true);
     setError('');
     try {
-      setRecipes(
-        await communityRpc<AccountRecipe[]>(
-          communityClient,
-          'community_my_recipes',
-        ),
-      );
+      const rows = await communityRpc<AccountRecipe[]>(communityClient, 'community_my_recipes');
+      if (version === requestVersion.current) setRecipes(rows);
     } catch (issue) {
-      setError(communityError(issue));
+      if (version === requestVersion.current) setError(communityError(issue));
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }, [userId]);
 
   useEffect(() => {
-    const task = Promise.resolve().then(() => refresh());
+    let active = true;
+    const pending = requestVersion;
+    const task = Promise.resolve().then(() => {
+      if (!active) return;
+      setRecipes([]);
+      return refresh();
+    });
     task.catch(() => undefined);
-  }, [refresh]);
+    return () => { active = false; pending.current++; };
+  }, [refresh, revision]);
 
   async function withdraw(recipe: AccountRecipe) {
     if (!communityClient) return;
@@ -78,6 +86,7 @@ export function AccountHub({
         'recipe_withdraw',
         { p_recipe: recipe.id },
       );
+      notifyCommunityChanged();
       if (paths.length) {
         const result = await communityClient.storage
           .from('recipe-photos')

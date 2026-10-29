@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import Link from 'next/link';
 import type { useCommunity } from '../../src/hooks/useCommunity';
 import type { AvatarUpload } from '../../src/lib/community';
@@ -14,6 +14,10 @@ export function CommunityAccess({
   purpose: 'community' | 'account';
 }) {
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const deletionDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (c.deletionComplete && !deletionDialog.current?.open) deletionDialog.current?.showModal();
+  }, [c.deletionComplete]);
   const [editingProfile, setEditingProfile] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -94,6 +98,11 @@ export function CommunityAccess({
 
   return (
     <section className="community-access" aria-label="INSTEAD account">
+      {c.deletionComplete && <dialog ref={deletionDialog} onClose={c.dismissDeletionConfirmation} onCancel={c.dismissDeletionConfirmation} aria-labelledby="deletion-complete-title" className="deletion-complete-dialog">
+        <h2 id="deletion-complete-title">Account deleted</h2>
+        <p>Your account and community data have been permanently deleted. You are now signed out.</p>
+        <button type="button" onClick={c.dismissDeletionConfirmation}>Continue browsing</button>
+      </dialog>}
       <p>
         {purpose === 'account'
           ? 'Create a profile to share recipes, keep your saved guides in sync, and manage your submissions. Your email stays private.'

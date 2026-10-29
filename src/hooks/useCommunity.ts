@@ -1,3 +1,7 @@
+import {
+  notifyCommunityChanged,
+  subscribeCommunityUpdates,
+} from '../lib/communityUpdates';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { POLICY_VERSION } from '../policies';
 import { communityError, communityRpc, profileError } from '../lib/community';
@@ -55,14 +59,18 @@ export function useCommunity(
     'auth' | 'other' | 'validation' | 'profile'
   >('other');
   const [notice, setNotice] = useState('');
+  const [deletionComplete, setDeletionComplete] = useState(false);
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
   const lock = useRef(false);
   const generation = useRef(0);
   const userId = session?.user.id;
   const accountGeneration = useRef(0);
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
   const loadAccount = useCallback(async () => {
     const version = ++accountGeneration.current;
+    const previousProfile = profileRef.current;
     if (!userId) {
       setAccountLoadStatus('idle');
       setAccountLoadError('');
@@ -105,8 +113,16 @@ export function useCommunity(
     if (profileResult.status === 'fulfilled') {
       const nextProfile = profileResult.value[0] ?? null;
       setProfile(nextProfile);
-      setUsername(nextProfile?.username ?? '');
-      setBio(nextProfile?.bio ?? '');
+      setUsername(current =>
+        current === (previousProfile?.username ?? '')
+          ? nextProfile?.username ?? ''
+          : current,
+      );
+      setBio(current =>
+        current === (previousProfile?.bio ?? '')
+          ? nextProfile?.bio ?? ''
+          : current,
+      );
     } else {
       setProfileLoadError(communityError(profileResult.reason));
     }
@@ -201,6 +217,9 @@ export function useCommunity(
     setAccountLoadStatus(userId ? 'loading' : 'idle');
     setAccountLoadError('');
     setProfile(null);
+    profileRef.current = null;
+    setUsername('');
+    setBio('');
     setProfileLoadError('');
     setBlocks([]);
     if (userId)
@@ -216,6 +235,32 @@ export function useCommunity(
       pendingAccount.current++;
     };
   }, [authReady, client, refresh, userId, loadAccount]);
+  useEffect(() => {
+    const reload = () => {
+      refresh().catch(() => undefined);
+      if (userId) loadAccount().catch(() => undefined);
+    };
+    const unsubscribe = subscribeCommunityUpdates(update => {
+      if (update.type === 'account-deleted' && update.userId === userId) {
+        generation.current++;
+        accountGeneration.current++;
+        setSession(null);
+        setAccount(null);
+        setProfile(null);
+        setBlocks([]);
+        setComments([]);
+        setDraft('');
+        setEmail('');
+        setPassword('');
+        setPasswordConfirmation('');
+        return;
+      }
+      reload();
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [refresh, loadAccount, userId]);
   useEffect(() => {
     if (!sentEmail) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -270,6 +315,7 @@ export function useCommunity(
       });
       await loadAccount();
       setNotice('Community terms accepted for this account.');
+      notifyCommunityChanged();
     });
   }
   function block(kind: 'comment' | 'recipe', id: string) {
@@ -278,6 +324,7 @@ export function useCommunity(
         p_kind: kind,
         p_content: id,
       });
+      notifyCommunityChanged();
       await Promise.all([loadAccount(), refresh()]);
       setNotice(
         'Contributor blocked. Their recipes are hidden for your account.',
@@ -289,19 +336,23 @@ export function useCommunity(
       await communityRpc(client, 'community_unblock', { p_block: id });
       await Promise.all([loadAccount(), refresh()]);
       setNotice('Contributor unblocked.');
+      notifyCommunityChanged();
     });
   }
   function requestDeletion() {
     return run(async () => {
       await communityRpc(client, 'community_request_deletion');
+      notifyCommunityChanged();
       await Promise.all([loadAccount(), refresh()]);
       if (client?.functions) {
         const result = await client.functions.invoke('delete-account');
         if (!result.error) {
-          await client.auth.signOut({ scope: 'local' });
+          await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
           setSession(null);
           setDraft('');
-          setNotice('Your account and community data have been deleted.');
+          setNotice('');
+          notifyCommunityChanged({ type: 'account-deleted', userId: userId! });
+          setDeletionComplete(true);
           return;
         }
       }
@@ -456,6 +507,7 @@ export function useCommunity(
         await storage?.remove([previousPath]).catch(() => undefined);
       setProfile({ username: handle, bio: about, avatar_path: nextPath });
       setNotice('Profile updated.');
+      notifyCommunityChanged();
     }, 'profile');
   }
   function verifyCode() {
@@ -535,6 +587,7 @@ export function useCommunity(
       setNotice(
         'Comment submitted for review. Only you can see it until approval.',
       );
+      notifyCommunityChanged();
       await refresh();
     });
   }
@@ -552,6 +605,7 @@ export function useCommunity(
         p_comment: comment.id,
         p_upvoted: !comment.upvoted,
       });
+      notifyCommunityChanged();
       await refresh();
     });
   }
@@ -562,12 +616,14 @@ export function useCommunity(
         p_reason: reason,
       });
       setNotice('Report received for review.');
+      notifyCommunityChanged();
       await refresh();
     });
   }
   function remove(comment: CommunityComment) {
     return run(async () => {
       await communityRpc(client, 'community_delete', { p_comment: comment.id });
+      notifyCommunityChanged();
       await refresh();
     });
   }
@@ -579,6 +635,7 @@ export function useCommunity(
       setSession(null);
       setDraft('');
       setNotice('Signed out.');
+      notifyCommunityChanged();
     });
   }
   function loadMore() {
@@ -624,6 +681,8 @@ export function useCommunity(
     block,
     unblock,
     requestDeletion,
+    deletionComplete,
+    dismissDeletionConfirmation: () => setDeletionComplete(false),
     email,
     setEmail,
     password,
@@ -680,6 +739,7 @@ export function useCommunity(
     },
     retry: () =>
       run(async () => {
+        notifyCommunityChanged();
         await refresh();
         if (userId) await loadAccount();
       }),

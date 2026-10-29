@@ -1,3 +1,4 @@
+import { useCommunityRevision } from '../lib/communityUpdates';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { productCatalog } from '../catalog';
@@ -5,6 +6,7 @@ import { applyBuiltinRecipeChanges } from '../lib/builtinRecipes';
 import { supabase } from '../lib/supabase';
 
 export function useGuideCatalog() {
+  const revision = useCommunityRevision();
   const [guides, setGuides] = useState(productCatalog);
   useEffect(() => {
     let active = true;
@@ -26,6 +28,6 @@ export function useGuideCatalog() {
       clearInterval(timer);
       subscription.remove();
     };
-  }, []);
+  }, [revision]);
   return { guides, isLoading: false };
 }

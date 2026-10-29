@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import {
+  notifyCommunityChanged,
+  useCommunityRevision,
+} from '../lib/communityUpdates';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { ProductCommunityAccess } from '../components/ProductCommunityAccess';
@@ -43,9 +47,13 @@ export function AccountScreen({
   const [error, setError] = useState('');
   const [removing, setRemoving] = useState<string | null>(null);
   const userId = community.session?.user.id;
+  const revision = useCommunityRevision();
+  const requestVersion = useRef(0);
   const refresh = useCallback(async () => {
+    const version = ++requestVersion.current;
     if (!userId || !supabase) {
       setRecipes([]);
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -55,16 +63,21 @@ export function AccountScreen({
         supabase,
         'community_my_recipes',
       );
-      setRecipes(rows);
+      if (version === requestVersion.current) setRecipes(rows);
     } catch (issue) {
-      setError(communityError(issue));
+      if (version === requestVersion.current) setError(communityError(issue));
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }, [userId]);
   useEffect(() => {
+    const pending = requestVersion;
+    setRecipes([]);
     refresh().catch(() => undefined);
-  }, [refresh]);
+    return () => {
+      pending.current++;
+    };
+  }, [refresh, revision]);
   const savedGuides = guides.filter(guide => savedGuideIds.includes(guide.id));
   async function withdraw(recipe: AccountRecipe) {
     if (!supabase) return;
@@ -74,6 +87,7 @@ export function AccountScreen({
       const paths = await communityRpc<string[]>(supabase, 'recipe_withdraw', {
         p_recipe: recipe.id,
       });
+      notifyCommunityChanged();
       if (paths.length) {
         const removed = await supabase.storage
           .from('recipe-photos')

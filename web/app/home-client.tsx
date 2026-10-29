@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { categories } from '../../src/categories';
+import { subscribeCommunityUpdates } from '../../src/lib/communityUpdates';
 import { useCommunity } from '../../src/hooks/useCommunity';
 import { communityRpc } from '../../src/lib/community';
 import type { Guide } from '../../src/types';
@@ -48,6 +49,10 @@ export default function HomeClient({
     'local' | 'syncing' | 'synced' | 'error'
   >('local');
   const userId = community.session?.user.id;
+  const [foregroundRevision, setForegroundRevision] = useState(0);
+  useEffect(() => subscribeCommunityUpdates(update => {
+    if (update.type === 'foreground') setForegroundRevision(value => value + 1);
+  }), []);
   const localSavedRef = useRef(savedIds);
   const recipeTitlesRef = useRef(recipeTitles);
 
@@ -167,7 +172,7 @@ export default function HomeClient({
       active = false;
       window.clearTimeout(syncingTimer);
     };
-  }, [userId, favoritesReady]);
+  }, [userId, favoritesReady, foregroundRevision]);
 
   const filteredGuides = useMemo(() => {
     const normalized = query.trim().toLowerCase();

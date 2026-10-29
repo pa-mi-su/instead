@@ -1,14 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useCommunityRevision } from '../../src/lib/communityUpdates';
 import { useEffect, useState } from 'react';
 import { communityClient } from '../lib/community-client';
 import type { PublicProfile as Profile } from '../../src/lib/recipes';
 
 export function PublicProfile({ username }: { username: string }) {
+  const revision = useCommunityRevision();
+  const key = `${username}:${revision}`;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadedUsername, setLoadedUsername] = useState('');
-  const loading = Boolean(communityClient) && loadedUsername !== username;
+  const loading = Boolean(communityClient) && loadedUsername !== key;
 
   useEffect(() => {
     let active = true;
@@ -22,18 +25,18 @@ export function PublicProfile({ username }: { username: string }) {
           const row = data[0] as Profile;
           setProfile(row);
         } else setProfile(null);
-        setLoadedUsername(username);
+        setLoadedUsername(key);
       })
       .catch(() => {
         if (active) {
           setProfile(null);
-          setLoadedUsername(username);
+          setLoadedUsername(key);
         }
       });
     return () => {
       active = false;
     };
-  }, [username]);
+  }, [username, key]);
 
   return (
     <main className="page-shell profile-page">

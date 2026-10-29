@@ -1,3 +1,8 @@
+import {
+  getCommunityRevision,
+  notifyCommunityChanged,
+  useCommunityRevision,
+} from '../lib/communityUpdates';
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { ScrollView, Text, View } from 'react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -90,19 +95,33 @@ export function GuideDetailScreen({
   const [recipeRatings, setRecipeRatings] = useState<
     Record<string, RecipeRating>
   >({});
+  const [ratingsError, setRatingsError] = useState(false);
   const recipes = guide.recipes ?? noRecipes;
+  const revision = useCommunityRevision();
+  const community = useCommunity(
+    supabase,
+    guide.id,
+    undefined,
+    'helpful',
+    false,
+  );
+
   useEffect(() => {
     let active = true;
     setRecipeRatings({});
+    setRatingsError(false);
     const client = supabase;
-    if (!client) return;
+    if (!client) {
+      setRatingsError(true);
+      return;
+    }
     Promise.all(
       recipes.map(async recipe => {
         const { data, error } = await client.rpc('builtin_recipe_rating', {
           p_recipe: recipe.id,
           p_product: guide.id,
         });
-        if (error) return [recipe.id, emptyRating] as const;
+        if (error) throw error;
         const row = Array.isArray(data) ? data[0] : data;
         return [
           recipe.id,
@@ -116,13 +135,20 @@ export function GuideDetailScreen({
             : emptyRating,
         ] as const;
       }),
-    ).then(entries => {
-      if (active) setRecipeRatings(Object.fromEntries(entries));
-    });
+    )
+      .then(entries => {
+        if (active) setRecipeRatings(Object.fromEntries(entries));
+      })
+      .catch(() => {
+        if (active) {
+          setRecipeRatings({});
+          setRatingsError(true);
+        }
+      });
     return () => {
       active = false;
     };
-  }, [guide.id, recipes]);
+  }, [guide.id, recipes, community.session?.user.id, revision]);
   const rankedRecipes = useMemo(
     () => rankRecipes(recipes, recipeRatings),
     [recipes, recipeRatings],
@@ -130,6 +156,7 @@ export function GuideDetailScreen({
   async function voteRecipe(recipeId: string, value: -1 | 1) {
     const client = supabase;
     if (!client) throw new Error('Voting is unavailable right now.');
+    const startedAt = getCommunityRevision();
     const current = recipeRatings[recipeId] ?? emptyRating;
     const nextVote = current.my_vote === value ? 0 : value;
     const { error } = await client.rpc('builtin_recipe_vote', {
@@ -138,6 +165,7 @@ export function GuideDetailScreen({
       p_value: nextVote,
     });
     if (error) throw error;
+    if (startedAt !== getCommunityRevision()) return;
     const upvotes =
       current.upvotes -
       (current.my_vote === 1 ? 1 : 0) +
@@ -155,14 +183,8 @@ export function GuideDetailScreen({
         my_vote: nextVote,
       },
     }));
+    notifyCommunityChanged();
   }
-  const community = useCommunity(
-    supabase,
-    guide.id,
-    undefined,
-    'helpful',
-    false,
-  );
   const verified = Boolean(
     community.session?.user.email_confirmed_at &&
       !community.session.user.is_anonymous,
@@ -326,16 +348,40 @@ export function GuideDetailScreen({
                     CAUTIONS
                   </Text>
                   <Text style={styles.optionDetail}>{recipe.cautions}</Text>
-                  <RecipeVoteButtons
-                    productId={guide.id}
-                    recipeId={recipe.id}
-                    title={recipe.name}
-                    signedIn={verified}
-                    canVote={community.canContribute}
-                    onSignIn={requestSignIn}
-                    onVote={value => voteRecipe(recipe.id, value)}
-                    rating={recipeRatings[recipe.id] ?? emptyRating}
-                  />
+                  {recipeRatings[recipe.id] ? (
+                    <RecipeVoteButtons
+                      productId={guide.id}
+                      recipeId={recipe.id}
+                      title={recipe.name}
+                      signedIn={verified}
+                      canVote={community.canContribute}
+                      onSignIn={requestSignIn}
+                      onVote={value => voteRecipe(recipe.id, value)}
+                      rating={recipeRatings[recipe.id] ?? emptyRating}
+                    />
+                  ) : (
+                    <View style={styles.optionList}>
+                      <Text
+                        style={styles.optionDetail}
+                        accessibilityRole={ratingsError ? 'alert' : undefined}
+                      >
+                        {ratingsError
+                          ? 'Could not refresh votes. Check your connection and try again.'
+                          : 'Refreshing votes…'}
+                      </Text>
+                      {ratingsError && (
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => notifyCommunityChanged()}
+                          style={styles.actionButton}
+                        >
+                          <Text style={styles.actionButtonText}>
+                            Retry votes
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
                 </View>
               ))}
             </View>

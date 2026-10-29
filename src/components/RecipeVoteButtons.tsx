@@ -1,3 +1,8 @@
+import {
+  getCommunityRevision,
+  notifyCommunityChanged,
+  useCommunityRevision,
+} from '../lib/communityUpdates';
 import { ThumbsDown, ThumbsUp } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
@@ -31,6 +36,7 @@ export function RecipeVoteButtons({
   onVote?: (value: -1 | 1) => Promise<void> | void;
   rating?: Rating;
 }) {
+  const revision = useCommunityRevision();
   const [rating, setRating] = useState<Rating>({
     score: 0,
     upvotes: 0,
@@ -52,11 +58,14 @@ export function RecipeVoteButtons({
     const client = supabase;
     if (signedInProp !== undefined || !client) return;
     let active = true;
+    let authVersion = 0;
     const update = async (
       session: {
         user: { email_confirmed_at?: string; is_anonymous?: boolean };
       } | null,
     ) => {
+      const version = ++authVersion;
+      setRating({ score: 0, upvotes: 0, downvotes: 0, my_vote: 0 });
       const verified = Boolean(
         session?.user.email_confirmed_at && !session.user.is_anonymous,
       );
@@ -66,7 +75,7 @@ export function RecipeVoteButtons({
       const { data, error: issue } = await client.rpc(
         'community_account_state',
       );
-      if (issue || !active) return;
+      if (issue || !active || version !== authVersion) return;
       const row = Array.isArray(data) ? data[0] : data;
       setBuiltInAccess({
         signedIn: verified,
@@ -94,6 +103,8 @@ export function RecipeVoteButtons({
     const client = supabase;
     if (externalRating || !client || !recipeId.startsWith('builtin:')) return;
     let active = true;
+    setRating({ score: 0, upvotes: 0, downvotes: 0, my_vote: 0 });
+    setError('');
     Promise.resolve(
       client.rpc('builtin_recipe_rating', {
         p_recipe: recipeId,
@@ -115,7 +126,7 @@ export function RecipeVoteButtons({
     return () => {
       active = false;
     };
-  }, [externalRating, productId, recipeId]);
+  }, [externalRating, productId, recipeId, signedIn, revision]);
 
   async function cast(value: -1 | 1) {
     if (!signedIn || !canVote) {
@@ -125,6 +136,7 @@ export function RecipeVoteButtons({
     if (busy) return;
     setBusy(true);
     setError('');
+    const startedAt = getCommunityRevision();
     const nextVote = activeRating.my_vote === value ? 0 : value;
     try {
       if (onVote) {
@@ -137,6 +149,7 @@ export function RecipeVoteButtons({
           p_value: nextVote,
         });
         if (issue) throw issue;
+        if (startedAt !== getCommunityRevision()) return;
         setRating(current => {
           const upvotes =
             current.upvotes -
@@ -153,6 +166,7 @@ export function RecipeVoteButtons({
             my_vote: nextVote,
           };
         });
+        notifyCommunityChanged();
       }
     } catch (issue) {
       const message =

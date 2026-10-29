@@ -1,5 +1,8 @@
+import {
+  notifyCommunityChanged,
+  useCommunityRevision,
+} from '../lib/communityUpdates';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { subscribeToForeground } from './appForeground';
 import { communityError, communityRpc } from '../lib/community';
 import type { ReportReason } from '../lib/community';
 import {
@@ -20,6 +23,7 @@ export function useRecipes(
   productId: string,
   userId?: string,
 ) {
+  const revision = useCommunityRevision();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [mine, setMine] = useState<Recipe[]>([]);
   const [draft, setDraft] = useState<RecipeDraft>({ ...emptyRecipe });
@@ -117,12 +121,7 @@ export function useRecipes(
       pending.current++;
       clearInterval(timer);
     };
-  }, [refresh]);
-  useEffect(() => {
-    return subscribeToForeground(() => {
-      refresh().catch(issue => setError(communityError(issue)));
-    });
-  }, [refresh]);
+  }, [refresh, revision]);
   async function run(task: () => Promise<void>) {
     if (lock.current) return;
     lock.current = true;
@@ -181,6 +180,7 @@ export function useRecipes(
           p_photos: paths,
         });
         submitted = true;
+        notifyCommunityChanged();
         setDraft({ ...emptyRecipe });
         setPhotos([]);
         setNotice(
@@ -249,6 +249,7 @@ export function useRecipes(
           p_recipe: recipe.id,
           p_value: recipe.my_vote === value ? 0 : value,
         });
+        notifyCommunityChanged();
         await refresh();
       }),
     report: (recipe: Recipe, reason: ReportReason) =>
@@ -257,6 +258,7 @@ export function useRecipes(
           p_recipe: recipe.id,
           p_reason: reason,
         });
+        notifyCommunityChanged();
         setNotice('Report received for review.');
         await refresh();
       }),
@@ -265,6 +267,7 @@ export function useRecipes(
         const paths = await communityRpc<string[]>(client, 'recipe_withdraw', {
           p_recipe: recipe.id,
         });
+        notifyCommunityChanged();
         setNotice('Recipe removed.');
         if (paths.length && store) {
           const removed = await store.remove(paths);

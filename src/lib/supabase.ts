@@ -1,3 +1,4 @@
+import { notifyCommunityChanged } from './communityUpdates';
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
@@ -38,10 +39,20 @@ export async function fetchPublishedGuides(): Promise<Guide[] | null> {
 }
 
 if (supabase) {
+  let previousUser: string | undefined;
+  supabase.auth.onAuthStateChange((event, session) => {
+    const user = session?.user.id;
+    if (user !== previousUser || event === 'USER_UPDATED') {
+      previousUser = user;
+      setTimeout(() => notifyCommunityChanged(), 0);
+    }
+  });
   if (AppState.currentState === 'active') supabase.auth.startAutoRefresh();
   else supabase.auth.stopAutoRefresh();
   AppState.addEventListener('change', state => {
-    if (state === 'active') supabase.auth.startAutoRefresh();
-    else supabase.auth.stopAutoRefresh();
+    if (state === 'active') {
+      supabase.auth.startAutoRefresh();
+      notifyCommunityChanged({ type: 'foreground' });
+    } else supabase.auth.stopAutoRefresh();
   });
 }

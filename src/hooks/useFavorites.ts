@@ -1,3 +1,4 @@
+import { subscribeCommunityUpdates } from '../lib/communityUpdates';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -20,6 +21,15 @@ function parseFavorites(value: string | null): string[] {
 }
 
 export function useFavorites(userId?: string) {
+  const [foregroundRevision, setForegroundRevision] = useState(0);
+  useEffect(
+    () =>
+      subscribeCommunityUpdates(update => {
+        if (update.type === 'foreground')
+          setForegroundRevision(value => value + 1);
+      }),
+    [],
+  );
   const [localFavorites, setLocalFavorites] = useState<string[]>([]);
   const [cloudFavorites, setCloudFavorites] = useState<string[]>([]);
   const [localRecipeTitles, setLocalRecipeTitles] = useState<
@@ -148,7 +158,7 @@ export function useFavorites(userId?: string) {
     return () => {
       active = false;
     };
-  }, [localRecipeTitles, localReady, userId]);
+  }, [localRecipeTitles, localReady, userId, foregroundRevision]);
 
   function persistFavorites(nextLocal: string[]) {
     setLocalFavorites(nextLocal);

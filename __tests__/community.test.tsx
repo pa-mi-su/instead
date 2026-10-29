@@ -1,3 +1,4 @@
+import { notifyCommunityChanged } from '../src/lib/communityUpdates';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useCommunity } from '../src/hooks/useCommunity';
 import type { CommunityClient, CommunitySession } from '../src/lib/community';
@@ -513,4 +514,85 @@ test('profile errors explain missing avatar setup and do not expose backend deta
   expect(profileError({ message: 'private backend information' })).toBe(
     'Your profile could not be saved. Please try again.',
   );
+});
+
+test('confirmed deletion clears every mounted account view even if local sign-out rejects', async () => {
+  const m = mockClient(member);
+  m.client.functions = {
+    invoke: jest.fn(async () => ({
+      data: { message: 'Account deleted.' },
+      error: null,
+    })),
+  };
+  m.auth.signOut.mockRejectedValueOnce(new Error('User no longer exists'));
+  const hook = await renderHook(() => ({
+    source: useCommunity(m.client, 'natural-toothpaste'),
+    other: useCommunity(m.client, 'natural-glass-cleaner'),
+  }));
+  await waitFor(() =>
+    expect(hook.result.current.other.canContribute).toBe(true),
+  );
+  await act(() =>
+    hook.result.current.other.setPassword('temporary credential'),
+  );
+  await act(() => hook.result.current.source.requestDeletion());
+  await waitFor(() =>
+    expect(hook.result.current.source.deletionComplete).toBe(true),
+  );
+  expect(hook.result.current.source.session).toBeNull();
+  expect(hook.result.current.other.session).toBeNull();
+  expect(hook.result.current.other.password).toBe('');
+  expect(hook.result.current.other.profile).toBeNull();
+  expect(hook.result.current.source.notice).toBe('');
+  await act(() => hook.result.current.source.dismissDeletionConfirmation());
+  expect(hook.result.current.source.deletionComplete).toBe(false);
+  hook.unmount();
+});
+
+test('pending deletion does not show permanent-success confirmation or sign the user out', async () => {
+  const m = mockClient(member);
+  m.client.functions = {
+    invoke: jest.fn(async () => ({
+      data: null,
+      error: new Error('Cleanup pending'),
+    })),
+  };
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() => expect(hook.result.current.canManage).toBe(true));
+  await act(() => hook.result.current.requestDeletion());
+  expect(hook.result.current.deletionComplete).toBe(false);
+  expect(hook.result.current.session?.user.id).toBe('member');
+  expect(m.auth.signOut).not.toHaveBeenCalled();
+  expect(hook.result.current.notice).toMatch(/could not finish/i);
+  hook.unmount();
+});
+
+test('shared and foreground refreshes update profiles without overwriting an unsaved edit', async () => {
+  const m = mockClient(member);
+  const original = m.rpc.getMockImplementation()!;
+  let bio = 'Original bio';
+  m.rpc.mockImplementation(async (name, args) =>
+    name === 'community_profile_me'
+      ? { data: [{ username: 'OriginalUser', bio }], error: null }
+      : original(name, args),
+  );
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() =>
+    expect(hook.result.current.username).toBe('OriginalUser'),
+  );
+  await act(() => hook.result.current.setUsername('UnsavedEdit'));
+  await act(() => {
+    bio = 'Updated elsewhere';
+    notifyCommunityChanged({ type: 'foreground' });
+  });
+  await waitFor(() =>
+    expect(hook.result.current.profile?.bio).toBe('Updated elsewhere'),
+  );
+  expect(hook.result.current.username).toBe('UnsavedEdit');
+  expect(hook.result.current.bio).toBe('Updated elsewhere');
+  hook.unmount();
 });
