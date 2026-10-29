@@ -1212,3 +1212,7 @@ a:focus-visible {
 .ack-check { display: flex; align-items: flex-start; gap: 12px; line-height: 1.6; margin-top: 24px; }
 .ack-check input { width: 24px; height: 24px; flex-shrink: 0; margin-top: 2px; }
 .ack-shell [role="alert"] { color: #9c2513; }
+
+.deletion-complete-dialog { position: fixed; inset: 0; z-index: 100; margin: auto; max-width: 30rem; padding: 2rem; border: 2px solid #183b32; border-radius: 1.5rem; background: #fff8ea; box-shadow: 0 0 0 100vmax #0008; }
+.deletion-complete-dialog h2 { font-size: 1.75rem; }
+.deletion-complete-dialog p { font-size: 1.125rem; line-height: 1.6; }

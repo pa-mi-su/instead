@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { useRecipes } from '../src/hooks/useRecipes';
@@ -197,4 +197,37 @@ test('failed submission preserves the draft and cleans uploaded photos', async (
   expect(hook.result.current.draft).toEqual(draft);
   expect(hook.result.current.error).toMatch(/unavailable/);
   hook.unmount();
+});
+
+test('removing a recipe refreshes another mounted recipe list automatically', async () => {
+  const m = mock();
+  let rows = [
+    {
+      id: 'shared-recipe',
+      title: 'Shared recipe',
+      photo_paths: [],
+      mine: true,
+      status: 'pending',
+    },
+  ];
+  m.rpc.mockImplementation(async name => {
+    if (name === 'recipe_withdraw') {
+      rows = [];
+      return { data: [], error: null };
+    }
+    return { data: name === 'recipe_list' ? rows : [], error: null };
+  });
+  const first = await renderHook(() =>
+    useRecipes(m.client, 'natural-toothpaste', 'member'),
+  );
+  const second = await renderHook(() =>
+    useRecipes(m.client, 'natural-toothpaste', 'member'),
+  );
+  await waitFor(() => expect(second.result.current.recipes).toHaveLength(1));
+  await act(() =>
+    first.result.current.withdraw(first.result.current.recipes[0]!),
+  );
+  await waitFor(() => expect(second.result.current.recipes).toHaveLength(0));
+  await first.unmount();
+  await second.unmount();
 });

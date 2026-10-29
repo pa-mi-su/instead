@@ -1,3 +1,4 @@
+import { AccountDeletionConfirmation } from './AccountDeletionConfirmation';
 import { CommunityAccountControls } from './CommunityAccountControls';
 import { useState, type ReactNode } from 'react';
 import { Eye, EyeOff } from 'lucide-react-native';
@@ -164,6 +165,10 @@ export function ProductCommunityAccess({
 
   return (
     <View style={styles.optionList}>
+      <AccountDeletionConfirmation
+        visible={!!c.deletionComplete}
+        onDismiss={c.dismissDeletionConfirmation}
+      />
       <Text style={styles.optionDetail}>
         {purpose === 'account'
           ? 'Create a profile to share recipes, save recipes and guides, and manage your submissions.'

@@ -1,3 +1,4 @@
+import { useCommunityRevision } from '../lib/communityUpdates';
 import { useEffect, useState } from 'react';
 import { Image, ScrollView, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
@@ -18,6 +19,7 @@ export function ProfileScreen({
   onBack: () => void;
   bottomInset: number;
 }) {
+  const revision = useCommunityRevision();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,8 @@ export function ProfileScreen({
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setError('');
+    setProfile(null);
     communityRpc<PublicProfile[]>(supabase, 'community_profile_public', {
       p_username: username,
     })
@@ -40,7 +44,7 @@ export function ProfileScreen({
     return () => {
       active = false;
     };
-  }, [username]);
+  }, [username, revision]);
 
   return (
     <ScrollView
