@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: instead-mobile-release
@@ -41,6 +42,7 @@ jobs:
       - name: Select mobile releases
         id: filter
         env:
+          GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
@@ -48,12 +50,7 @@ jobs:
           if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
             node scripts/detect-platform-changes.mjs --all
           else
-            BASE_SHA="$(git rev-parse "${HEAD_SHA}^1" 2>/dev/null || true)"
-            if [[ -z "$BASE_SHA" ]]; then
-              node scripts/detect-platform-changes.mjs --all
-            else
-              node scripts/detect-platform-changes.mjs "$BASE_SHA" "$HEAD_SHA"
-            fi
+            node scripts/detect-mobile-release-changes.mjs
           fi
 
   android:
