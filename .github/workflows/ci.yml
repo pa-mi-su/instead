@@ -80,7 +80,7 @@ jobs:
           npm run website:build
           node --check website/admin/admin.mjs
           npx eslint website/admin/admin.mjs website/admin/auth-security.mjs --env browser,es2022 --parser-options '{"ecmaVersion":2022,"sourceType":"module"}'
-          node --test scripts/test-detect-platform-changes.mjs
+          node --test scripts/test-detect-platform-changes.mjs scripts/test-mobile-release-changes.mjs
 
       - name: Verify website
         run: |

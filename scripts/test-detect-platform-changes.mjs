@@ -100,23 +100,13 @@ test('manual mobile releases are limited to main before production credentials l
   }
 });
 
-test('mobile release detection compares the triggering commit with its first parent without querying the Actions API', async () => {
+test('automatic mobile releases check published history instead of the previous commit', async () => {
   const workflow = await readFile(
     '.github/workflows/mobile-release.yml',
     'utf8',
   );
-  const changesJob = workflow.match(
-    /^  changes:[\s\S]*?(?=^  (?! )[a-z][\w-]*:|(?![\s\S]))/m,
-  )?.[0];
-  assert.ok(changesJob, 'mobile change-detection job exists');
-  assert.doesNotMatch(changesJob, /gh api/);
-  assert.match(
-    changesJob,
-    /git rev-parse "\$\{HEAD_SHA\}\^1" 2>\/dev\/null \|\| true/,
-  );
-  assert.match(changesJob, /detect-platform-changes\.mjs --all/);
-  assert.match(
-    changesJob,
-    /detect-platform-changes\.mjs "\$BASE_SHA" "\$HEAD_SHA"/,
-  );
+  assert.match(workflow, /actions: read/);
+  assert.match(workflow, /GH_TOKEN: \$\{\{ github.token \}\}/);
+  assert.match(workflow, /node scripts\/detect-mobile-release-changes\.mjs/);
+  assert.doesNotMatch(workflow, /HEAD_SHA\}\^1/);
 });
