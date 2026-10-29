@@ -588,6 +588,17 @@ function renderUser(item) {
       'meta',
     ),
   );
+  card.append(
+    element(
+      'p',
+      item.is_admin === true
+        ? 'Role: Admin — this user has administrator access.'
+        : item.is_admin === false
+        ? 'Role: User — no administrator access.'
+        : 'Role unavailable — apply the admin membership database update.',
+      'notice',
+    ),
+  );
   card.append(element('p', `Account ${item.user_id}`, 'meta'));
   card.append(
     element(
@@ -610,6 +621,55 @@ function renderUser(item) {
     'Reason for account action (at least 3 characters)',
     true,
   );
+  if (item.is_admin === true || item.has_admin_membership) {
+    card.append(
+      element(
+        'p',
+        item.is_admin
+          ? 'Admin accounts are protected from restriction and deletion.'
+          : 'Admin access is disabled. This account remains protected from deletion.',
+        'meta',
+      ),
+    );
+  }
+  if (item.is_admin === false && !item.suspended) {
+    const adminLabel = field(card, 'Admin display name (3–100 characters)');
+    adminLabel.maxLength = 100;
+    adminLabel.value = (item.username || item.email || '').slice(0, 100);
+    card.append(
+      button('Add admin', async () => {
+        if (reason.value.trim().length < 3)
+          throw new Error('Enter a reason of at least 3 characters.');
+        if (adminLabel.value.trim().length < 3)
+          throw new Error(
+            'Enter an admin display name of at least 3 characters.',
+          );
+        if (
+          !window.confirm(
+            `Give ${item.email} administrator access? They will be able to manage users and content and add other admins. Authenticator verification is required to open the panel.`,
+          )
+        )
+          return;
+        const generation = epoch;
+        await request(
+          '/rest/v1/rpc/community_admin_add',
+          {
+            p_user: item.user_id,
+            p_email: item.email,
+            p_label: adminLabel.value.trim(),
+            p_note: reason.value.trim(),
+          },
+          await token(),
+        );
+        if (generation !== epoch) return;
+        await load();
+        status(
+          `Admin access added for ${item.email}. They must sign in and verify an authenticator to use the admin panel.`,
+        );
+      }),
+    );
+  }
+  if (item.is_admin === true || item.has_admin_membership) return card;
   card.append(restrictButton(item.user_id, item.suspended, reason));
   const confirmation = field(
     card,
@@ -1013,6 +1073,7 @@ async function load() {
   $('login').hidden = true;
   $('workspace').hidden = false;
   $('signout').hidden = false;
+  $('admin-identity').textContent = `Signed in as ${summary.reviewer} · Admin`;
   $('counts').replaceChildren();
   for (const [label, key] of [
     ['Pending recipes', 'pending_recipes'],

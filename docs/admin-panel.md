@@ -6,6 +6,8 @@ Sign in with the existing authorized owner’s email and its eight-digit Supabas
 
 ## Operations
 
+- Users → Add admin: search for the verified account, enter a reason and admin display name, then confirm. The panel explicitly labels each account as Admin or User and identifies the signed-in admin. Existing admins with recent MFA can grant access; restricted, banned, unverified, and pending-deletion accounts cannot be promoted. Every grant is audited. New admins must complete authenticator verification before accessing private data. Apply `supabase/admin-membership.sql` after the existing migrations before deploying these controls.
+
 - Recipes → Awaiting review: read the full submission, load and inspect every photo, and write a specific review reason. Confirm the review checkbox to approve. The editor records the authenticated admin and review reason; it does not ask for reviewer qualifications or evidence-source fields.
 - Built-in recipes: edit the shipped app recipes or add one to an existing topic. Saving publishes the text in the app after its next catalog refresh. The editor keeps recipe IDs stable for ratings and historical references, records every change and reason, and archives recipes without deleting their history. The editor changes text only; packaged photos remain as shipped. New admin recipes do not include photos.
 - Approved / Rejected / All submissions: inspect previously reviewed content and unpublish when necessary.
