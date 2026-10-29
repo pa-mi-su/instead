@@ -67,6 +67,9 @@ insert into public.community_comments(id,product_id,user_id,body,moderation_stat
  run(psql+['-f',str(root/'supabase/admin-user-deletion.sql')])
  run(psql+['-f',str(root/'supabase/admin-user-deletion.sql')])
  print(run(psql+['-f',str(root/'supabase/tests/admin-user-deletion.test.sql')])[-500:])
+ run(psql+['-f',str(root/'supabase/admin-membership.sql')])
+ run(psql+['-f',str(root/'supabase/admin-membership.sql')])
+ print(run(psql+['-f',str(root/'supabase/tests/admin-membership.test.sql')])[-500:])
  run(psql+['-c',"""do $$ begin
 if exists(select 1 from information_schema.columns where table_schema='public' and table_name='community_moderation_audit' and column_name in ('qualifications','sources')) then raise exception 'Obsolete moderation audit columns remain'; end if;
 if not exists(select 1 from public.community_recipes where id='99000000-0000-0000-0000-000000000002' and admin_removed_at is not null and not review_record ? 'qualifications' and not review_record ? 'sources') then raise exception 'Legacy rejected recipe was not cleaned into Trash'; end if;

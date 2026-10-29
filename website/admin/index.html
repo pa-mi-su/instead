@@ -100,6 +100,7 @@
         </p>
       </section>
       <div id="workspace" hidden>
+        <p id="admin-identity" class="notice"></p>
         <div id="counts" class="counts"></div>
         <nav aria-label="Admin queues">
           <button data-view="recipe" aria-pressed="true">Recipes</button
@@ -110,6 +111,7 @@
           ><button data-view="audit" aria-pressed="false">Activity log</button>
         </nav>
         <form id="user-filters" hidden>
+          <p>Manage users and admins. To add an admin, search for their verified account, enter an action reason, and choose Add admin. New admins must verify an authenticator before accessing this panel.</p>
           <label for="user-search">Search users by email, username, or account ID</label>
           <input id="user-search" maxlength="100" placeholder="Search users" />
           <button type="submit">Search users</button>

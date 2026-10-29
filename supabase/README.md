@@ -14,6 +14,8 @@ For a new community database, use this dependency order:
 8. Run `recipe-saves-and-admin-users.sql`.
 9. Run `admin-user-deletion.sql` and redeploy the `delete-account` Edge Function before publishing the admin deletion UI.
 
+10. Run `admin-membership.sql` before publishing the admin role labels and Add admin controls. It adds an MFA-protected, audited grant operation; running the migration does not add any admins.
+
 Repeatable scripts can be applied again when their contents change. The two initial community migrations are one-time additions; never replay them on an existing project. Existing databases may have already applied some or all of these changes, so check the exact migration headers and [community setup](../docs/community-setup.md), [admin panel](../docs/admin-panel.md), and [release safety](../docs/release-safety.md) before using the Supabase SQL Editor. After adding or changing built-in recipes, rerun `recipe-voting.sql` to register the catalog for voting. None of these scripts grants admin membership.
 
 `schema.sql` and `seed.sql` set up the separate guide catalog for a new project. They are unrelated to community recipes and should not be rerun on an existing database.
