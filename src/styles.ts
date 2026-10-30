@@ -1130,6 +1130,8 @@ export const styles = StyleSheet.create({
     marginBottom: 13,
   },
   recipeHeading: {
+    fontSize: 11,
+    lineHeight: 16,
     marginTop: 24,
     marginBottom: 2,
   },
@@ -1141,9 +1143,9 @@ export const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   optionDetail: {
-    color: COLORS.muted,
-    fontSize: 14,
-    lineHeight: 21,
+    color: COLORS.ink,
+    fontSize: 17,
+    lineHeight: 27,
     marginTop: 6,
   },
   safetyNotice: {

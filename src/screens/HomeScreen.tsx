@@ -62,7 +62,7 @@ export function HomeScreen({
           </Text>
         </View>
         <Text style={styles.heroTitle}>
-          What would you{'\n'}like to replace?
+          What would you{'\n'}like to try INSTEAD?
         </Text>
         <Text style={styles.heroBody}>
           Search everyday products and explore natural alternatives.
