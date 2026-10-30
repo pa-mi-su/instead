@@ -2,17 +2,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 
-// Temporary, exact exception: React Native's Node build/test glob matching.
-// No patched braces version is published. User recipe/photo input is not passed
-// to this tool; CI only matches files and patterns from the checked-out source.
+// The remaining exception requires exact installed security-patch hashes.
 const exceptions = [
-  {
-    url: 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',
-    package: 'braces',
-    version: '3.0.3',
-    severity: 'high',
-    expires: '2026-10-30T00:00:00Z',
-  },
   {
     url: 'https://github.com/advisories/GHSA-gcqx-w48m-w2h4',
     package: 'deepmerge',
