@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-test('audit gate rejects new findings, unexpected locations, and registry errors', async () => {
+test('audit gate rejects retired exceptions, new findings, unexpected locations, and registry errors', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'instead-audit-test-'));
   try {
     await fs.writeFile(
@@ -37,7 +37,7 @@ test('audit gate rejects new findings, unexpected locations, and registry errors
         },
       },
     };
-    assert.equal(run(report).status, 0);
+    assert.equal(run(report).status, 1, 'retired braces exception must fail');
     const unknown = structuredClone(report);
     unknown.vulnerabilities.braces.via.push({
       severity: 'critical',
