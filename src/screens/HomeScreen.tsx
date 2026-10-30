@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { ArrowRight, ScanLine, Search, XCircle } from 'lucide-react-native';
 import {
   ActivityIndicator,
+  useWindowDimensions,
   ScrollView,
   Text,
   TextInput,
@@ -38,6 +40,9 @@ export function HomeScreen({
   scrollOffset: number;
   onScrollOffsetChange: (offset: number) => void;
 }) {
+  const { width } = useWindowDimensions();
+  const [titleWidth, setTitleWidth] = useState(0);
+  const titleSize = Math.min(48, (titleWidth || width - 48) * 0.09);
   const scroll = useScrollRestoration(scrollOffset, onScrollOffsetChange);
   return (
     <ScrollView
@@ -61,8 +66,23 @@ export function HomeScreen({
             SIMPLE INGREDIENTS. EVERYDAY ALTERNATIVES.
           </Text>
         </View>
-        <Text style={styles.heroTitle}>
-          What would you{'\n'}like to try INSTEAD?
+        <Text
+          accessibilityRole="header"
+          accessibilityLabel="What would you like to try INSTEAD?"
+          onLayout={event => setTitleWidth(event.nativeEvent.layout.width)}
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.25}
+          style={[
+            styles.heroTitle,
+            {
+              fontSize: titleSize,
+              lineHeight: titleSize * 1.12,
+              letterSpacing: -titleSize * 0.04,
+            },
+          ]}
+        >
+          What would you like{'\n'}to try INSTEAD?
         </Text>
         <Text style={styles.heroBody}>
           Search everyday products and explore natural alternatives.
