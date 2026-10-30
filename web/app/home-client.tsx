@@ -429,7 +429,9 @@ function GuideDirectory({
           <span aria-hidden="true" />
           SIMPLE INGREDIENTS. EVERYDAY ALTERNATIVES.
         </p>
-        <h1>What would you like to try INSTEAD?</h1>
+        <h1 aria-label="What would you like to try INSTEAD?">
+          <span>What would you like</span>{" "}<span>to try INSTEAD?</span>
+        </h1>
         <p className="hero-copy">
           Search everyday products and explore natural alternatives.
         </p>

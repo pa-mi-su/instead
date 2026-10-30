@@ -1226,3 +1226,8 @@ a:focus-visible {
   line-height: 1.65;
 }
 .builtin-recipe-card li + li { margin-top: 8px; }
+
+/* Two deliberate lines, sized against the available content width. */
+.hero { container-type: inline-size; }
+.hero h1 { font-size: clamp(16px, 8.3cqi, 64px); line-height: 1.12; letter-spacing: -.04em; }
+.hero h1 > span { display: block; white-space: nowrap; }
