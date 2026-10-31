@@ -334,3 +334,21 @@ footer {
 .primary:hover {
   background: #193e2b;
 }
+
+.admin-role-setup {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid #c7cdbf;
+  border-radius: 10px;
+}
+.admin-role-setup summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.admin-role-setup summary:focus-visible {
+  outline: 3px solid #35774e;
+  outline-offset: 3px;
+}
+.admin-role-setup[open] summary {
+  margin-bottom: 12px;
+}

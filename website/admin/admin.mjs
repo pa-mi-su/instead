@@ -680,13 +680,22 @@ function renderUser(item) {
     true,
   );
   if (item.is_admin === false && !item.suspended) {
+    const adminSetup = element('details', undefined, 'admin-role-setup');
+    adminSetup.append(element('summary', 'Grant administrator access'));
+    adminSetup.append(
+      element(
+        'p',
+        'This account is currently a regular user. Complete this section only to grant administrator access. The name below will identify the new administrator in the admin panel.',
+        'meta',
+      ),
+    );
     const adminLabel = field(
-      card,
-      'Admin display name (3–100 characters; for Add admin only)',
+      adminSetup,
+      'New administrator display name (3–100 characters)',
     );
     adminLabel.maxLength = 100;
     adminLabel.value = (item.username || item.email || '').slice(0, 100);
-    card.append(
+    adminSetup.append(
       button('Add admin', async () => {
         if (reason.value.trim().length < 3)
           throw new Error('Enter a reason of at least 3 characters.');
@@ -718,6 +727,7 @@ function renderUser(item) {
         );
       }),
     );
+    card.append(adminSetup);
   }
   if (item.is_admin === true || item.has_admin_membership) return card;
   card.append(restrictButton(item.user_id, item.suspended, reason));
