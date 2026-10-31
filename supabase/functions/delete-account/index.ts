@@ -8,7 +8,7 @@ export function createDeletionHandler(
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers':
       'authorization, apikey, content-type, x-client-info',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Cache-Control': 'no-store',
   };
   const reply = (status: number, message: string) =>
@@ -24,6 +24,16 @@ export function createDeletionHandler(
   return async (request: Request): Promise<Response> => {
     if (request.method === 'OPTIONS')
       return new Response(null, { status: 204, headers });
+    // Safe, read-only deployment handshake: legacy functions reject GET rather
+    // than interpreting the administrator's request as self-deletion.
+    if (
+      request.method === 'GET' &&
+      new URL(request.url).searchParams.get('action') === 'capabilities'
+    )
+      return new Response(JSON.stringify({ adminDeletionVersion: 1 }), {
+        status: 200,
+        headers: { ...headers, 'Content-Type': 'application/json' },
+      });
     if (request.method !== 'POST') return reply(405, 'Use POST.');
     const authorization = request.headers.get('Authorization');
     if (
@@ -49,6 +59,8 @@ export function createDeletionHandler(
 
       // A target id alone never changes the self-deletion path.
       const body = await request.json().catch(() => ({}));
+      if (body?.action && body.action !== 'admin-delete')
+        return reply(400, 'Unknown deletion action.');
       if (body?.action === 'admin-delete') {
         if (
           typeof body.user_id !== 'string' ||
@@ -104,7 +116,9 @@ export function createDeletionHandler(
       if (!Array.isArray(rows) || !rows[0]?.deletion_requested_at)
         return reply(
           409,
-          'Confirm an account deletion request in the app first.',
+          body?.action === 'admin-delete'
+            ? 'Admin deletion preparation is missing. Apply the current admin-user-deletion database migration and retry.'
+            : 'Confirm an account deletion request in the app first.',
         );
       const folderResult = await fetcher(
         `${

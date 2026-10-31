@@ -197,6 +197,7 @@ for (const file of [
   'admin.css',
   'admin.mjs',
   'auth-security.mjs',
+  'dialogs.mjs',
 ]) {
   let content = await fs.readFile(
     new URL(`website/admin/${file}`, root),

@@ -138,10 +138,21 @@ nav,
   gap: 10px;
   margin: 22px 0;
 }
-#user-filters label { grid-column: 1 / -1; font-weight: 750; }
+#user-filters label {
+  grid-column: 1 / -1;
+  font-weight: 750;
+}
 #user-filters input,
-#user-filters button { min-height: 46px; padding: 10px 14px; border: 1px solid #a2aa9c; border-radius: 8px; font: inherit; }
-#user-filters input { width: 100%; }
+#user-filters button {
+  min-height: 46px;
+  padding: 10px 14px;
+  border: 1px solid #a2aa9c;
+  border-radius: 8px;
+  font: inherit;
+}
+#user-filters input {
+  width: 100%;
+}
 #filters label {
   grid-row: 1;
 }
@@ -226,7 +237,9 @@ footer {
   #filters {
     display: block;
   }
-  #user-filters { display: block; }
+  #user-filters {
+    display: block;
+  }
   .card {
     padding: 16px;
   }
@@ -273,4 +286,51 @@ footer {
 #mfa-secret {
   font-family: monospace;
   font-size: 0.9rem;
+}
+
+.required-mark {
+  color: #b42318;
+  font-weight: 800;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.admin-dialog {
+  width: min(540px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  border: 1px solid #c7cdbf;
+  border-radius: 18px;
+  padding: 28px;
+  color: #20251f;
+  background: #fffdf8;
+  box-shadow: 0 24px 80px #142c2440;
+}
+.admin-dialog::backdrop {
+  background: #142c2470;
+  backdrop-filter: blur(3px);
+}
+.admin-dialog h2 {
+  font-size: 1.4rem;
+}
+.admin-dialog p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.dialog-actions {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+.primary {
+  background: #234f37;
+  color: white;
+}
+.primary:hover {
+  background: #193e2b;
 }

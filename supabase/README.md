@@ -25,3 +25,7 @@ Repeatable scripts can be applied again when their contents change. The two init
 `profile-avatars.sql` creates the public `profile-avatars` bucket and owner-scoped upload/update/delete policies. Avatar images are intentionally public when used on a public profile. The migration does not modify existing profile photos or recipe photos.
 
 The `tests/*.test.sql` files use synthetic accounts and roll back their fixtures. They are never production migrations. Run the full ordered migration and test suite with `python3 scripts/test-community-db.py`; it creates a temporary local PostgreSQL cluster and removes it when finished. Do not run the fixture files in a hosted Supabase project.
+
+### Account deletion audit privacy
+
+After `admin-membership.sql` and `builtin-recipe-admin.sql`, apply the repeatable `account-deletion-privacy.sql`. Both admin and self-service permanent Auth deletion then run the same transactional audit cleanup. See `docs/admin-panel.md` for rollout, historical limitations, backup/log retention and restore reconciliation. This migration must be applied separately; merging frontend code does not apply database migrations.
