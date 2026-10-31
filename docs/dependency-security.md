@@ -17,3 +17,12 @@ GHSA-gcqx-w48m-w2h4 affects deepmerge 4.2.0 through 4.3.1; no patched release is
 Because npm audit recognizes published versions rather than local patches, the audit gate accepts only this exact low-severity advisory at the top-level deepmerge 4.3.1 location until November 3, 2026, and only when all three installed patched files match their recorded SHA-256 hashes. Missing or modified patches, new advisories, changed severity, nested copies, and audit failures continue to fail CI. Replace the patch and this exact exception when an upstream release is available; otherwise review before expiry.
 
 Source: https://github.com/advisories/GHSA-gcqx-w48m-w2h4
+
+## CI audit fixes — October 31, 2026
+
+PR #47's production audit reported GHSA-3g3m-2fjr-6pw4 (glob), GHSA-4528-x5fx-h6hg (joi), and GHSA-g3hv-75wg-m249 (minimatch). Pin Joi to patched 17.13.9 and scope glob 14.0.2 / minimatch 11.0.1 to test-exclude 8.0.0. The latter remains in npm's production tree through React Native's Jest preset; older CommonJS minimatch callers elsewhere are not forced onto the new API. The patched packages support Node 22 used in CI. These are dependency updates, not new audit exceptions. Native verification (100 tests), safety tests and both production audit gates pass locally.
+
+Sources:
+- https://github.com/advisories/GHSA-3g3m-2fjr-6pw4
+- https://github.com/advisories/GHSA-4528-x5fx-h6hg
+- https://github.com/advisories/GHSA-g3hv-75wg-m249
