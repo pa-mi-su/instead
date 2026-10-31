@@ -188,3 +188,28 @@ test('admin cleanup failures preserve Auth for retry', async () => {
   assert.equal((await f.handler(adminRequest())).status, 503);
   assert.ok(!f.calls.some(call => call.url.includes('/auth/v1/admin/users/')));
 });
+
+test('capabilities handshake is read-only and never authenticates, prepares or deletes an account', async () => {
+  const f = fixture();
+  const response = await f.handler(
+    new Request('https://function.example.invalid?action=capabilities'),
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { adminDeletionVersion: 1 });
+  assert.equal(f.calls.length, 0);
+});
+test('unknown actions cannot fall through into authenticated self-deletion', async () => {
+  const f = fixture();
+  const response = await f.handler(
+    adminRequest({ action: 'unsupported-admin-action' }),
+  );
+  assert.equal(response.status, 400);
+  assert.ok(!f.calls.some(call => call.method === 'DELETE'));
+});
+test('admin deletion missing its prepared state returns an admin-specific error without deleting', async () => {
+  const f = fixture({ requested: false });
+  const response = await f.handler(adminRequest());
+  assert.equal(response.status, 409);
+  assert.match((await response.json()).message, /Admin deletion preparation/);
+  assert.ok(!f.calls.some(call => call.method === 'DELETE'));
+});

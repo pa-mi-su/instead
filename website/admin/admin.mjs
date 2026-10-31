@@ -1,3 +1,10 @@
+import {
+  dialog,
+  confirmAction,
+  requestReason,
+  markRequired,
+  closeNotice,
+} from './dialogs.mjs';
 import { config } from './config.mjs';
 import { ADMIN_IDLE_MS, isIdle, hasRecentMfa } from './auth-security.mjs';
 const $ = id => document.getElementById(id);
@@ -21,8 +28,22 @@ const storageKey = 'instead:admin-session';
 function status(message, error = false) {
   $('status').textContent = message;
   $('status').classList.toggle('error', error);
+  // Routine queue loads stay in the live region; action results are modal.
+  if (
+    !message ||
+    message === 'Deleting account and uploaded files…' ||
+    message === 'Loading admin data…' ||
+    message.startsWith('Signed in as ')
+  )
+    return;
+  $('status').textContent = '';
+  dialog({
+    title: error ? 'Action could not be completed' : 'INSTEAD admin',
+    message,
+  });
 }
 function clearSession() {
+  closeNotice();
   epoch += 1;
   authEpoch += 1;
   session = null;
@@ -83,7 +104,9 @@ async function request(route, body, bearer, method = 'POST') {
       [401, 403].includes(response.status)
     )
       clearSession();
-    throw new Error(message);
+    const issue = new Error(message);
+    issue.status = response.status;
+    throw issue;
   }
   return data;
 }
@@ -332,6 +355,10 @@ function field(parent, label, multiline = false) {
   text.htmlFor = id;
   const input = element(multiline ? 'textarea' : 'input');
   input.id = id;
+  if (!label.includes('(optional)')) {
+    input.required = true;
+    markRequired(text, input);
+  }
   input.maxLength = label.startsWith('Evidence') ? 4000 : 2000;
   parent.append(text, input);
   return input;
@@ -341,6 +368,18 @@ function details(parent, title, value) {
   parent.append(element('h3', title), element('p', value, 'text'));
 }
 async function mutate(action, payload, note, options = {}) {
+  if (!note?.trim() || note.trim().length < 3)
+    throw new Error('Enter an action reason of at least 3 characters.');
+  const descriptions = {
+    moderate:
+      payload.decision === 'approved'
+        ? 'Publish this recipe to all app users?'
+        : 'Reject this recipe and move it to Trash?',
+    restore: 'Restore this content to the pending review queue?',
+    resolve_reports: 'Mark the displayed reports as reviewed?',
+  };
+  if (descriptions[action] && !(await confirmAction(descriptions[action])))
+    return;
   const generation = epoch;
   await rpc(action, { ...payload, note });
   if (generation !== epoch) return;
@@ -355,7 +394,7 @@ async function mutate(action, payload, note, options = {}) {
     );
     return;
   }
-  if (options.successMessage) status(options.successMessage);
+  status(options.successMessage || 'Action completed successfully.');
 }
 function restrictButton(user, suspended, reason) {
   return button(
@@ -365,7 +404,7 @@ function restrictButton(user, suspended, reason) {
       const message = suspended
         ? 'Restore this account’s ability to contribute?'
         : 'Restrict this account in INSTEAD? Its contributions will be hidden and new submissions and votes blocked. This does not disable email sign-in.';
-      if (window.confirm(message))
+      if (await confirmAction(message))
         await mutate(
           'restrict',
           { user_id: user, suspended: !suspended },
@@ -471,10 +510,17 @@ function renderContent(item) {
   const check = element('label', undefined, 'check');
   const checkbox = element('input');
   checkbox.type = 'checkbox';
+  checkbox.setAttribute(
+    'aria-label',
+    'Full content review confirmation (required for approval)',
+  );
+  const reviewStar = element('span', ' *', 'required-mark');
+  reviewStar.setAttribute('aria-hidden', 'true');
+  check.append(reviewStar);
   check.append(
     checkbox,
     document.createTextNode(
-      ' I reviewed the full text and every submitted photo.',
+      ' I reviewed the full text and every submitted photo. (Required for approval)',
     ),
   );
   review.append(check);
@@ -543,7 +589,7 @@ function renderContent(item) {
           'Remove to Trash',
           async () => {
             if (
-              window.confirm(
+              await confirmAction(
                 'Remove this content from public view? It remains in admin Trash and can be restored. Removal does not permanently delete files. Existing signed photo links may take up to five minutes to expire.',
               )
             )
@@ -616,11 +662,6 @@ function renderUser(item) {
     ),
   );
   details(card, 'Submitted community recipes', `${item.recipes} recipe(s)`);
-  const reason = field(
-    card,
-    'Reason for account action (at least 3 characters)',
-    true,
-  );
   if (item.is_admin === true || item.has_admin_membership) {
     card.append(
       element(
@@ -631,9 +672,18 @@ function renderUser(item) {
         'meta',
       ),
     );
+    return card;
   }
+  const reason = field(
+    card,
+    'Reason for account action (at least 3 characters)',
+    true,
+  );
   if (item.is_admin === false && !item.suspended) {
-    const adminLabel = field(card, 'Admin display name (3–100 characters)');
+    const adminLabel = field(
+      card,
+      'Admin display name (3–100 characters; for Add admin only)',
+    );
     adminLabel.maxLength = 100;
     adminLabel.value = (item.username || item.email || '').slice(0, 100);
     card.append(
@@ -645,9 +695,9 @@ function renderUser(item) {
             'Enter an admin display name of at least 3 characters.',
           );
         if (
-          !window.confirm(
+          !(await confirmAction(
             `Give ${item.email} administrator access? They will be able to manage users and content and add other admins. Authenticator verification is required to open the panel.`,
-          )
+          ))
         )
           return;
         const generation = epoch;
@@ -679,7 +729,7 @@ function renderUser(item) {
   card.append(
     element(
       'p',
-      'Permanent deletion removes the login, profile, recipes, comments, votes, cloud saves, avatar, and uploaded photos. Audit records and existing backups remain; copies on other devices cannot be erased.',
+      'Permanent deletion removes the login, profile, recipes, comments, votes, cloud saves, avatar, and uploaded photos. Identifying audit details are cleaned up when deletion completes. An anonymous completion receipt and provider backups may remain; copies on other devices cannot be erased.',
       'meta',
     ),
   );
@@ -697,13 +747,30 @@ function renderUser(item) {
             'Type the account email exactly to confirm deletion.',
           );
         if (
-          !window.confirm(
+          !(await confirmAction(
             `Permanently delete ${item.email} and their account data? This cannot be undone.`,
-          )
+          ))
         )
           return;
         const generation = epoch;
         status('Deleting account and uploaded files…');
+        const access = await token();
+        const capability = await request(
+          '/functions/v1/delete-account?action=capabilities',
+          undefined,
+          access,
+          'GET',
+        ).catch(error => {
+          if ([404, 405].includes(error.status))
+            throw new Error(
+              'Admin deletion needs a backend update. Deploy the current delete-account function before retrying. No account was deleted.',
+            );
+          throw error;
+        });
+        if (capability.adminDeletionVersion !== 1)
+          throw new Error(
+            'Admin deletion needs a backend update. Deploy the current delete-account function before retrying. No account was deleted.',
+          );
         await request(
           '/functions/v1/delete-account',
           {
@@ -767,6 +834,8 @@ function renderBuiltinEditor(item, products) {
       option.value = product.id;
       productSelect.append(option);
     }
+    productSelect.required = true;
+    markRequired(productLabel, productSelect);
     productSelect.value = productId;
     productSelect.addEventListener('change', () => {
       productId = productSelect.value;
@@ -845,6 +914,13 @@ function renderBuiltinEditor(item, products) {
         throw new Error('Storage guidance and cautions are required.');
       if (reason.value.trim().length < 3)
         throw new Error('Enter a reason for this recipe change.');
+      if (
+        !(await confirmAction(
+          'Publish these recipe changes to app users?',
+          'Publish recipe',
+        ))
+      )
+        return;
       const result = await builtinRpc('save', {
         id: item.id,
         product_id: productId,
@@ -941,17 +1017,18 @@ function renderBuiltinItems() {
           async () => {
             if (
               item.is_active &&
-              !window.confirm(
+              !(await confirmAction(
                 'Archive this recipe from the app? It stays in the admin inventory and can be restored later.',
-              )
+              ))
             )
               return;
-            const note = window.prompt(
+            const note = await requestReason(
               item.is_active
                 ? 'Reason for archiving this recipe:'
                 : 'Reason for restoring this recipe:',
             );
-            if (!note || note.trim().length < 3)
+            if (note === null) return;
+            if (note.trim().length < 3)
               throw new Error('Enter a reason of at least 3 characters.');
             await builtinRpc('set_active', {
               id: item.id,
@@ -1203,7 +1280,10 @@ $('code-form').addEventListener('submit', async event => {
     submit.disabled = false;
   }
 });
-$('signout').addEventListener('click', () => signOutAdmin());
+$('signout').addEventListener('click', async () => {
+  if (await confirmAction('Sign out of the admin panel?', 'Sign out'))
+    await signOutAdmin();
+});
 for (const navButton of document.querySelectorAll('[data-view]'))
   navButton.addEventListener('click', () => {
     view = navButton.dataset.view;
@@ -1246,3 +1326,25 @@ try {
 } catch {
   clearSession();
 }
+
+for (const input of document.querySelectorAll('input[required]')) {
+  const label = document.querySelector(`label[for="${input.id}"]`);
+  if (label) markRequired(label, input);
+}
+
+document.addEventListener(
+  'invalid',
+  event => {
+    if (event.target.closest('dialog')) return;
+    event.preventDefault();
+    const input = event.target;
+    const label = document.querySelector(`label[for="${input.id}"]`);
+    dialog({
+      title: 'Check required fields',
+      message: `${
+        label?.textContent.replace(' *', '').trim() || 'This field'
+      }: ${input.validationMessage}`,
+    }).then(() => input.isConnected && input.focus());
+  },
+  true,
+);

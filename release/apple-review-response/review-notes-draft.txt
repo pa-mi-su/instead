@@ -1,0 +1,32 @@
+INSTEAD — response to Guideline 2.1
+
+1. PHYSICAL-DEVICE RECORDING
+Recording: [INSERT REVIEWER-ACCESSIBLE VIDEO URL OR ATTACHMENT NAME]
+Device: iPhone 17 Pro Max; OS: iOS 26.6.2; app version/build: 1.0.0 (426).
+The recording starts at app launch and shows browsing, search/filtering, guide and recipe details, local saves, optional barcode lookup, account registration and email confirmation, login, submissions, reporting, blocking, and account deletion.
+[Verify recorded flows; add timestamps.]
+
+2. PURPOSE AND AUDIENCE
+INSTEAD is an educational directory for a general audience interested in household and personal-care product alternatives. It organizes ingredients, instructions, storage guidance and cautions into searchable, saveable guides. Accounts are optional for browsing and local saves. It is not directed to children under 13. It does not provide individualized medical advice, diagnosis, treatment, professional services, or certification of recipe safety or effectiveness.
+
+3. ACCESS AND MAIN FEATURES
+Use the confirmed standard-user demo account in App Review Information's username/password fields. There is no paid tier or separate consumer account type. No sample files are required.
+After launch, review and accept the first-use acknowledgement. Browse the home directory, search, or select a category; tap a guide for recipes, instructions and cautions. Save a guide or recipe, then open the menu > Saved guides.
+Scan a product requests optional camera access and looks up a physical product barcode; browsing remains available without scanning.
+Open the menu > My INSTEAD to register or sign in. New email/password accounts require email confirmation. Signing in enables synced saves, recipe submissions and votes. Accept the community terms before contributing. Submissions and optional photos remain private pending moderator approval.
+On a published community recipe by another contributor, use Report recipe and Block contributor. Blocked contributors can be managed from account controls.
+Account controls in My INSTEAD include Delete account. Follow the in-app confirmation. Deletion removes the account and related data; storage-cleanup failures remain pending for retry/support.
+We maintain a separate disposable account for the recorded deletion test, so the reviewer login remains available.
+[VERIFY all paths and credentials on the submitted physical-device build.]
+
+4. EXTERNAL SERVICES
+Supabase: email/password authentication and confirmation, PostgreSQL database/RPCs for profiles, synced saves, recipes, votes, reports and moderation, private Storage for recipe photos, and an Edge Function for account deletion.
+Open Food Facts API: optional product barcode lookup for product name/category information. The app does not retain scan history or camera images from barcode scanning.
+The core directory is bundled in the app; built-in recipe updates are retrieved from Supabase. Public policy/support pages are hosted on AWS S3/CloudFront. Built with React Native and native camera/photo integrations. No AI service, payment processor, subscriptions, or in-app purchases are used.
+
+5. REGIONS
+Features and catalog content do not intentionally vary by region. Barcode lookup results depend on external database coverage and network availability. [OWNER: CONFIRM this accurately describes the submitted build and launch regions.]
+
+6. REGULATED SERVICES / THIRD-PARTY RIGHTS
+The app provides general educational reference content, not a regulated professional or medical service. Third-party product data comes from Open Food Facts; its database/content license attribution is included in the Terms. Contributors retain ownership and grant permission to store, display and moderate submissions under the community terms.
+[OWNER: VERIFY Open Food Facts license compliance and all bundled text/photo rights; attach relevant permissions/documentation if applicable. Do not claim authorizations not held.]
