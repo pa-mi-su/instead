@@ -30,4 +30,6 @@ The 15-minute inactivity timer is enforced by this admin client; server authoriz
 - The expiring deepmerge exception and patch-package patch have been removed. A private, maintained local fork contains the reviewed fix, with exact implementation hashes and resolution checked at install and audit. Registry advisories now fail the production audit without exceptions; local fork behavior and integrity have dedicated regression tests. This is INSTEAD-patched code, not an upstream security release.
 - The owner chose to remain on the Free plan. Supabase's built-in leaked-password protection remains unavailable on that plan; no paid upgrade was performed, and no client-only check is represented as server protection.
 
+The expanded audit also updates the development-tool Zod dependency to patched 4.6.6; no high/critical development-tree findings remain. Moderate legacy lint/test minimatch findings remain documented in the dependency review.
+
 Full app verification passes 102 tests and the safety suite passes 31 tests. Native and web production audits report no findings, and the native gate has zero advisory exceptions. Both mobile platforms must validate this expanded PR; merging it may upload beta builds as authorized by the owner.
