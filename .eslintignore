@@ -5,3 +5,4 @@ android/
 coverage/
 src/config/generatedEnv.ts
 web/
+vendor/

@@ -31,6 +31,7 @@ export function classifyPlatformChanges(files) {
       sharedFiles.has(file) ||
       file.startsWith('assets/') ||
       file.startsWith('patches/') ||
+      file.startsWith('vendor/') ||
       (file.startsWith('src/') && file !== 'src/policies.ts')
     ) {
       android = true;

@@ -110,3 +110,10 @@ test('automatic mobile releases check published history instead of the previous 
   assert.match(workflow, /node scripts\/detect-mobile-release-changes\.mjs/);
   assert.doesNotMatch(workflow, /HEAD_SHA\}\^1/);
 });
+
+test('reviewed vendor changes validate both mobile platforms', () => {
+  assert.deepEqual(classifyPlatformChanges(['vendor/deepmerge/dist/cjs.js']), {
+    android: true,
+    ios: true,
+  });
+});

@@ -37,6 +37,7 @@ export type CommunityClient = {
       email: string;
       options?: { shouldCreateUser?: boolean };
     }) => Promise<{ error: unknown }>;
+    resetPasswordForEmail: (email: string) => Promise<{ error: unknown }>;
     signInWithPassword: (args: {
       email: string;
       password: string;
@@ -51,7 +52,7 @@ export type CommunityClient = {
     verifyOtp: (args: {
       email: string;
       token: string;
-      type: 'email' | 'signup';
+      type: 'email' | 'signup' | 'recovery';
     }) => Promise<{ error: unknown }>;
     updateUser: (args: { password: string }) => Promise<{ error: unknown }>;
     signOut: (args: { scope: 'local' }) => Promise<{ error: unknown }>;
