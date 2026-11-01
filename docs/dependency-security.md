@@ -23,6 +23,17 @@ Source: https://github.com/advisories/GHSA-gcqx-w48m-w2h4
 PR #47's production audit reported GHSA-3g3m-2fjr-6pw4 (glob), GHSA-4528-x5fx-h6hg (joi), and GHSA-g3hv-75wg-m249 (minimatch). Pin Joi to patched 17.13.9 and scope glob 14.0.2 / minimatch 11.0.1 to test-exclude 8.0.0. The latter remains in npm's production tree through React Native's Jest preset; older CommonJS minimatch callers elsewhere are not forced onto the new API. The patched packages support Node 22 used in CI. These are dependency updates, not new audit exceptions. Native verification (100 tests), safety tests and both production audit gates pass locally.
 
 Sources:
+
 - https://github.com/advisories/GHSA-3g3m-2fjr-6pw4
 - https://github.com/advisories/GHSA-4528-x5fx-h6hg
 - https://github.com/advisories/GHSA-g3hv-75wg-m249
+
+## Exception removed — November 1, 2026
+
+The expiring deepmerge exception and patch-package patch are retired. Upstream still publishes 4.3.1, so INSTEAD maintains the reviewed implementation in `vendor/deepmerge`, version `4.3.2-instead.1`. This version identifies a local security fork, not an upstream release. The CommonJS and UMD builds retain the reviewed fix, and the source entry delegates to the self-contained CommonJS build. The original MIT license remains included.
+
+A direct local dev dependency plus the `$deepmerge` override routes all CLI/Jest users to the same fork. A clean `npm ci` verifies the fork before applying the remaining package patches. `scripts/verify-deepmerge.mjs` checks exact implementation hashes, package identity/entry point, local resolution, and absence of nested lockfile copies. This compensates for npm audit not scanning local forks. Tampering, missing files, changed versions, and nested copies fail the regression suite. The audit gate accepts zero registry advisory exceptions and fails closed on registry errors. The November 3 expiry no longer exists.
+
+Malicious-key regressions and normal nested/array/symbol/custom merges pass against the fork; native app verification and a clean install pass. Future vendor changes select both mobile platforms for CI validation.
+
+The expanded development-tree audit also identified high-severity GHSA-mrhx-c7xc-m3w5 in Zod 3.25.76. Pin Zod to 4.6.6; both eslint-plugin-react-hooks and zod-validation-error already accept Zod 4. Full lint, typecheck, and app tests pass with it. The full tree has no high/critical findings after this update. It still reports moderate minimatch advisories through legacy lint/test tooling; these are outside the production audit, and forcing minimatch 11 into function-based legacy callers would break their API. The production audit remains strict and clear; this is not a claim that the entire development tree has zero advisories.

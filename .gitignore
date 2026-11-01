@@ -60,3 +60,7 @@ coverage/
 
 # Python validation artifacts
 __pycache__/
+
+# Reviewed vendored library distributions are source inputs.
+!vendor/deepmerge/dist/
+!vendor/deepmerge/dist/*.js

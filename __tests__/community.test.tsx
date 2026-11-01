@@ -16,6 +16,7 @@ function mockClient(session: CommunitySession | null = null) {
       return { data: { subscription: { unsubscribe: jest.fn() } } };
     }),
     signInWithOtp: jest.fn(async () => ({ error: null })),
+    resetPasswordForEmail: jest.fn(async () => ({ error: null as unknown })),
     signInWithPassword: jest.fn(async () => ({ error: null as unknown })),
     signUp: jest.fn(async () => ({
       data: { session: null, user: { identities: [{ id: 'new-user' }] } },
@@ -92,18 +93,17 @@ test('requests a recovery code only from recovery mode and verifies against the 
   await act(() => hook.result.current.setAuthMode('recovery'));
   await act(() => hook.result.current.setEmail('  Person@Example.com '));
   await act(() => hook.result.current.sendCode());
-  expect(m.auth.signInWithOtp).toHaveBeenCalledWith({
-    email: 'person@example.com',
-    options: { shouldCreateUser: false },
-  });
+  expect(m.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+    'person@example.com',
+  );
   await act(() => hook.result.current.sendCode());
-  expect(m.auth.signInWithOtp).toHaveBeenCalledTimes(1);
+  expect(m.auth.resetPasswordForEmail).toHaveBeenCalledTimes(1);
   await act(() => hook.result.current.setCode('123456'));
   await act(() => hook.result.current.verifyCode());
   expect(m.auth.verifyOtp).toHaveBeenCalledWith({
     email: 'person@example.com',
     token: '123456',
-    type: 'email',
+    type: 'recovery',
   });
   hook.unmount();
 });
@@ -594,5 +594,70 @@ test('shared and foreground refreshes update profiles without overwriting an uns
   );
   expect(hook.result.current.username).toBe('UnsavedEdit');
   expect(hook.result.current.bio).toBe('Updated elsewhere');
+  hook.unmount();
+});
+
+test('password reset requires a verified recovery code and saves through the authenticated recovery session', async () => {
+  const m = mockClient();
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(() => hook.result.current.setPassword('a-new-long-password'));
+  await act(() =>
+    hook.result.current.setPasswordConfirmation('a-new-long-password'),
+  );
+  await act(() => hook.result.current.setNewPassword());
+  expect(m.auth.updateUser).not.toHaveBeenCalled();
+  await act(() => hook.result.current.setAuthMode('recovery'));
+  await act(() => hook.result.current.setEmail('person@example.com'));
+  await act(() => hook.result.current.sendCode());
+  await act(() => hook.result.current.setCode('12345678'));
+  await act(() => hook.result.current.verifyCode());
+  expect(m.auth.verifyOtp).toHaveBeenCalledWith({
+    email: 'person@example.com',
+    token: '12345678',
+    type: 'recovery',
+  });
+  expect(hook.result.current.passwordSetupReady).toBe(true);
+  await act(() => hook.result.current.setNewPassword());
+  expect(m.auth.updateUser).toHaveBeenCalledWith({
+    password: 'a-new-long-password',
+  });
+  expect(hook.result.current.passwordSetupReady).toBe(false);
+  expect(hook.result.current.password).toBe('');
+  hook.unmount();
+});
+
+test('password reset cannot use failed verification or leave its verified form open indefinitely', async () => {
+  const m = mockClient();
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(() => hook.result.current.setAuthMode('recovery'));
+  await act(() => hook.result.current.setEmail('person@example.com'));
+  await act(() => hook.result.current.sendCode());
+  await act(() => hook.result.current.setCode('12345678'));
+  m.auth.verifyOtp.mockResolvedValueOnce({ error: new Error('invalid code') });
+  await act(() => hook.result.current.verifyCode());
+  expect(hook.result.current.passwordSetupReady).toBe(false);
+  await act(() => hook.result.current.verifyCode());
+  await act(() => hook.result.current.setPassword('a-new-long-password'));
+  await act(() =>
+    hook.result.current.setPasswordConfirmation('a-new-long-password'),
+  );
+  const realNow = Date.now;
+  const verified = Date.now();
+  const clock = jest
+    .spyOn(Date, 'now')
+    .mockImplementation(() => verified + 300001);
+  try {
+    await act(() => hook.result.current.setNewPassword());
+  } finally {
+    clock.mockRestore();
+  }
+  expect(Date.now).toBe(realNow);
+  expect(m.auth.updateUser).not.toHaveBeenCalled();
+  expect(hook.result.current.passwordSetupReady).toBe(false);
+  expect(hook.result.current.notice).toMatch(/verification expired/i);
   hook.unmount();
 });

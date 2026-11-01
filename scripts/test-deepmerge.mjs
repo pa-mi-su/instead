@@ -39,3 +39,21 @@ test('nested config, arrays, custom merges and symbol keys retain their behavior
     { list: [2] },
   );
 });
+
+test('fork source entry and UMD build share the hardened merge behavior', async () => {
+  const { createRequire } = await import('node:module');
+  const require = createRequire(import.meta.url);
+  for (const entry of [
+    '../vendor/deepmerge/index.js',
+    '../vendor/deepmerge/dist/umd.js',
+  ]) {
+    const implementation = require(entry);
+    const result = implementation(
+      JSON.parse('{"__proto__":{"injected":true}}'),
+      { safe: 1 },
+    );
+    assert.equal(Object.getPrototypeOf(result), Object.prototype);
+    assert.equal(result.injected, undefined);
+    assert.equal(result.safe, 1);
+  }
+});

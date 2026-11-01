@@ -9,7 +9,7 @@
     "icons:generate": "node scripts/generate-icons.mjs",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "postinstall": "patch-package && npm run env:generate",
+    "postinstall": "node scripts/verify-deepmerge.mjs && patch-package && npm run env:generate",
     "preandroid": "npm run env:generate",
     "preios": "npm run env:generate",
     "prestart": "npm run env:generate",
@@ -65,7 +65,8 @@
     "prettier": "2.8.8",
     "react-test-renderer": "19.2.3",
     "sharp": "^0.35.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "deepmerge": "file:vendor/deepmerge"
   },
   "engines": {
     "node": ">= 22.11.0"
@@ -85,6 +86,8 @@
     "body-parser": "2.4.0",
     "brace-expansion@^5.0.0": "5.0.12",
     "launch-editor": "2.14.2",
-    "joi": "17.13.9"
+    "joi": "17.13.9",
+    "deepmerge": "$deepmerge",
+    "zod": "4.6.6"
   }
 }

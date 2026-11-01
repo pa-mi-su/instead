@@ -62,6 +62,7 @@ export function useCommunity(
   const [deletionComplete, setDeletionComplete] = useState(false);
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
+  const passwordVerifiedAt = useRef(0);
   const lock = useRef(false);
   const generation = useRef(0);
   const userId = session?.user.id;
@@ -170,6 +171,14 @@ export function useCommunity(
     let receivedAuthEvent = false;
     const { data } = client.auth.onAuthStateChange((_event, next) => {
       if (active) {
+        if (
+          _event === 'SIGNED_OUT' ||
+          _event === 'SIGNED_IN' ||
+          _event === 'PASSWORD_RECOVERY'
+        ) {
+          passwordVerifiedAt.current = 0;
+          setPasswordSetupReady(false);
+        }
         receivedAuthEvent = true;
         setSession(next);
         setAuthReady(true);
@@ -290,6 +299,8 @@ export function useCommunity(
     }
   }
   function changeAuthMode(mode: 'signin' | 'signup' | 'recovery') {
+    passwordVerifiedAt.current = 0;
+    setPasswordSetupReady(false);
     setAuthModeState(mode);
     setError('');
     setNotice('');
@@ -370,10 +381,7 @@ export function useCommunity(
         return;
       }
       if (!client || Date.now() < resendAt) return;
-      const { error: issue } = await client.auth.signInWithOtp({
-        email: address,
-        options: { shouldCreateUser: false },
-      });
+      const { error: issue } = await client.auth.resetPasswordForEmail(address);
       if (issue) throw issue;
       setSentEmail(address);
       setPendingAuth('recovery');
@@ -520,7 +528,7 @@ export function useCommunity(
       const { error: issue } = await client.auth.verifyOtp({
         email: sentEmail,
         token: code.trim(),
-        type: pendingAuth === 'signup' ? 'signup' : 'email',
+        type: pendingAuth === 'signup' ? 'signup' : 'recovery',
       });
       if (issue) {
         setError(
@@ -541,6 +549,7 @@ export function useCommunity(
         setEmail('');
         setNotice('Email verified. Your account is ready.');
       } else if (pendingAuth === 'recovery') {
+        passwordVerifiedAt.current = Date.now();
         setPasswordSetupReady(true);
         setNotice('Email verified. Choose a new password.');
       }
@@ -561,10 +570,22 @@ export function useCommunity(
     }
     return run(async () => {
       if (!client || !passwordSetupReady) return;
+      if (
+        Date.now() - passwordVerifiedAt.current >= 5 * 60 * 1000 ||
+        Date.now() < passwordVerifiedAt.current
+      ) {
+        passwordVerifiedAt.current = 0;
+        setPasswordSetupReady(false);
+        setPassword('');
+        setPasswordConfirmation('');
+        setNotice('Verification expired. Request a new password reset code.');
+        return;
+      }
       const { error: issue } = await client.auth.updateUser({ password });
       if (issue) throw issue;
       setPassword('');
       setPasswordConfirmation('');
+      passwordVerifiedAt.current = 0;
       setPasswordSetupReady(false);
       setPendingAuth(null);
       setEmail('');
@@ -731,6 +752,7 @@ export function useCommunity(
     signOut,
     loadMore,
     changeEmail: () => {
+      passwordVerifiedAt.current = 0;
       setSentEmail('');
       setCode('');
       setPendingAuth(null);
