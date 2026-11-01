@@ -31,3 +31,35 @@ export function hasRecentMfa(accessToken, now = Date.now()) {
     return false;
   }
 }
+
+export const ADMIN_EMAIL_CODE_MS = 5 * 60 * 1000;
+// UX deadline only: Supabase must also enforce mailer_otp_exp=300 server-side.
+export class EmailChallenge {
+  reset() {
+    this.email = null;
+    this.expiresAt = 0;
+  }
+  start(email, now = Date.now()) {
+    this.email = email;
+    this.expiresAt = now + ADMIN_EMAIL_CODE_MS;
+  }
+  current(now = Date.now()) {
+    return this.email &&
+      now < this.expiresAt &&
+      now >= this.expiresAt - ADMIN_EMAIL_CODE_MS
+      ? { email: this.email }
+      : null;
+  }
+}
+export function resetLoginForm($) {
+  $('email-form').reset();
+  $('code-form').reset();
+  $('mfa-form').reset();
+  $('code-form').hidden = true;
+  for (const id of ['email', 'code', 'mfa-code']) $(id).value = '';
+  for (const id of ['email-form', 'code-form', 'mfa-form'])
+    for (const control of $(id).querySelectorAll('button, input'))
+      control.disabled = false;
+  $('mfa-start').disabled = false;
+  $('send').textContent = 'Send sign-in code';
+}

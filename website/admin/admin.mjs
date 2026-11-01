@@ -6,7 +6,13 @@ import {
   closeNotice,
 } from './dialogs.mjs';
 import { config } from './config.mjs';
-import { ADMIN_IDLE_MS, isIdle, hasRecentMfa } from './auth-security.mjs';
+import {
+  ADMIN_IDLE_MS,
+  isIdle,
+  hasRecentMfa,
+  EmailChallenge,
+  resetLoginForm,
+} from './auth-security.mjs';
 const $ = id => document.getElementById(id);
 const base = config.url.replace(/\/$/, '');
 let session = null;
@@ -16,6 +22,9 @@ let epoch = 0;
 let authEpoch = 0;
 let refreshPromise = null;
 let cooldown = null;
+let codeTimer = null;
+let signoutPending = null;
+const emailChallenge = new EmailChallenge();
 let busy = false;
 let mfaFactor = null;
 let unfinishedFactor = null;
@@ -26,6 +35,7 @@ let builtinEditingId = null;
 let builtinSearch = '';
 const storageKey = 'instead:admin-session';
 function status(message, error = false) {
+  if (signoutPending) return;
   $('status').textContent = message;
   $('status').classList.toggle('error', error);
   // Routine queue loads stay in the live region; action results are modal.
@@ -47,6 +57,14 @@ function clearSession() {
   epoch += 1;
   authEpoch += 1;
   session = null;
+  clearInterval(cooldown);
+  clearTimeout(codeTimer);
+  emailChallenge.reset();
+  resetLoginForm($);
+  builtinItems = [];
+  builtinEditingId = null;
+  builtinSearch = '';
+  $('status').textContent = '';
   sessionStorage.removeItem(storageKey);
   $('items').replaceChildren();
   $('counts').replaceChildren();
@@ -79,6 +97,7 @@ async function request(route, body, bearer, method = 'POST') {
     response = await fetch(base + route, {
       method,
       cache: 'no-store',
+      signal: AbortSignal.timeout(20000),
       headers: {
         apikey: config.key,
         'Content-Type': 'application/json',
@@ -103,7 +122,9 @@ async function request(route, body, bearer, method = 'POST') {
       bearer === session?.access_token &&
       [401, 403].includes(response.status)
     )
-      clearSession();
+      await signOutAdmin(
+        'Your admin session is no longer authorized. Sign in again.',
+      );
     const issue = new Error(message);
     issue.status = response.status;
     throw issue;
@@ -128,8 +149,12 @@ async function token() {
             '/auth/v1/token?grant_type=refresh_token',
             { refresh_token: refresh },
           );
-          if (generation !== authEpoch)
+          if (generation !== authEpoch) {
+            request('/auth/v1/logout?scope=local', {}, data.access_token).catch(
+              () => {},
+            );
             throw new Error('Session changed. Sign in again.');
+          }
           saveSession(data);
         } catch (error) {
           if (generation === authEpoch) clearSession();
@@ -190,15 +215,25 @@ function recordActivity(event) {
   armIdleTimer();
 }
 async function signOutAdmin(message = 'Signed out.') {
+  if (signoutPending) return signoutPending;
   const access = session?.access_token;
   clearSession();
-  status(message);
-  if (access) {
-    try {
-      await request('/auth/v1/logout?scope=local', {}, access);
-    } catch {
-      /* Local session and private data are already cleared. */
+  const generation = authEpoch;
+  $('login').hidden = true;
+  // Revoke remotely without making the acknowledgement wait for the network.
+  if (access)
+    request('/auth/v1/logout?scope=local', {}, access).catch(() => {});
+  signoutPending = (async () => {
+    await dialog({ title: 'Admin session ended', message });
+    if (generation === authEpoch) {
+      $('login').hidden = false;
+      $('email').focus();
     }
+  })();
+  try {
+    await signoutPending;
+  } finally {
+    signoutPending = null;
   }
 }
 async function beginAdmin() {
@@ -282,9 +317,9 @@ $('mfa-start').addEventListener('click', async () => {
       'Scan the setup QR privately, then enter the current six-digit code.',
     );
   } catch (error) {
-    status(error.message, true);
+    if (generation === epoch) status(error.message, true);
   } finally {
-    control.disabled = false;
+    if (generation === epoch) control.disabled = false;
   }
 });
 $('mfa-form').addEventListener('submit', async event => {
@@ -302,7 +337,12 @@ $('mfa-form').addEventListener('submit', async event => {
       { challenge_id: challenge.id, code: $('mfa-code').value.trim() },
       access,
     );
-    if (generation !== epoch) return;
+    if (generation !== epoch) {
+      request('/auth/v1/logout?scope=local', {}, verified.access_token).catch(
+        () => {},
+      );
+      return;
+    }
     saveSession(verified);
     session.last_activity = Date.now();
     sessionStorage.setItem(storageKey, JSON.stringify(session));
@@ -314,9 +354,9 @@ $('mfa-form').addEventListener('submit', async event => {
     $('mfa').hidden = true;
     await load();
   } catch (error) {
-    status(error.message, true);
+    if (generation === epoch) status(error.message, true);
   } finally {
-    control.disabled = false;
+    if (generation === epoch) control.disabled = false;
   }
 });
 for (const event of ['pointerdown', 'pointermove', 'keydown', 'touchstart'])
@@ -815,6 +855,7 @@ async function loadBuiltinSeeds() {
   try {
     response = await fetch('/admin/builtin-recipes.json', {
       cache: 'no-store',
+      signal: AbortSignal.timeout(20000),
     });
   } catch (error) {
     console.error('Built-in recipe inventory request failed:', error);
@@ -1241,53 +1282,105 @@ async function load() {
         }`,
   );
 }
+$('email').addEventListener('input', () => {
+  // A response for a previous address must never restore its challenge.
+  authEpoch += 1;
+  emailChallenge.reset();
+  clearTimeout(codeTimer);
+  clearInterval(cooldown);
+  $('code-form').hidden = true;
+  $('code').value = '';
+  $('send').disabled = false;
+  $('send').textContent = 'Send sign-in code';
+});
 $('email-form').addEventListener('submit', async event => {
   event.preventDefault();
+  if (signoutPending || $('send').disabled) return;
+  const generation = ++authEpoch;
+  const email = $('email').value.trim();
+  const started = Date.now();
+  emailChallenge.reset();
+  clearTimeout(codeTimer);
+  $('code-form').hidden = true;
+  $('code').value = '';
   $('send').disabled = true;
   try {
-    await request('/auth/v1/otp', {
-      email: $('email').value.trim(),
-      create_user: false,
-    });
+    await request('/auth/v1/otp', { email, create_user: false });
+    if (generation !== authEpoch) return;
+    emailChallenge.start(email, started);
+    if (!emailChallenge.current())
+      throw new Error('The sign-in code has expired. Request a new code.');
     $('code-form').hidden = false;
     $('code').focus();
-    status('If this is an existing account, a sign-in code has been sent.');
-    let remaining = 60;
-    $('send').textContent = `Resend in ${remaining}s`;
+    codeTimer = setTimeout(() => {
+      if (generation === authEpoch && !session)
+        signOutAdmin(
+          'Your email sign-in code expired after five minutes. Request a new code.',
+        );
+    }, emailChallenge.expiresAt - Date.now());
+    status(
+      'If this is an existing account, a sign-in code has been sent. It expires in five minutes.',
+    );
     clearInterval(cooldown);
-    cooldown = setInterval(() => {
-      remaining -= 1;
+    const updateCooldown = () => {
+      if (generation !== authEpoch) return;
+      const remaining = Math.max(
+        0,
+        Math.ceil((started + 60000 - Date.now()) / 1000),
+      );
       $('send').textContent = remaining
         ? `Resend in ${remaining}s`
         : 'Resend sign-in code';
-      if (!remaining) {
-        clearInterval(cooldown);
-        $('send').disabled = false;
-      }
-    }, 1000);
+      $('send').disabled = remaining > 0;
+      if (!remaining) clearInterval(cooldown);
+    };
+    updateCooldown();
+    cooldown = setInterval(updateCooldown, 1000);
   } catch (error) {
+    if (generation !== authEpoch) return;
     status(error.message, true);
     $('send').disabled = false;
   }
 });
 $('code-form').addEventListener('submit', async event => {
   event.preventDefault();
+  if (signoutPending) return;
   const submit = event.submitter;
+  if (submit.disabled) return;
+  const challenge = emailChallenge.current();
+  if (!challenge) {
+    await signOutAdmin('Your email sign-in code expired. Request a new code.');
+    return;
+  }
+  const generation = authEpoch;
   submit.disabled = true;
   try {
     const data = await request('/auth/v1/verify', {
-      email: $('email').value.trim(),
+      email: challenge.email,
       token: $('code').value.trim(),
       type: 'email',
     });
+    if (generation !== authEpoch || !emailChallenge.current()) {
+      if (data.access_token)
+        request('/auth/v1/logout?scope=local', {}, data.access_token).catch(
+          () => {},
+        );
+      return;
+    }
+    clearTimeout(codeTimer);
+    clearInterval(cooldown);
+    emailChallenge.reset();
     saveSession(data);
     $('code').value = '';
+    $('code-form').hidden = true;
+    $('login').hidden = true;
     await beginAdmin();
   } catch (error) {
+    if (generation !== authEpoch) return;
     clearSession();
     status(error.message, true);
   } finally {
-    submit.disabled = false;
+    if (generation === authEpoch) submit.disabled = false;
   }
 });
 $('signout').addEventListener('click', async () => {
@@ -1328,7 +1421,9 @@ try {
   session = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
   if (session) {
     armIdleTimer();
+    const generation = authEpoch;
     beginAdmin().catch(error => {
+      if (generation !== authEpoch) return;
       clearSession();
       status(error.message, true);
     });
