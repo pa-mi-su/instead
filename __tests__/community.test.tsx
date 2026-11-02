@@ -797,3 +797,27 @@ test('account request deadline cancels an abortable Supabase request', async () 
   expect(requestSignal?.aborted).toBe(true);
   jest.useRealTimers();
 });
+
+test('signing out clears credentials and returns to sign in', async () => {
+  const m = mockClient(member);
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() => expect(hook.result.current.session).toEqual(member));
+  await act(() => {
+    hook.result.current.setAuthMode('signup');
+    hook.result.current.setPassword('test-only-secret');
+    hook.result.current.setPasswordConfirmation('test-only-secret');
+    hook.result.current.setEmail('test@example.invalid');
+    hook.result.current.setUsername('tester');
+  });
+  await act(async () => {
+    await hook.result.current.signOut();
+  });
+  expect(hook.result.current.password).toBe('');
+  expect(hook.result.current.passwordConfirmation).toBe('');
+  expect(hook.result.current.email).toBe('');
+  expect(hook.result.current.username).toBe('');
+  expect(hook.result.current.authMode).toBe('signin');
+  expect(hook.result.current.session).toBeNull();
+});

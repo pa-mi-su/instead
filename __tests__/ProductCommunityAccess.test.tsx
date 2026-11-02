@@ -135,3 +135,19 @@ test('signup completion stays in a dedicated progress state until setup finishes
   expect(screen.queryByText('Update profile')).toBeNull();
   expect(screen.queryByText('Delete account')).toBeNull();
 });
+
+test('clearing a password resets its visibility before another is entered', async () => {
+  const screen = await render(<Harness />);
+  await fireEvent.changeText(
+    screen.getByLabelText('Password'),
+    'test-only-secret',
+  );
+  await fireEvent.press(screen.getByLabelText('Show password'));
+  expect(screen.getByLabelText('Password').props.secureTextEntry).toBe(false);
+  await fireEvent.changeText(screen.getByLabelText('Password'), '');
+  await fireEvent.changeText(
+    screen.getByLabelText('Password'),
+    'another-test-secret',
+  );
+  expect(screen.getByLabelText('Password').props.secureTextEntry).toBe(true);
+});

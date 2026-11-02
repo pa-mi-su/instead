@@ -1,6 +1,6 @@
 import { AccountDeletionConfirmation } from './AccountDeletionConfirmation';
 import { CommunityAccountControls } from './CommunityAccountControls';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Eye, EyeOff } from 'lucide-react-native';
 import {
   ActivityIndicator,
@@ -34,6 +34,12 @@ export function ProductCommunityAccess({
   const [visiblePasswords, setVisiblePasswords] = useState<
     Record<string, boolean>
   >({});
+  useEffect(() => {
+    setVisiblePasswords({});
+  }, [c.session?.user.id, c.authMode, c.pendingAuth]);
+  useEffect(() => {
+    if (!c.password && !c.passwordConfirmation) setVisiblePasswords({});
+  }, [c.password, c.passwordConfirmation]);
   const signupCode = c.pendingAuth === 'signup' && c.sentEmail;
   const recoveryCode = c.pendingAuth === 'recovery' && c.sentEmail;
   const button = (
