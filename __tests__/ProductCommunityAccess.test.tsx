@@ -95,3 +95,43 @@ test('profile editor failures do not leak onto the account page', async () => {
   await screen.rerender(<ErrorScopeHarness source="other" />);
   expect(screen.getByText('Profile photo failed')).toBeTruthy();
 });
+
+test('sign-in offers password recovery without implying signup omitted a password', async () => {
+  const screen = await render(<Harness />);
+  expect(await screen.findByText('Forgot password?')).toBeTruthy();
+  expect(screen.queryByText('Forgot or set password')).toBeNull();
+});
+
+function SetupHarness({ finishing = false }: { finishing?: boolean }) {
+  const c = useCommunity(client, 'natural-toothpaste');
+  return (
+    <ProductCommunityAccess
+      community={{
+        ...c,
+        session: { user: { id: 'test', email_confirmed_at: '2026-11-02' } },
+        authReady: true,
+        accountLoading: true,
+        profileLoading: true,
+        finishingSignup: finishing,
+      }}
+      purpose="account"
+      onSignInRequest={() => undefined}
+    />
+  );
+}
+
+test('account loading shows progress instead of fake profile or eligibility warnings', async () => {
+  const screen = await render(<SetupHarness />);
+  expect(screen.getByLabelText('Checking your account')).toBeTruthy();
+  expect(screen.getByLabelText('Loading your profile')).toBeTruthy();
+  expect(screen.queryByText('Set your username')).toBeNull();
+  expect(screen.queryByText(/Create a profile to share recipes/)).toBeNull();
+  expect(screen.queryByText(/A verified, active account/)).toBeNull();
+});
+
+test('signup completion stays in a dedicated progress state until setup finishes', async () => {
+  const screen = await render(<SetupHarness finishing />);
+  expect(screen.getByLabelText('Finishing account setup')).toBeTruthy();
+  expect(screen.queryByText('Update profile')).toBeNull();
+  expect(screen.queryByText('Delete account')).toBeNull();
+});

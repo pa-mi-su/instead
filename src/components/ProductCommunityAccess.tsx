@@ -3,6 +3,7 @@ import { CommunityAccountControls } from './CommunityAccountControls';
 import { useState, type ReactNode } from 'react';
 import { Eye, EyeOff } from 'lucide-react-native';
 import {
+  ActivityIndicator,
   Image,
   Linking,
   StyleSheet,
@@ -169,11 +170,13 @@ export function ProductCommunityAccess({
         visible={!!c.deletionComplete}
         onDismiss={c.dismissDeletionConfirmation}
       />
-      <Text style={styles.optionDetail}>
-        {purpose === 'account'
-          ? 'Create a profile to share recipes, save recipes and guides, and manage your submissions.'
-          : 'Sign in to vote or share a recipe. Your public username identifies approved recipes.'}
-      </Text>
+      {!c.session && !c.finishingSignup && (
+        <Text style={styles.optionDetail}>
+          {purpose === 'account'
+            ? 'Create a profile to share recipes, save recipes and guides, and manage your submissions.'
+            : 'Sign in to vote or share a recipe. Your public username identifies approved recipes.'}
+        </Text>
+      )}
       {!c.configured && <Text>Community features are not configured yet.</Text>}
       {!!c.error && c.errorSource !== 'profile' && (
         <View style={local.errorBox}>
@@ -189,9 +192,25 @@ export function ProductCommunityAccess({
           {c.notice}
         </Text>
       )}
+      {c.finishingSignup && (
+        <View
+          style={styles.optionCard}
+          accessibilityRole="progressbar"
+          accessibilityLabel="Finishing account setup"
+          accessibilityLiveRegion="polite"
+        >
+          <ActivityIndicator color={COLORS.ink} size="large" />
+          <Text style={styles.optionName}>Finishing your account setup…</Text>
+          <Text style={styles.optionDetail}>
+            We’re saving your profile and checking your account. Please keep
+            this screen open. Community terms are next.
+          </Text>
+        </View>
+      )}
       {c.configured &&
         c.authReady &&
         !c.session &&
+        !c.finishingSignup &&
         !signupCode &&
         !recoveryCode && (
           <View style={styles.optionCard}>
@@ -322,49 +341,49 @@ export function ProductCommunityAccess({
                     c.busy || !c.email.trim() || !c.password,
                     true,
                   )}
-                  {button('Forgot or set password', () =>
-                    c.setAuthMode('recovery'),
-                  )}
+                  {button('Forgot password?', () => c.setAuthMode('recovery'))}
                 </View>
               </>
             )}
           </View>
         )}
-      {(signupCode || recoveryCode) && !c.passwordSetupReady && (
-        <View style={styles.optionCard}>
-          <Text style={styles.optionName}>
-            {signupCode ? 'Confirm your email' : 'Verify your email'}
-          </Text>
-          <Text>Enter the code sent to {c.sentEmail}.</Text>
-          {field(
-            signupCode ? 'Confirmation code' : 'Recovery code',
-            c.code,
-            value => c.setCode(value.replace(/\D/g, '')),
-            {
-              keyboard: 'number-pad',
-              autocomplete: 'one-time-code',
-              maxLength: 10,
-            },
-          )}
-          <View style={local.actionStack}>
-            {button(
-              signupCode ? 'Verify and create profile' : 'Verify code',
-              c.verifyCode,
-              c.busy || !c.code.trim(),
-              true,
+      {(signupCode || recoveryCode) &&
+        !c.passwordSetupReady &&
+        !c.finishingSignup && (
+          <View style={styles.optionCard}>
+            <Text style={styles.optionName}>
+              {signupCode ? 'Confirm your email' : 'Verify your email'}
+            </Text>
+            <Text>Enter the code sent to {c.sentEmail}.</Text>
+            {field(
+              signupCode ? 'Confirmation code' : 'Recovery code',
+              c.code,
+              value => c.setCode(value.replace(/\D/g, '')),
+              {
+                keyboard: 'number-pad',
+                autocomplete: 'one-time-code',
+                maxLength: 10,
+              },
             )}
-            {recoveryCode &&
-              button(
-                c.resendSeconds
-                  ? `Resend in ${c.resendSeconds}s`
-                  : 'Resend recovery code',
-                c.sendCode,
-                c.busy || c.resendSeconds > 0,
+            <View style={local.actionStack}>
+              {button(
+                signupCode ? 'Verify and create profile' : 'Verify code',
+                c.verifyCode,
+                c.busy || !c.code.trim(),
+                true,
               )}
-            {button('Cancel', c.changeEmail)}
+              {recoveryCode &&
+                button(
+                  c.resendSeconds
+                    ? `Resend in ${c.resendSeconds}s`
+                    : 'Resend recovery code',
+                  c.sendCode,
+                  c.busy || c.resendSeconds > 0,
+                )}
+              {button('Cancel', c.changeEmail)}
+            </View>
           </View>
-        </View>
-      )}
+        )}
       {c.passwordSetupReady && (
         <View style={styles.optionCard}>
           <Text style={styles.optionName}>Choose a password</Text>
@@ -399,13 +418,13 @@ export function ProductCommunityAccess({
           </View>
         </View>
       )}
-      {!!c.session && !c.passwordSetupReady && (
+      {!!c.session && !c.passwordSetupReady && !c.finishingSignup && (
         <View style={styles.optionCard}>
           <Text>
             Signed in{c.session.user.email ? ` as ${c.session.user.email}` : ''}
             .
           </Text>
-          {purpose === 'account' && (
+          {purpose === 'account' && !c.profileLoading && (
             <View style={local.profileSummary}>
               {c.avatarUrl ? (
                 <Image
@@ -425,6 +444,8 @@ export function ProductCommunityAccess({
                 <Text style={local.profileUsername}>
                   {c.profile?.username
                     ? `@${c.profile.username}`
+                    : c.profileLoadError
+                    ? 'Profile unavailable'
                     : 'Set your username'}
                 </Text>
                 <Text style={styles.optionDetail}>
@@ -449,14 +470,17 @@ export function ProductCommunityAccess({
               )}
             </View>
           )}
+          {purpose === 'account' && c.profileLoading && (
+            <View
+              accessibilityRole="progressbar"
+              accessibilityLabel="Loading your profile"
+            >
+              <ActivityIndicator color={COLORS.ink} />
+              <Text>Loading your profile…</Text>
+            </View>
+          )}
           {button('Sign out', c.signOut)}
           <CommunityAccountControls community={c} />
-          {!c.canContribute && (
-            <Text>
-              A verified, active account and current community agreement are
-              required to contribute.
-            </Text>
-          )}
         </View>
       )}
       {renderRecipes?.(c, onSignInRequest)}

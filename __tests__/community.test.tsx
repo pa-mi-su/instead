@@ -2,7 +2,7 @@ import { notifyCommunityChanged } from '../src/lib/communityUpdates';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useCommunity } from '../src/hooks/useCommunity';
 import type { CommunityClient, CommunitySession } from '../src/lib/community';
-import { communityError, profileError } from '../src/lib/community';
+import { accountRpc, communityError, profileError } from '../src/lib/community';
 
 function mockClient(session: CommunitySession | null = null) {
   let listener: (
@@ -22,7 +22,11 @@ function mockClient(session: CommunitySession | null = null) {
       data: { session: null, user: { identities: [{ id: 'new-user' }] } },
       error: null as unknown,
     })),
-    verifyOtp: jest.fn(async () => ({ error: null as unknown })),
+    verifyOtp: jest.fn(async () => {
+      session = session ?? member;
+      listener('SIGNED_IN', session);
+      return { error: null as unknown };
+    }),
     updateUser: jest.fn(async () => ({ error: null })),
     signOut: jest.fn(async () => {
       listener('SIGNED_OUT', null);
@@ -171,7 +175,9 @@ test('creates an account and stores the public profile only after email confirma
     p_username: 'RecipeMaker',
     p_bio: '',
   });
-  expect(hook.result.current.notice).toMatch(/account is ready/i);
+  expect(hook.result.current.notice).toMatch(
+    /community terms to finish setup/i,
+  );
   hook.unmount();
 });
 test('returns an existing email to sign-in instead of waiting for a code that was not sent', async () => {
@@ -324,7 +330,7 @@ test('setup errors are actionable and unexpected errors do not expose backend de
 
 test('authentication errors explain the next step without exposing service details', () => {
   expect(communityError({ code: 'invalid_credentials' })).toMatch(
-    /email or password is incorrect.*forgot or set password/i,
+    /email or password is incorrect.*forgot password\?/i,
   );
   expect(communityError({ code: 'user_already_exists' })).toMatch(
     /already has an account.*sign in/i,
@@ -660,4 +666,134 @@ test('password reset cannot use failed verification or leave its verified form o
   expect(hook.result.current.passwordSetupReady).toBe(false);
   expect(hook.result.current.notice).toMatch(/verification expired/i);
   hook.unmount();
+});
+
+test('community terms become ready without waiting for profile or blocked-user requests', async () => {
+  const m = mockClient(member);
+  const original = m.rpc.getMockImplementation()!;
+  let releaseBlocks!: (value: { data: unknown; error: unknown }) => void;
+  let releaseProfile!: (value: { data: unknown; error: unknown }) => void;
+  m.rpc.mockImplementation((name, args) => {
+    if (name === 'community_blocks_list')
+      return new Promise(resolve => {
+        releaseBlocks = resolve;
+      });
+    if (name === 'community_profile_me')
+      return new Promise(resolve => {
+        releaseProfile = resolve;
+      });
+    return original(name, args);
+  });
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() => expect(hook.result.current.accountReady).toBe(true));
+  expect(hook.result.current.accountLoading).toBe(false);
+  expect(hook.result.current.profileLoading).toBe(true);
+  await act(async () => {
+    releaseBlocks({ data: [], error: null });
+    releaseProfile({ data: [{ username: 'Paul', bio: '' }], error: null });
+  });
+  expect(hook.result.current.profile?.username).toBe('Paul');
+  expect(hook.result.current.profileLoading).toBe(false);
+  hook.unmount();
+});
+
+test('stalled account checks time out, preserve contribution restrictions, and can recover', async () => {
+  jest.useFakeTimers();
+  const m = mockClient(member);
+  const original = m.rpc.getMockImplementation()!;
+  let stalled = true;
+  m.rpc.mockImplementation((name, args) =>
+    name === 'community_account_state' && stalled
+      ? new Promise(() => {})
+      : original(name, args),
+  );
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(15000);
+  });
+  expect(hook.result.current.accountLoading).toBe(false);
+  expect(hook.result.current.canContribute).toBe(false);
+  expect(hook.result.current.accountLoadError).toMatch(/took too long/i);
+  stalled = false;
+  await act(() => hook.result.current.retryAccount());
+  expect(hook.result.current.accountReady).toBe(true);
+  hook.unmount();
+  jest.useRealTimers();
+});
+
+test('signup keeps setup progress until the verified user profile is saved and checked', async () => {
+  const m = mockClient();
+  const original = m.rpc.getMockImplementation()!;
+  let finishProfile!: (value: { data: unknown; error: unknown }) => void;
+  m.rpc.mockImplementation((name, args) =>
+    name === 'community_profile_set'
+      ? new Promise(resolve => {
+          finishProfile = resolve;
+        })
+      : original(name, args),
+  );
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await act(() => hook.result.current.setAuthMode('signup'));
+  await act(() => hook.result.current.setEmail('person@example.com'));
+  await act(() => hook.result.current.setUsername('Paul'));
+  await act(() => hook.result.current.setPassword('long-enough-password'));
+  await act(() =>
+    hook.result.current.setPasswordConfirmation('long-enough-password'),
+  );
+  await act(() => hook.result.current.signUp());
+  await act(() => hook.result.current.setCode('12345678'));
+  let pending!: Promise<boolean>;
+  await act(async () => {
+    pending = hook.result.current.verifyCode();
+  });
+  await waitFor(() => expect(finishProfile).toBeDefined());
+  expect(hook.result.current.finishingSignup).toBe(true);
+  expect(hook.result.current.notice).not.toMatch(/account is ready/i);
+  await act(async () => {
+    finishProfile({ data: null, error: null });
+    await pending;
+  });
+  expect(hook.result.current.finishingSignup).toBe(false);
+  expect(hook.result.current.accountReady).toBe(true);
+  expect(hook.result.current.accountLoading).toBe(false);
+  expect(hook.result.current.notice).toMatch(
+    /community terms to finish setup/i,
+  );
+  expect(m.rpc).toHaveBeenCalledWith('community_profile_set', {
+    p_username: 'Paul',
+    p_bio: '',
+  });
+  hook.unmount();
+});
+
+test('account request deadline cancels an abortable Supabase request', async () => {
+  jest.useFakeTimers();
+  let requestSignal: AbortSignal | undefined;
+  const m = mockClient();
+  const stalledClient = {
+    ...m.client,
+    rpc: () => ({
+      abortSignal(signal: AbortSignal) {
+        requestSignal = signal;
+        return new Promise(() => {});
+      },
+    }),
+  } as unknown as CommunityClient;
+  const result = accountRpc(stalledClient, 'community_account_state').catch(
+    issue => issue,
+  );
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(15000);
+  });
+  const issue = await result;
+  expect(issue).toBeInstanceOf(Error);
+  expect((issue as Error).message).toMatch(/timed out/i);
+  expect(requestSignal?.aborted).toBe(true);
+  jest.useRealTimers();
 });

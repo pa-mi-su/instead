@@ -176,7 +176,7 @@ export function AccountScreen({
             ))}
           </>
         )}
-        {userId && (
+        {userId && !community.finishingSignup && !community.accountLoading && (
           <>
             <Text style={styles.optionName}>My recipe submissions</Text>
             <Text style={styles.optionDetail}>

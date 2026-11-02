@@ -4,7 +4,12 @@ import {
 } from '../lib/communityUpdates';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { POLICY_VERSION } from '../policies';
-import { communityError, communityRpc, profileError } from '../lib/community';
+import {
+  accountRpc,
+  communityError,
+  communityRpc,
+  profileError,
+} from '../lib/community';
 import type {
   CommunityClient,
   CommunitySession,
@@ -62,6 +67,8 @@ export function useCommunity(
   const [deletionComplete, setDeletionComplete] = useState(false);
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
+  const [finishingSignup, setFinishingSignup] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
   const passwordVerifiedAt = useRef(0);
   const lock = useRef(false);
   const generation = useRef(0);
@@ -69,66 +76,82 @@ export function useCommunity(
   const accountGeneration = useRef(0);
   const profileRef = useRef(profile);
   profileRef.current = profile;
-  const loadAccount = useCallback(async () => {
-    const version = ++accountGeneration.current;
-    const previousProfile = profileRef.current;
-    if (!userId) {
-      setAccountLoadStatus('idle');
+  const loadAccount = useCallback(
+    async (targetUserId = userId) => {
+      const version = ++accountGeneration.current;
+      const previousProfile = profileRef.current;
+      if (!targetUserId) {
+        setAccountLoadStatus('idle');
+        setAccountLoadError('');
+        setAccountUserId(undefined);
+        return true;
+      }
+      setAccountLoadStatus('loading');
       setAccountLoadError('');
-      setAccountUserId(undefined);
-      return true;
-    }
-    setAccountLoadStatus('loading');
-    setAccountLoadError('');
-    setProfileLoadError('');
-    const [stateResult, blocksResult, profileResult] = await Promise.allSettled(
-      [
-        communityRpc<CommunityAccountState[]>(
-          client,
-          'community_account_state',
-        ),
-        communityRpc<BlockedContributor[]>(client, 'community_blocks_list'),
-        communityRpc<CommunityProfile[]>(client, 'community_profile_me'),
-      ],
-    );
-    if (version !== accountGeneration.current) return false;
-
-    if (stateResult.status === 'fulfilled' && stateResult.value[0]) {
-      setAccount(stateResult.value[0]);
-      setAccountUserId(userId);
-      setAccountLoadStatus('ready');
-    } else {
-      const issue =
-        stateResult.status === 'rejected'
-          ? stateResult.reason
-          : new Error('Account safeguards are unavailable.');
-      setAccount(null);
-      setAccountUserId(userId);
-      setAccountLoadStatus('error');
-      setAccountLoadError(communityError(issue));
-    }
-
-    if (blocksResult.status === 'fulfilled') setBlocks(blocksResult.value);
-    else setBlocks([]);
-
-    if (profileResult.status === 'fulfilled') {
-      const nextProfile = profileResult.value[0] ?? null;
-      setProfile(nextProfile);
-      setUsername(current =>
-        current === (previousProfile?.username ?? '')
-          ? nextProfile?.username ?? ''
-          : current,
+      setProfileLoadError('');
+      setProfileLoading(true);
+      // Optional profile/block requests must never hold the account terms gate.
+      accountRpc<BlockedContributor[]>(client, 'community_blocks_list')
+        .then(rows => {
+          if (version === accountGeneration.current) setBlocks(rows);
+        })
+        .catch(() => {
+          if (version === accountGeneration.current) setBlocks([]);
+        });
+      accountRpc<CommunityProfile[]>(client, 'community_profile_me')
+        .then(rows => {
+          if (version !== accountGeneration.current) return;
+          const nextProfile = rows[0] ?? null;
+          setProfile(nextProfile);
+          setUsername(current =>
+            current === (previousProfile?.username ?? '')
+              ? nextProfile?.username ?? ''
+              : current,
+          );
+          setBio(current =>
+            current === (previousProfile?.bio ?? '')
+              ? nextProfile?.bio ?? ''
+              : current,
+          );
+        })
+        .catch(issue => {
+          if (version === accountGeneration.current)
+            setProfileLoadError(communityError(issue));
+        })
+        .finally(() => {
+          if (version === accountGeneration.current) setProfileLoading(false);
+        });
+      // Both background requests handle their own errors.
+      const stateResult = await accountRpc<CommunityAccountState[]>(
+        client,
+        'community_account_state',
+      ).then(
+        value => ({ status: 'fulfilled' as const, value }),
+        reason => ({ status: 'rejected' as const, reason }),
       );
-      setBio(current =>
-        current === (previousProfile?.bio ?? '')
-          ? nextProfile?.bio ?? ''
-          : current,
+      if (version !== accountGeneration.current) return false;
+
+      if (stateResult.status === 'fulfilled' && stateResult.value[0]) {
+        setAccount(stateResult.value[0]);
+        setAccountUserId(targetUserId);
+        setAccountLoadStatus('ready');
+      } else {
+        const issue =
+          stateResult.status === 'rejected'
+            ? stateResult.reason
+            : new Error('Account safeguards are unavailable.');
+        setAccount(null);
+        setAccountUserId(targetUserId);
+        setAccountLoadStatus('error');
+        setAccountLoadError(communityError(issue));
+      }
+
+      return (
+        stateResult.status === 'fulfilled' && Boolean(stateResult.value[0])
       );
-    } else {
-      setProfileLoadError(communityError(profileResult.reason));
-    }
-    return stateResult.status === 'fulfilled' && Boolean(stateResult.value[0]);
-  }, [client, userId]);
+    },
+    [client, userId],
+  );
   const refresh = useCallback(async () => {
     const version = ++generation.current;
     if (!includeComments) {
@@ -444,7 +467,7 @@ export function useCommunity(
         setPassword('');
         setPasswordConfirmation('');
         setNotice(
-          'No confirmation code was sent. Try signing in, or use “Forgot or set password” to set a password for an earlier email-code account.',
+          'No confirmation code was sent. Try signing in, or choose “Forgot password?” to reset your password.',
         );
         return;
       }
@@ -525,33 +548,49 @@ export function useCommunity(
         setErrorSource('auth');
         return;
       }
-      const { error: issue } = await client.auth.verifyOtp({
-        email: sentEmail,
-        token: code.trim(),
-        type: pendingAuth === 'signup' ? 'signup' : 'recovery',
-      });
-      if (issue) {
-        setError(
-          'That code is invalid or expired. Try again or request a new code.',
-        );
-        setErrorSource('auth');
-        return;
-      }
-      setCode('');
-      setSentEmail('');
-      if (pendingAuth === 'signup') {
-        await communityRpc(client, 'community_profile_set', {
-          p_username: username.trim(),
-          p_bio: bio.trim(),
+      const isSignup = pendingAuth === 'signup';
+      if (isSignup) setFinishingSignup(true);
+      try {
+        const { error: issue } = await client.auth.verifyOtp({
+          email: sentEmail,
+          token: code.trim(),
+          type: pendingAuth === 'signup' ? 'signup' : 'recovery',
         });
-        await loadAccount();
-        setPendingAuth(null);
-        setEmail('');
-        setNotice('Email verified. Your account is ready.');
-      } else if (pendingAuth === 'recovery') {
-        passwordVerifiedAt.current = Date.now();
-        setPasswordSetupReady(true);
-        setNotice('Email verified. Choose a new password.');
+        if (issue) {
+          setError(
+            'That code is invalid or expired. Try again or request a new code.',
+          );
+          setErrorSource('auth');
+          return;
+        }
+        setCode('');
+        setSentEmail('');
+        if (pendingAuth === 'signup') {
+          const { data: verifiedAuth, error: sessionError } =
+            await client.auth.getSession();
+          if (sessionError) throw sessionError;
+          if (!verifiedAuth.session)
+            throw new Error('Verify your email before updating your profile.');
+          setSession(verifiedAuth.session);
+          await accountRpc(client, 'community_profile_set', {
+            p_username: username.trim(),
+            p_bio: bio.trim(),
+          });
+          const ready = await loadAccount(verifiedAuth.session.user.id);
+          setPendingAuth(null);
+          setEmail('');
+          setNotice(
+            ready
+              ? 'Email verified. Review the community terms to finish setup.'
+              : 'Email verified. Retry the account check to finish setup.',
+          );
+        } else if (pendingAuth === 'recovery') {
+          passwordVerifiedAt.current = Date.now();
+          setPasswordSetupReady(true);
+          setNotice('Email verified. Choose a new password.');
+        }
+      } finally {
+        if (isSignup) setFinishingSignup(false);
       }
     }, 'auth');
   }
@@ -691,11 +730,13 @@ export function useCommunity(
     comments,
     publicCount: comments[0]?.public_count ?? 0,
     account: accountUserId === userId ? account : null,
+    finishingSignup,
+    profileLoading,
     accountReady:
       accountUserId === userId && accountLoadStatus === 'ready' && !!account,
     accountLoading: accountUserId !== userId || accountLoadStatus === 'loading',
     accountLoadError,
-    retryAccount: loadAccount,
+    retryAccount: () => loadAccount(),
     canManage,
     blocks: accountUserId === userId ? blocks : [],
     acceptPolicy,
