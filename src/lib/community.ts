@@ -97,6 +97,8 @@ export function communityError(error: unknown) {
   const value = error as { code?: string; message?: string; status?: number };
   const code = value?.code?.toLowerCase() ?? '';
   const message = value?.message?.toLowerCase() ?? '';
+  if (message.includes('account check timed out'))
+    return 'Your account check took too long. Check your connection and try again.';
   const localMessages = [
     'enter a valid email address.',
     'enter your password.',
@@ -117,16 +119,16 @@ export function communityError(error: unknown) {
     code === 'invalid_grant' ||
     message === 'invalid login credentials'
   )
-    return 'Email or password is incorrect. Check your details or choose “Forgot or set password”.';
+    return 'Email or password is incorrect. Check your details or choose “Forgot password?”.';
   if (
     code === 'user_already_exists' ||
     code === 'email_exists' ||
     message.includes('user already registered') ||
     message.includes('already registered')
   )
-    return 'This email already has an account. Sign in or choose “Forgot or set password”.';
+    return 'This email already has an account. Sign in or choose “Forgot password?”.';
   if (code === 'email_not_confirmed' || message.includes('email not confirmed'))
-    return 'Confirm your email first. Check your inbox, or choose “Forgot or set password” to request a code.';
+    return 'Confirm your email first. Check your inbox, or choose “Forgot password?” to request a code.';
   if (
     code === 'weak_password' ||
     message.includes('password should be at least')
@@ -195,3 +197,32 @@ export type BlockedContributor = {
   label: string;
   created_at: string;
 };
+
+// Account setup must not wait indefinitely on a stalled network request.
+export async function accountRpc<T>(
+  client: CommunityClient | null,
+  name: string,
+  args = {},
+): Promise<T> {
+  if (!client) throw new Error('Community is not configured.');
+  const controller = new AbortController();
+  const query = client.rpc(name, args) as ReturnType<CommunityClient['rpc']> & {
+    abortSignal?: (signal: AbortSignal) => ReturnType<CommunityClient['rpc']>;
+  };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const result = await Promise.race([
+      query.abortSignal ? query.abortSignal(controller.signal) : query,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error('Network request failed: account check timed out.'));
+          controller.abort();
+        }, 15000);
+      }),
+    ]);
+    if (result.error) throw result.error;
+    return result.data as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}

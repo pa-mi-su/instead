@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
 import type { useCommunity } from '../hooks/useCommunity';
 import { communityRules } from '../disclaimer';
@@ -27,7 +27,19 @@ export function CommunityAccountControls({
   return (
     <View style={styles.optionList}>
       {c.accountLoading ? (
-        <Text>Loading account safeguards…</Text>
+        <View
+          accessibilityRole="progressbar"
+          accessibilityLabel="Checking your account"
+          accessibilityLiveRegion="polite"
+          style={local.loadFailure}
+        >
+          <ActivityIndicator />
+          <Text>Checking your account…</Text>
+          <Text>
+            We’re checking your account status and community terms. Please keep
+            this screen open.
+          </Text>
+        </View>
       ) : !c.accountReady ? (
         <View style={local.loadFailure}>
           <Text accessibilityRole="alert">
