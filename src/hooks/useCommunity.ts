@@ -91,20 +91,14 @@ export function useCommunity(
       setProfileLoadError('');
       setProfileLoading(true);
       // Optional profile/block requests must never hold the account terms gate.
-      const blocksTask = accountRpc<BlockedContributor[]>(
-        client,
-        'community_blocks_list',
-      )
+      accountRpc<BlockedContributor[]>(client, 'community_blocks_list')
         .then(rows => {
           if (version === accountGeneration.current) setBlocks(rows);
         })
         .catch(() => {
           if (version === accountGeneration.current) setBlocks([]);
         });
-      const profileTask = accountRpc<CommunityProfile[]>(
-        client,
-        'community_profile_me',
-      )
+      accountRpc<CommunityProfile[]>(client, 'community_profile_me')
         .then(rows => {
           if (version !== accountGeneration.current) return;
           const nextProfile = rows[0] ?? null;
@@ -127,9 +121,7 @@ export function useCommunity(
         .finally(() => {
           if (version === accountGeneration.current) setProfileLoading(false);
         });
-      // Both tasks handle their own errors; account readiness is independent.
-      void blocksTask;
-      void profileTask;
+      // Both background requests handle their own errors.
       const stateResult = await accountRpc<CommunityAccountState[]>(
         client,
         'community_account_state',
