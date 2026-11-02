@@ -125,6 +125,7 @@ test('account loading shows progress instead of fake profile or eligibility warn
   expect(screen.getByLabelText('Checking your account')).toBeTruthy();
   expect(screen.getByLabelText('Loading your profile')).toBeTruthy();
   expect(screen.queryByText('Set your username')).toBeNull();
+  expect(screen.queryByText(/Create a profile to share recipes/)).toBeNull();
   expect(screen.queryByText(/A verified, active account/)).toBeNull();
 });
 

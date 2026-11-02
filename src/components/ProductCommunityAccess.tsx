@@ -170,11 +170,13 @@ export function ProductCommunityAccess({
         visible={!!c.deletionComplete}
         onDismiss={c.dismissDeletionConfirmation}
       />
-      <Text style={styles.optionDetail}>
-        {purpose === 'account'
-          ? 'Create a profile to share recipes, save recipes and guides, and manage your submissions.'
-          : 'Sign in to vote or share a recipe. Your public username identifies approved recipes.'}
-      </Text>
+      {!c.session && !c.finishingSignup && (
+        <Text style={styles.optionDetail}>
+          {purpose === 'account'
+            ? 'Create a profile to share recipes, save recipes and guides, and manage your submissions.'
+            : 'Sign in to vote or share a recipe. Your public username identifies approved recipes.'}
+        </Text>
+      )}
       {!c.configured && <Text>Community features are not configured yet.</Text>}
       {!!c.error && c.errorSource !== 'profile' && (
         <View style={local.errorBox}>
