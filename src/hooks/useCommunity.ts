@@ -76,6 +76,20 @@ export function useCommunity(
   const accountGeneration = useRef(0);
   const profileRef = useRef(profile);
   profileRef.current = profile;
+  const resetAuthForm = useCallback(() => {
+    setEmail('');
+    setPassword('');
+    setPasswordConfirmation('');
+    setUsername('');
+    setBio('');
+    setCode('');
+    setSentEmail('');
+    setPendingAuth(null);
+    setPasswordSetupReady(false);
+    passwordVerifiedAt.current = 0;
+    setResendAt(0);
+    setAuthModeState('signin');
+  }, []);
   const loadAccount = useCallback(
     async (targetUserId = userId) => {
       const version = ++accountGeneration.current;
@@ -202,6 +216,7 @@ export function useCommunity(
           passwordVerifiedAt.current = 0;
           setPasswordSetupReady(false);
         }
+        if (_event === 'SIGNED_OUT') resetAuthForm();
         receivedAuthEvent = true;
         setSession(next);
         setAuthReady(true);
@@ -230,7 +245,7 @@ export function useCommunity(
       active = false;
       data.subscription.unsubscribe();
     };
-  }, [client]);
+  }, [client, resetAuthForm]);
   useEffect(() => {
     if (!authReady || !client) return;
     let active = true;
@@ -456,6 +471,8 @@ export function useCommunity(
         password,
       });
       if (issue) throw issue;
+      setPassword('');
+      setPasswordConfirmation('');
       if (
         !data?.session &&
         Array.isArray(data?.user?.identities) &&
@@ -692,6 +709,7 @@ export function useCommunity(
       if (!client) return;
       const { error: issue } = await client.auth.signOut({ scope: 'local' });
       if (issue) throw issue;
+      resetAuthForm();
       setSession(null);
       setDraft('');
       setNotice('Signed out.');
