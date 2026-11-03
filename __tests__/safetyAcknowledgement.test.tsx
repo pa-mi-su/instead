@@ -12,6 +12,7 @@ import {
   makeAcknowledgement,
 } from '../src/disclaimer';
 import { useSafetyAcknowledgement } from '../src/hooks/useSafetyAcknowledgement';
+import { AppBuildContext } from '../src/lib/appBuild';
 import { InfoScreen } from '../src/screens/InfoScreen';
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
@@ -79,4 +80,19 @@ test('agreement is explicit, policies work offline, and declining keeps browsing
   await fireEvent.press(screen.getByText('I do not agree'));
   expect(screen.getByText('You have not agreed')).toBeTruthy();
   expect(screen.queryByText('Agree & continue')).toBeNull();
+});
+
+test('Info displays the installed native version and build across policy tabs', async () => {
+  const screen = await render(
+    <AppBuildContext.Provider
+      value={{ appVersion: '1.0.0', buildNumber: '987' }}
+    >
+      <InfoScreen />
+    </AppBuildContext.Provider>,
+  );
+  expect(screen.getByText('Version 1.0.0 (Build 987)').props.selectable).toBe(
+    true,
+  );
+  await fireEvent.press(screen.getByText('Privacy Policy'));
+  expect(screen.getByText('Version 1.0.0 (Build 987)')).toBeTruthy();
 });

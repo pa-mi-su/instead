@@ -10,12 +10,13 @@ import { decode } from 'base64-arraybuffer';
 import { useRecipes } from '../hooks/useRecipes';
 import { PHOTO_LIMIT, recipeFields, validatePhoto } from '../lib/recipes';
 import type { Recipe, RecipePhoto } from '../lib/recipes';
-import { reportReasons } from '../lib/community';
-import { supabase } from '../lib/supabase';
+import { ReportRecipeButton } from './ReportRecipeButton';
 import { styles } from '../styles';
 import { savedRecipeKey } from '../lib/savedRecipes';
 
-export function ProductRecipes({
+export function RecipeContent({
+  controller,
+  mode = 'all',
   productId,
   userId,
   canContribute,
@@ -25,7 +26,11 @@ export function ProductRecipes({
   onOpenProfile,
   savedRecipeIds,
   onSaveRecipe,
+  onRecipeLayout,
 }: {
+  onRecipeLayout?: (id: string, y: number) => void;
+  controller: ReturnType<typeof useRecipes>;
+  mode?: 'all' | 'published' | 'submissions';
   productId: string;
   userId?: string;
   canContribute: boolean;
@@ -36,10 +41,9 @@ export function ProductRecipes({
   savedRecipeIds: string[];
   onSaveRecipe: (recipeId: string, title: string) => void;
 }) {
-  const r = useRecipes(supabase, productId, userId);
+  const r = controller;
   const [open, setOpen] = useState(false);
   const [selecting, setSelecting] = useState(false);
-  const [reportId, setReportId] = useState<string | null>(null);
   const [removeId, setRemoveId] = useState<string | null>(null);
   const button = (
     label: string,
@@ -105,14 +109,20 @@ export function ProductRecipes({
   }
   function card(recipe: Recipe) {
     return (
-      <View key={recipe.id} style={styles.optionCard}>
+      <View
+        key={recipe.id}
+        style={styles.optionCard}
+        onLayout={event =>
+          onRecipeLayout?.(recipe.id, event.nativeEvent.layout.y)
+        }
+      >
         <Text style={styles.optionLabel}>
-          COMMUNITY RECIPE ·{' '}
+          RECIPE ·{' '}
           {recipe.status === 'pending'
             ? 'AWAITING REVIEW'
             : recipe.status === 'rejected'
             ? 'NOT PUBLISHED'
-            : 'COMMUNITY SUBMISSION'}
+            : 'PUBLISHED'}
           {recipe.mine ? ' · YOUR SUBMISSION' : ''}
         </Text>
         <View style={styles.recipeCardHeader}>
@@ -212,22 +222,13 @@ export function ProductRecipes({
             ) : (
               <Text>Community score: {recipe.score}</Text>
             )}
-            {canManage &&
-              button(
-                recipe.reported ? 'Reported' : 'Report recipe',
-                () => setReportId(reportId === recipe.id ? null : recipe.id),
-                r.busy || recipe.reported,
-              )}
-            {reportId === recipe.id && !recipe.reported && (
-              <View>
-                {reportReasons.map(reason => (
-                  <View key={reason}>
-                    {button(reason, () => r.report(recipe, reason))}
-                  </View>
-                ))}
-                {button('Cancel report', () => setReportId(null))}
-              </View>
-            )}
+            <ReportRecipeButton
+              productId={productId}
+              recipeId={recipe.id}
+              title={recipe.title}
+              signedIn={Boolean(userId)}
+              onSignIn={onSignInRequest}
+            />
           </>
         )}
         {!recipe.mine &&
@@ -246,9 +247,18 @@ export function ProductRecipes({
       </View>
     );
   }
+  if (mode === 'published')
+    return (
+      <View style={styles.optionList}>
+        {!r.ready && !r.error && <Text>Loading recipes…</Text>}
+        {!!r.error && <Text accessibilityRole="alert">{r.error}</Text>}
+        {r.recipes.map(card)}
+        {r.more && button('Load more recipes', r.loadMore)}
+      </View>
+    );
   return (
     <View style={styles.optionList}>
-      <Text style={styles.optionName}>Community recipes</Text>
+      <Text style={styles.optionName}>Submit a recipe</Text>
       <Text style={styles.optionDetail}>
         Approved recipes show your public username and optional bio. Submissions
         and photos are checked before publishing; publication and votes do not
@@ -332,8 +342,8 @@ export function ProductRecipes({
           No published community recipes yet. Be the first to submit one.
         </Text>
       )}
-      {r.recipes.map(card)}
-      {r.more && button('Load more recipes', r.loadMore)}
+      {mode === 'all' && r.recipes.map(card)}
+      {mode === 'all' && r.more && button('Load more recipes', r.loadMore)}
       {!!r.mine.filter(recipe => recipe.status !== 'approved').length && (
         <View>
           <Text style={styles.optionName}>

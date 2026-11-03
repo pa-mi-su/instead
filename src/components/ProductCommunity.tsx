@@ -1,7 +1,9 @@
 import { ProductCommunityAccess } from './ProductCommunityAccess';
-import { ProductRecipes } from './ProductRecipes';
+import { RecipeContent } from './ProductRecipes';
+import type { useRecipes } from '../hooks/useRecipes';
 import type { useCommunity } from '../hooks/useCommunity';
 export function ProductCommunity({
+  recipeController,
   productId,
   community,
   onSignInRequest,
@@ -9,6 +11,7 @@ export function ProductCommunity({
   savedRecipeIds,
   onSaveRecipe,
 }: {
+  recipeController: ReturnType<typeof useRecipes>;
   productId: string;
   community: ReturnType<typeof useCommunity>;
   onSignInRequest: () => void;
@@ -21,7 +24,9 @@ export function ProductCommunity({
       community={community}
       onSignInRequest={onSignInRequest}
       renderRecipes={(c, signIn) => (
-        <ProductRecipes
+        <RecipeContent
+          controller={recipeController}
+          mode="submissions"
           key={`${productId}:${c.session?.user.id ?? 'guest'}:${c.blocks
             .map(b => b.id)
             .join(',')}`}

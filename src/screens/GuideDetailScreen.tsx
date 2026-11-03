@@ -8,11 +8,14 @@ import { ScrollView, Text, View } from 'react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { BrandLogo } from '../components/BrandLogo';
+import { useRecipes } from '../hooks/useRecipes';
+import { RecipeContent } from '../components/ProductRecipes';
 import { ProductCommunity } from '../components/ProductCommunity';
 import { DetailSection } from '../components/DetailSection';
 import { COLORS, styles } from '../styles';
 import type { Guide } from '../types';
 import { ExpandableSafety } from '../components/ExpandableSafety';
+import { ReportRecipeButton } from '../components/ReportRecipeButton';
 import { RecipeVoteButtons } from '../components/RecipeVoteButtons';
 import { RecipePhotoGallery } from '../components/RecipePhotoGallery';
 import { useCommunity } from '../hooks/useCommunity';
@@ -94,6 +97,8 @@ export function GuideDetailScreen({
   const communityY = useRef(0);
   const recipeSectionY = useRef(0);
   const recipeListY = useRef(0);
+  const publishedY = useRef(0);
+  const initialScrollDone = useRef(false);
   const [recipeRatings, setRecipeRatings] = useState<
     Record<string, RecipeRating>
   >({});
@@ -111,6 +116,7 @@ export function GuideDetailScreen({
     false,
   );
 
+  const published = useRecipes(supabase, guide.id, community.session?.user.id);
   useEffect(() => {
     const scope = ratingScope;
     scope.current++;
@@ -268,7 +274,9 @@ export function GuideDetailScreen({
         </View>
 
         <ExpandableSafety key={guide.id} guide={guide} />
-        {guide.recipes?.length ? (
+        {guide.recipes?.length ||
+        published.recipes.length ||
+        !published.ready ? (
           <DetailSection
             number="01"
             title="RECIPES"
@@ -287,7 +295,11 @@ export function GuideDetailScreen({
                   key={recipe.id}
                   style={styles.optionCard}
                   onLayout={event => {
-                    if (recipe.id === initialRecipeId) {
+                    if (
+                      recipe.id === initialRecipeId &&
+                      !initialScrollDone.current
+                    ) {
+                      initialScrollDone.current = true;
                       // Native events are cleared after the layout handler returns.
                       const recipeY = event.nativeEvent.layout.y;
                       requestAnimationFrame(() =>
@@ -355,6 +367,13 @@ export function GuideDetailScreen({
                     CAUTIONS
                   </Text>
                   <Text style={styles.optionDetail}>{recipe.cautions}</Text>
+                  <ReportRecipeButton
+                    productId={guide.id}
+                    recipeId={recipe.id}
+                    title={recipe.name}
+                    signedIn={verified}
+                    onSignIn={requestSignIn}
+                  />
                   {recipeRatings[recipe.id] ? (
                     <RecipeVoteButtons
                       productId={guide.id}
@@ -391,6 +410,43 @@ export function GuideDetailScreen({
                   )}
                 </View>
               ))}
+              <View
+                onLayout={event => {
+                  publishedY.current = event.nativeEvent.layout.y;
+                }}
+              >
+                <RecipeContent
+                  onRecipeLayout={(id, y) => {
+                    if (id !== initialRecipeId || initialScrollDone.current)
+                      return;
+                    initialScrollDone.current = true;
+                    requestAnimationFrame(() =>
+                      scrollRef.current?.scrollTo({
+                        y: Math.max(
+                          0,
+                          recipeSectionY.current +
+                            recipeListY.current +
+                            publishedY.current +
+                            y -
+                            24,
+                        ),
+                        animated: false,
+                      }),
+                    );
+                  }}
+                  controller={published}
+                  mode="published"
+                  productId={guide.id}
+                  userId={community.session?.user.id}
+                  canContribute={community.canContribute}
+                  canManage={community.canManage}
+                  onBlock={id => community.block('recipe', id)}
+                  onSignInRequest={requestSignIn}
+                  onOpenProfile={onOpenProfile}
+                  savedRecipeIds={savedRecipeIds}
+                  onSaveRecipe={onSaveRecipe}
+                />
+              </View>
             </View>
           </DetailSection>
         ) : null}
@@ -398,23 +454,17 @@ export function GuideDetailScreen({
         <DetailSection
           onLayout={event => {
             communityY.current = event.nativeEvent.layout.y;
-            if (
-              initialRecipeId &&
-              !recipes.some(recipe => recipe.id === initialRecipeId)
-            ) {
-              requestAnimationFrame(() =>
-                scrollRef.current?.scrollTo({
-                  y: Math.max(0, communityY.current - 16),
-                  animated: false,
-                }),
-              );
-            }
           }}
-          number={guide.recipes?.length ? '02' : '01'}
-          title="COMMUNITY RECIPES & ACCOUNT"
+          number={
+            recipes.length || published.recipes.length || !published.ready
+              ? '02'
+              : '01'
+          }
+          title="SUBMIT A RECIPE & ACCOUNT"
         >
           <ProductCommunity
             key={guide.id}
+            recipeController={published}
             productId={guide.id}
             community={community}
             onSignInRequest={requestSignIn}

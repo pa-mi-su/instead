@@ -33,6 +33,10 @@ let builtinSeeds = null;
 let builtinItems = [];
 let builtinEditingId = null;
 let builtinSearch = '';
+let publishedSubmissions = [];
+let publishedSource = 'all';
+let publishedFilter = 'published';
+let publishedMore = false;
 const storageKey = 'instead:admin-session';
 function status(message, error = false) {
   if (signoutPending) return;
@@ -62,6 +66,10 @@ function clearSession() {
   emailChallenge.reset();
   resetLoginForm($);
   builtinItems = [];
+  publishedSubmissions = [];
+  publishedSource = 'all';
+  publishedFilter = 'published';
+  publishedMore = false;
   builtinEditingId = null;
   builtinSearch = '';
   $('status').textContent = '';
@@ -174,6 +182,37 @@ async function rpc(action, payload = {}) {
     { p_action: action, p_payload: payload },
     await token(),
   );
+}
+async function concernsRpc(action, payload = {}) {
+  return request(
+    '/rest/v1/rpc/recipe_concerns_admin',
+    { p_action: action, p_payload: payload },
+    await token(),
+  );
+}
+function appendConcerns(card, item) {
+  if (!item.concerns?.length) return;
+  const concerns = element('div', undefined, 'reports');
+  concerns.append(element('h3', `${item.concerns.length} open concern(s)`));
+  for (const concern of item.concerns) {
+    details(concerns, concern.reason, concern.details);
+  }
+  concerns.append(
+    button('Mark concerns reviewed', async () => {
+      const note = await requestReason(
+        'Explain how these concerns were reviewed.',
+      );
+      if (!note) return;
+      await concernsRpc('resolve', {
+        recipe: item.id,
+        cutoff: item.concerns[0].created_at,
+        note,
+      });
+      await load();
+      status('Concerns marked reviewed.');
+    }),
+  );
+  card.append(concerns);
 }
 async function builtinRpc(action, payload = {}) {
   return request(
@@ -475,7 +514,7 @@ function renderContent(item) {
       'meta',
     ),
   );
-  if (view === 'recipe') {
+  if (view === 'recipe' || view === 'builtin') {
     for (const [label, key] of [
       ['Ingredients', 'ingredients'],
       ['Instructions', 'instructions'],
@@ -545,6 +584,7 @@ function renderContent(item) {
       );
     card.append(reports);
   }
+  appendConcerns(card, item);
   const review = element('div', undefined, 'review');
   const reason = field(review, 'Review reason / action note', true);
   const check = element('label', undefined, 'check');
@@ -565,7 +605,7 @@ function renderContent(item) {
   );
   review.append(check);
   const actions = element('div', undefined, 'actions');
-  const target = { kind: view, id: item.id };
+  const target = { kind: 'recipe', id: item.id };
   if (item.admin_removed_at)
     actions.append(
       button('Restore to pending review', () =>
@@ -573,7 +613,7 @@ function renderContent(item) {
       ),
     );
   else {
-    if (item.status !== 'withdrawn') {
+    if (item.status !== 'withdrawn' && item.status !== 'approved') {
       actions.append(
         button('Approve', async () => {
           if (!checkbox.checked)
@@ -592,10 +632,11 @@ function renderContent(item) {
             reason.value,
             {
               afterSuccess: () => {
-                $('filter').value = 'approved';
+                $('filter').value = 'pending';
                 offset = 0;
               },
-              successMessage: 'Recipe approved. It is now in Approved history.',
+              successMessage:
+                'Recipe published. Find it in Recipes; it has left Pending recipes.',
             },
           );
         }),
@@ -640,7 +681,7 @@ function renderContent(item) {
       );
     }
   }
-  if (item.open_reports > 0)
+  if (item.open_reports > 0 && !item.concerns?.length)
     actions.append(
       button('Mark reports reviewed', () =>
         mutate(
@@ -858,16 +899,14 @@ async function loadBuiltinSeeds() {
       signal: AbortSignal.timeout(20000),
     });
   } catch (error) {
-    console.error('Built-in recipe inventory request failed:', error);
+    console.error('Recipe inventory request failed:', error);
     throw new Error(
-      'Could not load the built-in recipe catalog. Check your connection and try again.',
+      'Could not load the recipe catalog. Check your connection and try again.',
     );
   }
-  if (!response.ok)
-    throw new Error('Built-in recipe inventory is unavailable.');
+  if (!response.ok) throw new Error('Recipe inventory is unavailable.');
   const data = await response.json();
-  if (!Array.isArray(data))
-    throw new Error('Built-in recipe inventory is invalid.');
+  if (!Array.isArray(data)) throw new Error('Recipe inventory is invalid.');
   builtinSeeds = data;
   return builtinSeeds;
 }
@@ -981,8 +1020,8 @@ function renderBuiltinEditor(item, products) {
       builtinEditingId = null;
       const successMessage =
         result.action === 'created'
-          ? 'Built-in recipe created and published. It will appear in the app after its next catalog refresh.'
-          : 'Built-in recipe saved and published. It will appear in the app after its next catalog refresh.';
+          ? 'Recipe created and published. It will appear in the app after its next catalog refresh.'
+          : 'Recipe saved and published. It will appear in the app after its next catalog refresh.';
       try {
         await load();
         status(successMessage);
@@ -1004,7 +1043,7 @@ function renderBuiltinEditor(item, products) {
   editor.append(
     element(
       'p',
-      'Saving publishes this built-in recipe to the app. Review the full wording, storage guidance, and cautions before saving.',
+      'Saving publishes this recipe to the app. Review the full wording, storage guidance, and cautions before saving.',
       'notice',
     ),
     actions,
@@ -1014,14 +1053,27 @@ function renderBuiltinEditor(item, products) {
 function renderBuiltinItems() {
   const container = $('items');
   container.replaceChildren();
-  const filtered = builtinItems.filter(item =>
-    `${item.title} ${item.product_title} ${item.product_id}`
+  const filtered = builtinItems.filter(
+    item =>
+      (offset === 0 || publishedSource === 'instead') &&
+      `${item.title} ${item.product_title} ${item.product_id}`
+        .toLowerCase()
+        .includes(builtinSearch.trim().toLowerCase()) &&
+      publishedSource !== 'submitted' &&
+      (publishedFilter === 'archived'
+        ? !item.is_active
+        : publishedFilter === 'reported'
+        ? item.is_active && item.concerns?.length
+        : item.is_active),
+  );
+  const submitted = publishedSubmissions.filter(item =>
+    `${item.title} ${item.product_id}`
       .toLowerCase()
       .includes(builtinSearch.trim().toLowerCase()),
   );
   if (!filtered.length) {
-    container.append(element('p', 'No built-in recipes match this search.'));
-    return;
+    if (!submitted.length)
+      container.append(element('p', 'No recipes match these filters.'));
   }
   const products = [
     ...new Map(
@@ -1103,29 +1155,86 @@ function renderBuiltinItems() {
         ),
       );
     card.append(actions);
+    appendConcerns(card, item);
     if (item.id === builtinEditingId)
       card.append(renderBuiltinEditor(item, products));
     container.append(card);
   }
+  for (const item of submitted) container.append(renderContent(item));
 }
 function renderBuiltinTools() {
   const tools = $('builtin-tools');
   tools.replaceChildren();
+  for (const [label, value, options, update] of [
+    [
+      'Recipe source',
+      publishedSource,
+      [
+        ['all', 'All recipes'],
+        ['instead', 'INSTEAD recipes'],
+        ['submitted', 'User submissions'],
+      ],
+      value => {
+        publishedSource = value;
+      },
+    ],
+    [
+      'Recipe status',
+      publishedFilter,
+      [
+        ['published', 'Published'],
+        ['reported', 'Open reports'],
+        ['archived', 'Archived'],
+      ],
+      value => {
+        publishedFilter = value;
+      },
+    ],
+  ]) {
+    const text = element('label', label);
+    const select = element('select');
+    select.setAttribute('aria-label', label);
+    select.id = label === 'Recipe source' ? 'recipe-source' : 'recipe-status';
+    for (const [key, title] of options) {
+      const option = element('option', title);
+      option.value = key;
+      select.append(option);
+    }
+    select.value = value;
+    select.addEventListener('change', () => {
+      update(select.value);
+      offset = 0;
+      load().catch(error => status(error.message, true));
+    });
+    text.append(select);
+    tools.append(text);
+  }
   const search = element('input');
   search.type = 'search';
   search.maxLength = 100;
-  search.placeholder = 'Search built-in recipes or topics';
-  search.setAttribute('aria-label', 'Search built-in recipes or topics');
+  search.placeholder = 'Search recipes or topics';
+  search.setAttribute('aria-label', 'Search recipes or topics');
   search.value = builtinSearch;
   search.addEventListener('input', () => {
     builtinSearch = search.value;
     renderBuiltinItems();
   });
-  tools.append(search);
   tools.append(
-    button('Add a built-in recipe', () => {
+    search,
+    button('Search recipes', () => {
+      offset = 0;
+      return load();
+    }),
+  );
+  tools.append(
+    button('Add a recipe', () => {
       const firstProduct = builtinSeeds[0];
       builtinSearch = '';
+      publishedSource = 'all';
+      publishedFilter = 'published';
+      offset = 0;
+      $('recipe-source').value = 'all';
+      $('recipe-status').value = 'published';
       search.value = '';
       const id = `admin:${crypto.randomUUID()}`;
       builtinItems.unshift({
@@ -1185,7 +1294,33 @@ async function load() {
         isNew: false,
       });
     }
-    data = { items: builtinItems };
+    publishedSubmissions = [];
+    publishedMore = false;
+    if (publishedSource !== 'instead') {
+      const submitted = await rpc('queue', {
+        kind: 'recipe',
+        filter:
+          publishedFilter === 'reported'
+            ? 'reported'
+            : publishedFilter === 'archived'
+            ? 'trash'
+            : 'approved',
+        search: builtinSearch,
+        offset,
+      });
+      publishedMore = submitted.items.length === 20;
+      publishedSubmissions = submitted.items.filter(
+        item => item.status === 'approved',
+      );
+    }
+    const concerns = await concernsRpc('list', {
+      recipes: [...builtinItems, ...publishedSubmissions].map(item => item.id),
+    });
+    for (const item of [...builtinItems, ...publishedSubmissions])
+      item.concerns = concerns.items.filter(
+        concern => concern.recipe_id === item.id,
+      );
+    data = { items: [...builtinItems, ...publishedSubmissions] };
   } else if (view === 'users') {
     data = await usersRpc($('user-search').value.trim(), offset);
   } else {
@@ -1221,7 +1356,7 @@ async function load() {
   $('filters').hidden = !isContent;
   $('user-filters').hidden = !isUsers;
   $('builtin-tools').hidden = !isBuiltin;
-  $('pagination').hidden = isBuiltin;
+  $('pagination').hidden = isBuiltin && publishedSource === 'instead';
   $('items').replaceChildren();
   if (isBuiltin) {
     renderBuiltinTools();
@@ -1268,13 +1403,15 @@ async function load() {
       $('items').append(card);
     }
   }
-  if (!data.items.length)
+  if (!isBuiltin && !data.items.length)
     $('items').append(element('p', 'No items in this queue.'));
+  $('previous').textContent = isBuiltin ? 'Previous recipes' : 'Previous 20';
+  $('next').textContent = isBuiltin ? 'More recipes' : 'Next 20';
   $('previous').disabled = offset === 0;
-  $('next').disabled = data.items.length < 20;
+  $('next').disabled = isBuiltin ? !publishedMore : data.items.length < 20;
   status(
     isBuiltin
-      ? `Signed in as ${summary.reviewer}. ${data.items.length} built-in recipe(s) loaded.`
+      ? `Signed in as ${summary.reviewer}. ${data.items.length} recipe(s) loaded.`
       : `Signed in as ${summary.reviewer}. ${
           isContent
             ? `Showing ${data.items.length} item(s), starting at ${offset + 1}.`
@@ -1391,6 +1528,7 @@ for (const navButton of document.querySelectorAll('[data-view]'))
   navButton.addEventListener('click', () => {
     view = navButton.dataset.view;
     offset = 0;
+    if (view === 'recipe') $('filter').value = 'pending';
     for (const other of document.querySelectorAll('[data-view]'))
       other.setAttribute('aria-pressed', String(other === navButton));
     load().catch(error => status(error.message, true));

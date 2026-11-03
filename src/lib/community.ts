@@ -23,7 +23,10 @@ export type CommunityClient = {
     };
   };
   functions?: {
-    invoke: (name: string) => Promise<{ data: unknown; error: unknown }>;
+    invoke: (
+      name: string,
+      options?: { body: Record<string, unknown> },
+    ) => Promise<{ data: unknown; error: unknown }>;
   };
   auth: {
     getSession: () => Promise<{
