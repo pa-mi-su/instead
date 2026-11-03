@@ -67,7 +67,7 @@ export default function SupportPage() {
 
       <PolicySection title="Saved guides and local data">
         <p>
-          Saved guides are stored on your device or in your browser. If you sign in, your saved guides can also sync privately across devices. Clearing local data does not delete your account or its cloud-synced saves.
+          In the mobile app, saving guides and recipes requires a verified, signed-in account. Open Saved in the menu to see them; signing out hides them. Older device-wide saves are not imported into an account. Website guide saves may be stored in your browser and sync when signed in. Clearing local data does not delete your account or its cloud-synced saves.
         </p>
         <ul>
           <li>
@@ -75,7 +75,7 @@ export default function SupportPage() {
             this site’s browser storage.
           </li>
           <li>
-            On mobile, remove individual saved guides in the app. Clearing app
+            On mobile, sign in and remove individual saved guides or recipes in the app. Clearing app
             storage or uninstalling the app removes its local saved data.
           </li>
         </ul>

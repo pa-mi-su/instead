@@ -134,7 +134,7 @@ export function TopBar({
                 icon={<UserRound size={21} color={COLORS.ink} />}
               />
               <MenuItem
-                label="Saved guides"
+                label="Saved"
                 detail="Your bookmarked alternatives"
                 active={activeView === 'saved'}
                 onPress={() => chooseDestination(onSaved)}

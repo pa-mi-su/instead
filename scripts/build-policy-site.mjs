@@ -45,7 +45,7 @@ ${section(
 )}
 ${section(
   'What is deleted',
-  'Account deletion removes your sign-in account, community comments, recipes, recipe photos, votes, reports, blocks, and account-linked agreements. Stored recipe photos are removed before the account. Failed cleanup keeps the request pending. Locally saved guides must be cleared separately on your device. Provider backups and operational logs may follow their retention schedules; see the Privacy Policy.',
+  'Account deletion removes your sign-in account, community comments, recipes, recipe photos, votes, reports, blocks, and account-linked agreements. Stored recipe photos are removed before the account. Failed cleanup keeps the request pending. Current mobile saves require a signed-in account and are removed from the account on deletion. Legacy device-wide saves are not displayed or imported by the current mobile app; old local storage and browser saves can be cleared separately. Provider backups and operational logs may follow their retention schedules; see the Privacy Policy.',
 )}
 ${section(
   'Request status',

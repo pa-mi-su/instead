@@ -14,11 +14,6 @@ jest.mock('../src/components/AnimatedPressable', () => ({
 }));
 const props = {
   guides: [],
-  savedGuideIds: [],
-  savedRecipes: [],
-  syncStatus: 'local' as const,
-  onOpenGuide: jest.fn(),
-  onOpenRecipe: jest.fn(),
   bottomInset: 0,
 };
 const account = (id: string) =>
@@ -69,6 +64,19 @@ test('submission changes elsewhere refresh the open account page', async () => {
   rpc.mockResolvedValue({ data: [recipe], error: null });
   await act(() => notifyCommunityChanged());
   expect(await screen.findByText(recipe.title)).toBeTruthy();
+  await screen.unmount();
+  rpc.mockReset();
+});
+
+test('My INSTEAD has account management without duplicate saved lists', async () => {
+  const rpc = supabase!.rpc as jest.Mock;
+  rpc.mockResolvedValue({ data: [], error: null });
+  const screen = await render(
+    <AccountScreen community={account('first')} {...props} />,
+  );
+  expect(screen.queryByText('Saved guides')).toBeNull();
+  expect(screen.queryByText('Saved recipes')).toBeNull();
+  expect(screen.getByText('My account.')).toBeTruthy();
   await screen.unmount();
   rpc.mockReset();
 });
