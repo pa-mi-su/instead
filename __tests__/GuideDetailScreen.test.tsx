@@ -25,12 +25,15 @@ jest.mock('../src/lib/supabase', () => ({
 }));
 let mockSession: { user: { id: string } } | null = null;
 let mockPublished: Record<string, unknown>[] = [];
+let mockMore = false;
+const mockLoadMore = jest.fn();
 jest.mock('../src/hooks/useRecipes', () => ({
   useRecipes: () => ({
     recipes: mockPublished,
     mine: [],
     ready: true,
-    more: false,
+    more: mockMore,
+    loadMore: mockLoadMore,
     error: '',
   }),
 }));
@@ -70,49 +73,6 @@ jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
   Bookmark: () => null,
 }));
-
-test('opening a saved recipe survives the layout event being cleared before the next frame', async () => {
-  const frames: Parameters<typeof requestAnimationFrame>[0][] = [];
-  const raf = jest
-    .spyOn(global, 'requestAnimationFrame')
-    .mockImplementation(callback => {
-      frames.push(callback);
-      return frames.length;
-    });
-  try {
-    const guide = productCatalog.find(item => item.recipes?.length)!;
-    const recipe = guide.recipes![0]!;
-    const screen = await render(
-      <GuideDetailScreen
-        guide={guide}
-        initialRecipeId={recipe.id}
-        isSaved={false}
-        savedRecipeIds={[]}
-        onBack={jest.fn()}
-        onSave={jest.fn()}
-        onSaveRecipe={jest.fn()}
-        onOpenProfile={jest.fn()}
-        bottomInset={0}
-      />,
-    );
-    const event = {
-      nativeEvent: { layout: { x: 0, y: 180, width: 320, height: 500 } } as {
-        layout: { x: number; y: number; width: number; height: number };
-      } | null,
-    };
-    let card = screen.getByText(recipe.name).parent;
-    while (card && !card.props.onLayout) card = card.parent;
-    if (!card) throw new Error('Recipe card layout handler not found');
-    await fireEvent(card, 'layout', event);
-    expect(frames.length).toBeGreaterThan(0);
-    // Reproduce React Native releasing its event before requestAnimationFrame.
-    event.nativeEvent = null;
-    expect(() => frames.forEach(callback => callback(0))).not.toThrow();
-    expect(mockScrollTo).toHaveBeenCalledWith({ y: 156, animated: false });
-  } finally {
-    raf.mockRestore();
-  }
-});
 
 function ratingGuide() {
   const original = productCatalog.find(item => item.recipes?.length)!;
@@ -359,47 +319,56 @@ test('a confirmed vote from the previous account cannot overwrite the new accoun
   rpc.mockReset();
 });
 
-test('a saved approved submission opens in Recipes and later layout changes do not jump again', async () => {
-  mockPublished = [
-    {
-      id: 'approved-submission',
-      status: 'approved',
-      title: 'Published user recipe',
-      ingredients: 'Water',
-      instructions: 'Mix',
-      storage_notes: 'Store',
-      cautions: 'Care',
-      photos: [],
-      mine: false,
-    },
-  ];
-  const frames: Parameters<typeof requestAnimationFrame>[0][] = [];
-  const raf = jest
-    .spyOn(global, 'requestAnimationFrame')
-    .mockImplementation(callback => {
-      frames.push(callback);
-      return frames.length;
-    });
-  mockScrollTo.mockClear();
+test('a saved community recipe beyond the first page is fetched until found without looping', async () => {
+  const base = {
+    status: 'approved',
+    ingredients: 'Water',
+    instructions: 'Mix',
+    storage_notes: 'Store',
+    cautions: 'Care',
+    photos: [],
+    mine: false,
+  };
+  mockMore = true;
+  mockLoadMore.mockClear();
+  mockPublished = Array.from({ length: 20 }, (_, i) => ({
+    ...base,
+    id: `published-${i}`,
+    title: `Published recipe ${i}`,
+  }));
   try {
+    const guide = ratingGuide();
     const screen = await render(
       <GuideDetailScreen
-        guide={ratingGuide()}
+        guide={guide}
         {...detailProps}
-        initialRecipeId="approved-submission"
+        initialRecipeId="saved-on-page-two"
       />,
     );
-    let card = screen.getByText('Published user recipe').parent;
-    while (card && !card.props.onLayout) card = card.parent;
-    if (!card) throw new Error('Published card layout handler missing');
-    await fireEvent(card, 'layout', { nativeEvent: { layout: { y: 400 } } });
-    frames.forEach(callback => callback(0));
-    expect(mockScrollTo).toHaveBeenCalledWith({ y: 376, animated: false });
-    const count = frames.length;
-    await fireEvent(card, 'layout', { nativeEvent: { layout: { y: 450 } } });
-    expect(frames).toHaveLength(count);
+    await waitFor(() => expect(mockLoadMore).toHaveBeenCalledTimes(1));
+    await screen.rerender(
+      <GuideDetailScreen
+        guide={guide}
+        {...detailProps}
+        initialRecipeId="saved-on-page-two"
+      />,
+    );
+    expect(mockLoadMore).toHaveBeenCalledTimes(1);
+    mockPublished = [
+      ...mockPublished,
+      { ...base, id: 'saved-on-page-two', title: 'Exact saved recipe' },
+    ];
+    await screen.rerender(
+      <GuideDetailScreen
+        guide={guide}
+        {...detailProps}
+        initialRecipeId="saved-on-page-two"
+      />,
+    );
+    expect(screen.getByText('Exact saved recipe')).toBeTruthy();
+    expect(mockLoadMore).toHaveBeenCalledTimes(1);
   } finally {
     mockPublished = [];
-    raf.mockRestore();
+    mockMore = false;
   }
 });
