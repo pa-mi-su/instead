@@ -1,5 +1,10 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
+import { Platform } from 'react-native';
 import { TopBar } from '../src/components/TopBar';
+
+let mockManualDismiss = false;
+let mockDismiss: (() => void) | undefined;
+let mockAnimation: string | undefined;
 
 jest.mock('react-native/Libraries/Modal/Modal', () => ({
   __esModule: true,
@@ -7,15 +12,19 @@ jest.mock('react-native/Libraries/Modal/Modal', () => ({
     visible,
     children,
     onDismiss,
+    animationType,
   }: {
     visible: boolean;
     children: unknown;
     onDismiss?: () => void;
+    animationType?: string;
   }) {
+    mockDismiss = onDismiss;
+    mockAnimation = animationType;
     const { useEffect, useRef } = require('react');
     const wasVisible = useRef(visible);
     useEffect(() => {
-      if (wasVisible.current && !visible) onDismiss?.();
+      if (wasVisible.current && !visible && !mockManualDismiss) onDismiss?.();
       wasVisible.current = visible;
     }, [visible, onDismiss]);
     return visible ? children : null;
@@ -91,4 +100,32 @@ test('selecting Saved completes navigation after the drawer dismisses', async ()
 
   expect(screen.props.onSaved).toHaveBeenCalledTimes(1);
   expect(screen.screen.queryByText('Your spaces')).toBeNull();
+});
+
+test('iPhone menu removes fade delay but waits for native dismissal before navigation', async () => {
+  const original = Platform.OS;
+  Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+  mockManualDismiss = true;
+  try {
+    const screen = await renderTopBar();
+    await fireEvent.press(
+      screen.screen.getByRole('button', { name: 'Open navigation menu' }),
+    );
+    expect(mockAnimation).toBe('none');
+    await fireEvent.press(
+      screen.screen.getByRole('button', { name: 'Saved, 2 saved' }),
+    );
+    expect(screen.props.onSaved).not.toHaveBeenCalled();
+    await act(() => mockDismiss?.());
+    expect(screen.props.onSaved).toHaveBeenCalledTimes(1);
+    await act(() => mockDismiss?.());
+    expect(screen.props.onSaved).toHaveBeenCalledTimes(1);
+    await screen.screen.unmount();
+  } finally {
+    mockManualDismiss = false;
+    Object.defineProperty(Platform, 'OS', {
+      configurable: true,
+      value: original,
+    });
+  }
 });

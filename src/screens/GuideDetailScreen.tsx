@@ -18,6 +18,7 @@ import { RecipePhotoGallery } from '../components/RecipePhotoGallery';
 import { useCommunity } from '../hooks/useCommunity';
 import { supabase } from '../lib/supabase';
 import { rankRecipes } from '../lib/recipeRanking';
+import { applyRecipeVote } from '../lib/recipeRating';
 import { savedRecipeKey } from '../lib/savedRecipes';
 
 type RecipeRating = {
@@ -89,10 +90,14 @@ export function GuideDetailScreen({
   bottomInset: number;
 }) {
   const scrollRef = useRef<ScrollView>(null);
+  const ratingScope = useRef(0);
   const communityY = useRef(0);
   const recipeSectionY = useRef(0);
   const recipeListY = useRef(0);
   const [recipeRatings, setRecipeRatings] = useState<
+    Record<string, RecipeRating>
+  >({});
+  const [rankingRatings, setRankingRatings] = useState<
     Record<string, RecipeRating>
   >({});
   const [ratingsError, setRatingsError] = useState(false);
@@ -107,8 +112,16 @@ export function GuideDetailScreen({
   );
 
   useEffect(() => {
-    let active = true;
+    const scope = ratingScope;
+    scope.current++;
     setRecipeRatings({});
+    setRankingRatings({});
+    return () => {
+      scope.current++;
+    };
+  }, [guide.id, community.session?.user.id]);
+  useEffect(() => {
+    let active = true;
     setRatingsError(false);
     const client = supabase;
     if (!client) {
@@ -137,7 +150,11 @@ export function GuideDetailScreen({
       }),
     )
       .then(entries => {
-        if (active) setRecipeRatings(Object.fromEntries(entries));
+        if (active) {
+          const ratings = Object.fromEntries(entries);
+          setRecipeRatings(ratings);
+          setRankingRatings(ratings);
+        }
       })
       .catch(() => {
         if (active) {
@@ -150,13 +167,14 @@ export function GuideDetailScreen({
     };
   }, [guide.id, recipes, community.session?.user.id, revision]);
   const rankedRecipes = useMemo(
-    () => rankRecipes(recipes, recipeRatings),
-    [recipes, recipeRatings],
+    () => rankRecipes(recipes, rankingRatings),
+    [recipes, rankingRatings],
   );
   async function voteRecipe(recipeId: string, value: -1 | 1) {
     const client = supabase;
     if (!client) throw new Error('Voting is unavailable right now.');
     const startedAt = getCommunityRevision();
+    const scope = ratingScope.current;
     const current = recipeRatings[recipeId] ?? emptyRating;
     const nextVote = current.my_vote === value ? 0 : value;
     const { error } = await client.rpc('builtin_recipe_vote', {
@@ -165,25 +183,14 @@ export function GuideDetailScreen({
       p_value: nextVote,
     });
     if (error) throw error;
-    if (startedAt !== getCommunityRevision()) return;
-    const upvotes =
-      current.upvotes -
-      (current.my_vote === 1 ? 1 : 0) +
-      (nextVote === 1 ? 1 : 0);
-    const downvotes =
-      current.downvotes -
-      (current.my_vote === -1 ? 1 : 0) +
-      (nextVote === -1 ? 1 : 0);
+    if (startedAt !== getCommunityRevision() || scope !== ratingScope.current)
+      return;
+    // Patch the confirmed vote only. Re-ranking/refetching here moves cards
+    // under the user's finger and remounts controls during a single tap.
     setRecipeRatings(previous => ({
       ...previous,
-      [recipeId]: {
-        upvotes,
-        downvotes,
-        score: upvotes - downvotes,
-        my_vote: nextVote,
-      },
+      [recipeId]: applyRecipeVote(current, value),
     }));
-    notifyCommunityChanged();
   }
   const verified = Boolean(
     community.session?.user.email_confirmed_at &&

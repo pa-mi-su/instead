@@ -1,13 +1,13 @@
 import {
   getCommunityRevision,
-  notifyCommunityChanged,
   useCommunityRevision,
 } from '../lib/communityUpdates';
 import { ThumbsDown, ThumbsUp } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
 import { supabase } from '../lib/supabase';
+import { applyRecipeVote } from '../lib/recipeRating';
 import { COLORS } from '../styles';
 
 type Rating = {
@@ -44,6 +44,8 @@ export function RecipeVoteButtons({
     my_vote: 0,
   });
   const [promptOpen, setPromptOpen] = useState(false);
+  const voteLock = useRef(false);
+  const authScope = useRef(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [builtInAccess, setBuiltInAccess] = useState({
@@ -65,6 +67,7 @@ export function RecipeVoteButtons({
       } | null,
     ) => {
       const version = ++authVersion;
+      authScope.current++;
       setRating({ score: 0, upvotes: 0, downvotes: 0, my_vote: 0 });
       const verified = Boolean(
         session?.user.email_confirmed_at && !session.user.is_anonymous,
@@ -133,10 +136,12 @@ export function RecipeVoteButtons({
       setPromptOpen(true);
       return;
     }
-    if (busy) return;
+    if (voteLock.current) return;
+    voteLock.current = true;
     setBusy(true);
     setError('');
     const startedAt = getCommunityRevision();
+    const scope = authScope.current;
     const nextVote = activeRating.my_vote === value ? 0 : value;
     try {
       if (onVote) {
@@ -149,24 +154,9 @@ export function RecipeVoteButtons({
           p_value: nextVote,
         });
         if (issue) throw issue;
-        if (startedAt !== getCommunityRevision()) return;
-        setRating(current => {
-          const upvotes =
-            current.upvotes -
-            (current.my_vote === 1 ? 1 : 0) +
-            (nextVote === 1 ? 1 : 0);
-          const downvotes =
-            current.downvotes -
-            (current.my_vote === -1 ? 1 : 0) +
-            (nextVote === -1 ? 1 : 0);
-          return {
-            upvotes,
-            downvotes,
-            score: upvotes - downvotes,
-            my_vote: nextVote,
-          };
-        });
-        notifyCommunityChanged();
+        if (startedAt !== getCommunityRevision() || scope !== authScope.current)
+          return;
+        setRating(current => applyRecipeVote(current, value));
       }
     } catch (issue) {
       const message =
@@ -178,6 +168,7 @@ export function RecipeVoteButtons({
           : 'Could not save your vote.';
       setError(message);
     } finally {
+      voteLock.current = false;
       setBusy(false);
     }
   }
