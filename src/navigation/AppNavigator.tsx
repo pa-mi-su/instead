@@ -49,7 +49,17 @@ export function AppNavigator() {
     toggleFavorite,
     toggleRecipeFavorite,
     syncStatus,
-  } = useFavorites(community.session?.user.id);
+    retry: retrySaves,
+  } = useFavorites(
+    community.session?.user.email_confirmed_at &&
+      !community.session.user.is_anonymous
+      ? community.session.user.id
+      : undefined,
+  );
+  const canSave = Boolean(
+    community.session?.user.email_confirmed_at &&
+      !community.session.user.is_anonymous,
+  );
   const [view, setView] = useState<ViewName>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
@@ -277,9 +287,13 @@ export function AppNavigator() {
           isSaved={favorites.includes(selected.id)}
           savedRecipeIds={favorites}
           onBack={goBack}
-          onSave={() => toggleFavorite(selected.id)}
+          onSave={() =>
+            canSave ? toggleFavorite(selected.id) : navigate('saved')
+          }
           onSaveRecipe={(recipeId, title) =>
-            toggleRecipeFavorite(selected.id, recipeId, title)
+            canSave
+              ? toggleRecipeFavorite(selected.id, recipeId, title)
+              : navigate('saved')
           }
           onOpenProfile={openProfile}
           bottomInset={insets.bottom}
@@ -300,11 +314,6 @@ export function AppNavigator() {
             <AccountScreen
               community={community}
               guides={catalog}
-              savedGuideIds={favorites}
-              savedRecipes={savedRecipes}
-              syncStatus={syncStatus}
-              onOpenGuide={openGuide}
-              onOpenRecipe={openRecipe}
               bottomInset={insets.bottom}
             />
           ) : view === 'profile' ? (
@@ -335,6 +344,18 @@ export function AppNavigator() {
             />
           ) : view === 'saved' ? (
             <SavedScreen
+              signedIn={canSave}
+              authReady={community.authReady}
+              syncStatus={syncStatus}
+              onRetry={retrySaves}
+              onSignIn={() => {
+                community.setAuthMode('signin');
+                navigate('account');
+              }}
+              onRegister={() => {
+                community.setAuthMode('signup');
+                navigate('account');
+              }}
               guides={saved}
               catalog={catalog}
               savedRecipes={savedRecipes}

@@ -61,7 +61,7 @@ test('keeps the top bar focused on the brand and opens a labeled navigation draw
   expect(screen.screen.getByText('My INSTEAD')).toBeTruthy();
   expect(screen.screen.getByText('Info & safety')).toBeTruthy();
   expect(
-    screen.screen.getByRole('button', { name: 'Saved guides, 2 saved' }),
+    screen.screen.getByRole('button', { name: 'Saved, 2 saved' }),
   ).toBeTruthy();
 });
 
@@ -79,14 +79,14 @@ test('selecting a destination navigates and closes the drawer', async () => {
   expect(screen.screen.queryByText('Your spaces')).toBeNull();
 });
 
-test('selecting Saved guides completes navigation after the drawer dismisses', async () => {
+test('selecting Saved completes navigation after the drawer dismisses', async () => {
   const screen = await renderTopBar();
 
   await fireEvent.press(
     screen.screen.getByRole('button', { name: 'Open navigation menu' }),
   );
   await fireEvent.press(
-    screen.screen.getByRole('button', { name: 'Saved guides, 2 saved' }),
+    screen.screen.getByRole('button', { name: 'Saved, 2 saved' }),
   );
 
   expect(screen.props.onSaved).toHaveBeenCalledTimes(1);
