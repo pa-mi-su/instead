@@ -12,7 +12,7 @@ const compiled = ts.transpileModule(source, {
     target: ts.ScriptTarget.ES2022,
   },
 }).outputText;
-const { createReportHandler } = await import(
+const { createReportHandler, formatReportEmail } = await import(
   `data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`
 );
 const id = '00000000-0000-4000-8000-000000000001';
@@ -134,4 +134,58 @@ test('catalogue reports include canonical ingredients in the stored snapshot and
   assert.match(f.mail[0].text, /Water/);
   const patches = f.calls.filter(call => call.options.method === 'PATCH');
   assert.match(patches[0].options.body, /recipe_snapshot/);
+});
+
+test('HTML and text present user-submitted recipe fields without raw JSON or executable markup', () => {
+  const report = {
+    id,
+    recipe_id: 'recipe-id',
+    product_id: 'topic',
+    reason: 'Other',
+    details: '<img src=x onerror="alert(1)">\nCheck quantities & storage.',
+    recipe_snapshot: {
+      title: 'Soap <test>',
+      ingredients: 'Water\nSoap',
+      instructions: 'Mix carefully',
+      storage_notes: 'Keep dry',
+      cautions: 'Do not eat',
+      source: 'https://example.test/<unsafe>',
+    },
+  };
+  const email = formatReportEmail(report, user);
+  assert.match(email.html, /Soap &lt;test&gt;/);
+  assert.match(email.html, /&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;/);
+  assert.doesNotMatch(email.html, /<img|<script|href="https:\/\/example/);
+  assert.match(email.html, /Keep dry/);
+  assert.match(email.html, /Verified reporter email/);
+  assert.match(email.text, /REPORTED CONCERN/);
+  assert.match(email.text, /Water\n- Soap/);
+  assert.doesNotMatch(email.text, /"recipe_snapshot"|"ingredients":/);
+});
+test('catalogue recipe arrays render as readable lists, including numbered instructions', () => {
+  const email = formatReportEmail(
+    {
+      id,
+      recipe_id: 'catalogue',
+      product_id: 'topic',
+      reason: 'Other',
+      details: 'Please review',
+      recipe_snapshot: {
+        title: 'Catalogue title',
+        recipe: {
+          name: 'Recipe name',
+          ingredients: ['Water', 'Soap'],
+          equipment: ['Jar'],
+          instructions: ['Mix', 'Store'],
+          storage: 'Keep dry',
+          cautions: 'Use care',
+        },
+      },
+    },
+    user,
+  );
+  assert.match(email.html, /<ol[^>]*><li[^>]*>Mix/);
+  assert.match(email.html, /<li[^>]*>Jar/);
+  assert.match(email.text, /Recipe name/);
+  assert.match(email.text, /Keep dry/);
 });

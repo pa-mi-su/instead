@@ -4,7 +4,144 @@ type Mail = {
   replyTo: string;
   subject: string;
   text: string;
+  html: string;
 };
+type ReportEmail = {
+  id: string;
+  recipe_id: string;
+  product_id: string;
+  reason: string;
+  details: string;
+  recipe_snapshot: Record<string, unknown>;
+};
+
+// User-supplied content is always text, never email markup or a link target.
+export function formatReportEmail(
+  report: ReportEmail,
+  user: { id: string; email: string },
+) {
+  const escape = (value: string) =>
+    value.replace(
+      /[&<>"']/g,
+      char =>
+        ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        }[char]!),
+    );
+  const string = (value: unknown) => (typeof value === 'string' ? value : '');
+  const snapshot = report.recipe_snapshot;
+  const recipe =
+    snapshot.recipe && typeof snapshot.recipe === 'object'
+      ? (snapshot.recipe as Record<string, unknown>)
+      : snapshot;
+  const title = string(recipe.name) || string(snapshot.title) || 'Recipe';
+  const sections: [string, unknown][] = [
+    ['Ingredients & quantities', recipe.ingredients],
+    ['Equipment', recipe.equipment],
+    ['Instructions', recipe.instructions],
+    ['Storage & shelf life', recipe.storage ?? recipe.storage_notes],
+    ['Cautions', recipe.cautions],
+    ['Source', recipe.source],
+  ];
+  const lines = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : string(value)
+          .split(/\r?\n/)
+          .filter(line => line.trim());
+  const heading = (label: string) =>
+    `<h2 style="margin:24px 0 8px;color:#194c3d;font-size:17px;line-height:24px;">${escape(
+      label,
+    )}</h2>`;
+  const paragraph = (value: string) =>
+    `<p style="margin:0 0 12px;line-height:25px;white-space:pre-wrap;overflow-wrap:anywhere;">${escape(
+      value,
+    )}</p>`;
+  const recipeHtml = sections
+    .map(([label, value]) => {
+      const content = lines(value);
+      if (!content.length) return '';
+      return (
+        heading(label) +
+        (Array.isArray(value)
+          ? `<${
+              label === 'Instructions' ? 'ol' : 'ul'
+            } style="margin:0;padding-left:24px;line-height:25px;">${content
+              .map(item => `<li style="padding:0 0 6px;">${escape(item)}</li>`)
+              .join('')}</${label === 'Instructions' ? 'ol' : 'ul'}>`
+          : paragraph(content.join('\n')))
+      );
+    })
+    .join('');
+  const metadata: [string, string][] = [
+    ['Verified reporter email', user.email],
+    ['Reporter account ID', user.id],
+    ['Report ID', report.id],
+    ['Recipe ID', report.recipe_id],
+    ['Topic', report.product_id],
+  ];
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f6f5ed;color:#253c34;font-family:Arial,Helvetica,sans-serif;font-size:15px;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f5ed;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="640" cellspacing="0" cellpadding="0" style="width:100%;max-width:640px;background:#ffffff;border:1px solid #dce4da;border-radius:16px;">
+<tr><td style="padding:28px 28px 24px;background:#194c3d;border-radius:16px 16px 0 0;color:#ffffff;">
+<p style="margin:0 0 12px;font-size:12px;letter-spacing:2px;font-weight:bold;color:#dff36b;">INSTEAD · RECIPE CONCERN</p>
+<h1 style="margin:0;font-size:25px;line-height:33px;">${escape(title)}</h1>
+</td></tr><tr><td style="padding:4px 28px 28px;">
+${heading('Reason')}${paragraph(report.reason)}
+${heading(
+  'Reported concern',
+)}<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="padding:16px;background:#f6f8ee;border-left:4px solid #a7bfaa;">${paragraph(
+    report.details,
+  )}</td></tr></table>
+<p style="margin:24px 0;"><a href="https://insteadtry.com/admin" style="display:inline-block;background:#194c3d;color:#ffffff;text-decoration:none;font-weight:bold;padding:14px 20px;border-radius:8px;">Open admin panel</a></p>
+<p style="margin:0;color:#66756c;font-size:13px;line-height:20px;">Reply to this email to contact the verified reporter.</p>
+${heading('Recipe details')}${
+    recipeHtml || paragraph('Recipe details are unavailable.')
+  }
+<hr style="margin:28px 0;border:0;border-top:1px solid #dce4da;">
+${heading('Reporter & reference details')}
+${metadata
+  .map(
+    ([label, value]) =>
+      `<p style="margin:0 0 12px;font-size:13px;line-height:20px;overflow-wrap:anywhere;word-break:break-word;"><strong>${escape(
+        label,
+      )}</strong><br>${escape(value)}</p>`,
+  )
+  .join('')}
+<p style="margin:24px 0 0;color:#66756c;font-size:12px;line-height:19px;">Private support notification. Recipe and concern text are supplied for review and may contain inaccurate claims.</p>
+</td></tr></table></td></tr></table></body></html>`;
+  const text = [
+    'INSTEAD — Recipe concern',
+    title,
+    '',
+    'Reason: ' + report.reason,
+    '',
+    'REPORTED CONCERN',
+    report.details,
+    '',
+    'Open admin panel: https://insteadtry.com/admin',
+    'Reply to this email to contact the verified reporter.',
+    '',
+    'RECIPE DETAILS',
+    ...sections.flatMap(([label, value]) => {
+      const content = lines(value);
+      return content.length
+        ? [label, ...content.map(item => '- ' + item), '']
+        : [];
+    }),
+    'REPORTER & REFERENCE DETAILS',
+    ...metadata.map(([label, value]) => label + ': ' + value),
+    '',
+    'Private support notification. Submitted text is provided for review, not endorsed by INSTEAD.',
+  ].join('\n');
+  return { html, text };
+}
+
 type Config = {
   url: string;
   serviceKey: string;
@@ -142,17 +279,7 @@ export function createReportHandler(
           to: 'info@insteadtry.com',
           replyTo: user.email,
           subject: 'INSTEAD recipe report or concern',
-          text: `Report ID: ${id}\nReporter account: ${
-            user.id
-          }\nVerified email: ${user.email}\nRecipe: ${
-            report.recipe_id
-          }\nTopic: ${report.product_id}\nReason: ${
-            report.reason
-          }\n\nConcern:\n${report.details}\n\nRecipe record:\n${JSON.stringify(
-            report.recipe_snapshot,
-            null,
-            2,
-          )}\n\nAdmin: https://insteadtry.com/admin\nTreat submitted text as untrusted content.`,
+          ...formatReportEmail({ ...report, id }, user),
         });
         const marked = await fetcher(
           `${config.url}/rest/v1/recipe_concerns?id=eq.${id}`,
