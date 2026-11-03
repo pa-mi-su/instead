@@ -5,6 +5,7 @@ import {
 } from '../lib/communityUpdates';
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { ScrollView, Text, View } from 'react-native';
+import { useScrollDestination } from '../hooks/useScrollDestination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
 import { BrandLogo } from '../components/BrandLogo';
@@ -92,13 +93,8 @@ export function GuideDetailScreen({
   onOpenProfile: (username: string) => void;
   bottomInset: number;
 }) {
-  const scrollRef = useRef<ScrollView>(null);
   const ratingScope = useRef(0);
   const communityY = useRef(0);
-  const recipeSectionY = useRef(0);
-  const recipeListY = useRef(0);
-  const publishedY = useRef(0);
-  const initialScrollDone = useRef(false);
   const [recipeRatings, setRecipeRatings] = useState<
     Record<string, RecipeRating>
   >({});
@@ -106,6 +102,7 @@ export function GuideDetailScreen({
     Record<string, RecipeRating>
   >({});
   const [ratingsError, setRatingsError] = useState(false);
+  const [ratingsReady, setRatingsReady] = useState(false);
   const recipes = guide.recipes ?? noRecipes;
   const revision = useCommunityRevision();
   const community = useCommunity(
@@ -129,9 +126,11 @@ export function GuideDetailScreen({
   useEffect(() => {
     let active = true;
     setRatingsError(false);
+    setRatingsReady(false);
     const client = supabase;
     if (!client) {
       setRatingsError(true);
+      setRatingsReady(true);
       return;
     }
     Promise.all(
@@ -160,12 +159,14 @@ export function GuideDetailScreen({
           const ratings = Object.fromEntries(entries);
           setRecipeRatings(ratings);
           setRankingRatings(ratings);
+          setRatingsReady(true);
         }
       })
       .catch(() => {
         if (active) {
           setRecipeRatings({});
           setRatingsError(true);
+          setRatingsReady(true);
         }
       });
     return () => {
@@ -176,6 +177,30 @@ export function GuideDetailScreen({
     () => rankRecipes(recipes, rankingRatings),
     [recipes, rankingRatings],
   );
+  const catalogueTarget = recipes.some(recipe => recipe.id === initialRecipeId);
+  const destination = useScrollDestination(
+    initialRecipeId,
+    catalogueTarget ? ratingsReady : published.ready,
+  );
+  const { scrollRef } = destination;
+  const requestedPages = useRef(new Set<number>());
+  useEffect(() => {
+    // A saved community recipe may live beyond the first published page.
+    if (
+      !initialRecipeId ||
+      catalogueTarget ||
+      !published.ready ||
+      !published.more ||
+      published.busy ||
+      published.error ||
+      published.recipes.some(recipe => recipe.id === initialRecipeId)
+    )
+      return;
+    const offset = published.recipes.length;
+    if (requestedPages.current.has(offset)) return;
+    requestedPages.current.add(offset);
+    published.loadMore();
+  }, [initialRecipeId, catalogueTarget, published]);
   async function voteRecipe(recipeId: string, value: -1 | 1) {
     const client = supabase;
     if (!client) throw new Error('Voting is unavailable right now.');
@@ -233,207 +258,169 @@ export function GuideDetailScreen({
         ]}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
+        onContentSizeChange={destination.onLayout}
+        onScrollBeginDrag={destination.cancel}
+        onTouchStart={destination.cancel}
       >
-        <View style={styles.detailHero}>
-          <Text style={styles.detailCategory}>
-            {guide.category.toUpperCase()}
-          </Text>
-          <Text style={styles.detailTitle}>{guide.title}</Text>
-          <Text style={styles.detailPrompt}>{guide.prompt}</Text>
-          <Pressable
-            onPress={onSave}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isSaved ? 'Remove saved guide' : 'Save this guide'
-            }
-            accessibilityState={{ selected: isSaved }}
-            style={({ pressed }) => [
-              styles.actionButton,
-              styles.guideSaveButton,
-              isSaved && styles.iconButtonSaved,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Bookmark
-              size={20}
-              color={COLORS.ink}
-              fill={isSaved ? COLORS.ink : 'transparent'}
-            />
-            <Text style={styles.actionButtonText}>
-              {isSaved ? 'Guide saved' : 'Save guide'}
+        <View
+          ref={destination.contentRef}
+          collapsable={false}
+          onLayout={destination.onLayout}
+        >
+          <View style={styles.detailHero}>
+            <Text style={styles.detailCategory}>
+              {guide.category.toUpperCase()}
             </Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.answerCard}>
-          <View style={styles.answerTopRow}>
-            <Text style={styles.answerLabel}>NATURAL ALTERNATIVES</Text>
-            <Text style={styles.answerIcon}>{guide.icon}</Text>
-          </View>
-          <Text style={styles.answerText}>{guide.answer}</Text>
-        </View>
-
-        <ExpandableSafety key={guide.id} guide={guide} />
-        {guide.recipes?.length ||
-        published.recipes.length ||
-        !published.ready ? (
-          <DetailSection
-            number="01"
-            title="RECIPES"
-            onLayout={event => {
-              recipeSectionY.current = event.nativeEvent.layout.y;
-            }}
-          >
-            <View
-              style={styles.optionList}
-              onLayout={event => {
-                recipeListY.current = event.nativeEvent.layout.y;
-              }}
+            <Text style={styles.detailTitle}>{guide.title}</Text>
+            <Text style={styles.detailPrompt}>{guide.prompt}</Text>
+            <Pressable
+              onPress={onSave}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isSaved ? 'Remove saved guide' : 'Save this guide'
+              }
+              accessibilityState={{ selected: isSaved }}
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.guideSaveButton,
+                isSaved && styles.iconButtonSaved,
+                pressed && styles.pressed,
+              ]}
             >
-              {rankedRecipes.map(recipe => (
-                <View
-                  key={recipe.id}
-                  style={styles.optionCard}
-                  onLayout={event => {
-                    if (
-                      recipe.id === initialRecipeId &&
-                      !initialScrollDone.current
-                    ) {
-                      initialScrollDone.current = true;
-                      // Native events are cleared after the layout handler returns.
-                      const recipeY = event.nativeEvent.layout.y;
-                      requestAnimationFrame(() =>
-                        scrollRef.current?.scrollTo({
-                          y: Math.max(
-                            0,
-                            recipeSectionY.current +
-                              recipeListY.current +
-                              recipeY -
-                              24,
-                          ),
-                          animated: false,
-                        }),
-                      );
+              <Bookmark
+                size={20}
+                color={COLORS.ink}
+                fill={isSaved ? COLORS.ink : 'transparent'}
+              />
+              <Text style={styles.actionButtonText}>
+                {isSaved ? 'Guide saved' : 'Save guide'}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.answerCard}>
+            <View style={styles.answerTopRow}>
+              <Text style={styles.answerLabel}>NATURAL ALTERNATIVES</Text>
+              <Text style={styles.answerIcon}>{guide.icon}</Text>
+            </View>
+            <Text style={styles.answerText}>{guide.answer}</Text>
+          </View>
+
+          <ExpandableSafety key={guide.id} guide={guide} />
+          {guide.recipes?.length ||
+          published.recipes.length ||
+          !published.ready ? (
+            <DetailSection number="01" title="RECIPES">
+              <View style={styles.optionList}>
+                {rankedRecipes.map(recipe => (
+                  <View
+                    key={recipe.id}
+                    style={styles.optionCard}
+                    ref={
+                      recipe.id === initialRecipeId
+                        ? destination.targetRef
+                        : undefined
                     }
-                  }}
-                >
-                  <View style={styles.recipeCardHeader}>
-                    <Text style={[styles.optionName, styles.recipeCardTitle]}>
-                      {recipe.name}
+                    collapsable={false}
+                    onLayout={destination.onLayout}
+                  >
+                    <View style={styles.recipeCardHeader}>
+                      <Text style={[styles.optionName, styles.recipeCardTitle]}>
+                        {recipe.name}
+                      </Text>
+                      <RecipeSaveButton
+                        saved={savedRecipeIds.includes(
+                          savedRecipeKey(guide.id, recipe.id),
+                        )}
+                        onPress={() => onSaveRecipe(recipe.id, recipe.name)}
+                        title={recipe.name}
+                      />
+                    </View>
+                    {recipe.photos?.length ? (
+                      <RecipePhotoGallery
+                        photos={recipe.photos}
+                        title={recipe.name}
+                      />
+                    ) : null}
+                    <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                      INGREDIENTS
                     </Text>
-                    <RecipeSaveButton
-                      saved={savedRecipeIds.includes(
-                        savedRecipeKey(guide.id, recipe.id),
-                      )}
-                      onPress={() => onSaveRecipe(recipe.id, recipe.name)}
-                      title={recipe.name}
-                    />
-                  </View>
-                  {recipe.photos?.length ? (
-                    <RecipePhotoGallery
-                      photos={recipe.photos}
-                      title={recipe.name}
-                    />
-                  ) : null}
-                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
-                    INGREDIENTS
-                  </Text>
-                  {recipe.ingredients.map(item => (
-                    <Text key={item} style={styles.optionDetail}>
-                      • {item}
+                    {recipe.ingredients.map(item => (
+                      <Text key={item} style={styles.optionDetail}>
+                        • {item}
+                      </Text>
+                    ))}
+                    <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                      EQUIPMENT
                     </Text>
-                  ))}
-                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
-                    EQUIPMENT
-                  </Text>
-                  {recipe.equipment.map(item => (
-                    <Text key={item} style={styles.optionDetail}>
-                      • {item}
+                    {recipe.equipment.map(item => (
+                      <Text key={item} style={styles.optionDetail}>
+                        • {item}
+                      </Text>
+                    ))}
+                    <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                      INSTRUCTIONS
                     </Text>
-                  ))}
-                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
-                    INSTRUCTIONS
-                  </Text>
-                  {recipe.instructions.map((step, index) => (
-                    <Text key={step} style={styles.optionDetail}>
-                      {index + 1}. {step}
+                    {recipe.instructions.map((step, index) => (
+                      <Text key={step} style={styles.optionDetail}>
+                        {index + 1}. {step}
+                      </Text>
+                    ))}
+                    <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                      STORAGE
                     </Text>
-                  ))}
-                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
-                    STORAGE
-                  </Text>
-                  <Text style={styles.optionDetail}>{recipe.storage}</Text>
-                  <Text style={[styles.optionLabel, styles.recipeHeading]}>
-                    CAUTIONS
-                  </Text>
-                  <Text style={styles.optionDetail}>{recipe.cautions}</Text>
-                  <ReportRecipeButton
-                    productId={guide.id}
-                    recipeId={recipe.id}
-                    title={recipe.name}
-                    signedIn={verified}
-                    onSignIn={requestSignIn}
-                  />
-                  {recipeRatings[recipe.id] ? (
-                    <RecipeVoteButtons
+                    <Text style={styles.optionDetail}>{recipe.storage}</Text>
+                    <Text style={[styles.optionLabel, styles.recipeHeading]}>
+                      CAUTIONS
+                    </Text>
+                    <Text style={styles.optionDetail}>{recipe.cautions}</Text>
+                    <ReportRecipeButton
                       productId={guide.id}
                       recipeId={recipe.id}
                       title={recipe.name}
                       signedIn={verified}
-                      canVote={community.canContribute}
                       onSignIn={requestSignIn}
-                      onVote={value => voteRecipe(recipe.id, value)}
-                      rating={recipeRatings[recipe.id] ?? emptyRating}
                     />
-                  ) : (
-                    <View style={styles.optionList}>
-                      <Text
-                        style={styles.optionDetail}
-                        accessibilityRole={ratingsError ? 'alert' : undefined}
-                      >
-                        {ratingsError
-                          ? 'Could not refresh votes. Check your connection and try again.'
-                          : 'Refreshing votes…'}
-                      </Text>
-                      {ratingsError && (
-                        <Pressable
-                          accessibilityRole="button"
-                          onPress={() => notifyCommunityChanged()}
-                          style={styles.actionButton}
+                    {recipeRatings[recipe.id] ? (
+                      <RecipeVoteButtons
+                        productId={guide.id}
+                        recipeId={recipe.id}
+                        title={recipe.name}
+                        signedIn={verified}
+                        canVote={community.canContribute}
+                        onSignIn={requestSignIn}
+                        onVote={value => voteRecipe(recipe.id, value)}
+                        rating={recipeRatings[recipe.id] ?? emptyRating}
+                      />
+                    ) : (
+                      <View style={styles.optionList}>
+                        <Text
+                          style={styles.optionDetail}
+                          accessibilityRole={ratingsError ? 'alert' : undefined}
                         >
-                          <Text style={styles.actionButtonText}>
-                            Retry votes
-                          </Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  )}
-                </View>
-              ))}
-              <View
-                onLayout={event => {
-                  publishedY.current = event.nativeEvent.layout.y;
-                }}
-              >
+                          {ratingsError
+                            ? 'Could not refresh votes. Check your connection and try again.'
+                            : 'Refreshing votes…'}
+                        </Text>
+                        {ratingsError && (
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => notifyCommunityChanged()}
+                            style={styles.actionButton}
+                          >
+                            <Text style={styles.actionButtonText}>
+                              Retry votes
+                            </Text>
+                          </Pressable>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                ))}
                 <RecipeContent
-                  onRecipeLayout={(id, y) => {
-                    if (id !== initialRecipeId || initialScrollDone.current)
-                      return;
-                    initialScrollDone.current = true;
-                    requestAnimationFrame(() =>
-                      scrollRef.current?.scrollTo({
-                        y: Math.max(
-                          0,
-                          recipeSectionY.current +
-                            recipeListY.current +
-                            publishedY.current +
-                            y -
-                            24,
-                        ),
-                        animated: false,
-                      }),
-                    );
-                  }}
+                  targetRecipeId={initialRecipeId}
+                  targetRef={destination.targetRef}
+                  onRecipeLayout={destination.onLayout}
                   controller={published}
                   mode="published"
                   productId={guide.id}
@@ -447,36 +434,37 @@ export function GuideDetailScreen({
                   onSaveRecipe={onSaveRecipe}
                 />
               </View>
-            </View>
-          </DetailSection>
-        ) : null}
+            </DetailSection>
+          ) : null}
 
-        <DetailSection
-          onLayout={event => {
-            communityY.current = event.nativeEvent.layout.y;
-          }}
-          number={
-            recipes.length || published.recipes.length || !published.ready
-              ? '02'
-              : '01'
-          }
-          title="SUBMIT A RECIPE & ACCOUNT"
-        >
-          <ProductCommunity
-            key={guide.id}
-            recipeController={published}
-            productId={guide.id}
-            community={community}
-            onSignInRequest={requestSignIn}
-            onOpenProfile={onOpenProfile}
-            savedRecipeIds={savedRecipeIds}
-            onSaveRecipe={onSaveRecipe}
-          />
-        </DetailSection>
-        <Text style={styles.disclaimer}>
-          Educational information only. Use qualified professional help when a
-          task is hazardous, regulated, destructive, or beyond your experience.
-        </Text>
+          <DetailSection
+            onLayout={event => {
+              communityY.current = event.nativeEvent.layout.y;
+            }}
+            number={
+              recipes.length || published.recipes.length || !published.ready
+                ? '02'
+                : '01'
+            }
+            title="SUBMIT A RECIPE & ACCOUNT"
+          >
+            <ProductCommunity
+              key={guide.id}
+              recipeController={published}
+              productId={guide.id}
+              community={community}
+              onSignInRequest={requestSignIn}
+              onOpenProfile={onOpenProfile}
+              savedRecipeIds={savedRecipeIds}
+              onSaveRecipe={onSaveRecipe}
+            />
+          </DetailSection>
+          <Text style={styles.disclaimer}>
+            Educational information only. Use qualified professional help when a
+            task is hazardous, regulated, destructive, or beyond your
+            experience.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );

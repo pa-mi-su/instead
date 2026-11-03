@@ -1,5 +1,5 @@
 import { imageContentType } from '../lib/imageUpload';
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { Bookmark } from 'lucide-react-native';
 import { RecipeVoteButtons } from './RecipeVoteButtons';
 import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -27,8 +27,12 @@ export function RecipeContent({
   savedRecipeIds,
   onSaveRecipe,
   onRecipeLayout,
+  targetRecipeId,
+  targetRef,
 }: {
-  onRecipeLayout?: (id: string, y: number) => void;
+  onRecipeLayout?: () => void;
+  targetRecipeId?: string;
+  targetRef?: RefObject<View | null>;
   controller: ReturnType<typeof useRecipes>;
   mode?: 'all' | 'published' | 'submissions';
   productId: string;
@@ -112,9 +116,9 @@ export function RecipeContent({
       <View
         key={recipe.id}
         style={styles.optionCard}
-        onLayout={event =>
-          onRecipeLayout?.(recipe.id, event.nativeEvent.layout.y)
-        }
+        ref={recipe.id === targetRecipeId ? targetRef : undefined}
+        collapsable={false}
+        onLayout={onRecipeLayout}
       >
         <Text style={styles.optionLabel}>
           RECIPE ·{' '}

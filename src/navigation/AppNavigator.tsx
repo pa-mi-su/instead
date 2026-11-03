@@ -282,6 +282,7 @@ export function AppNavigator() {
         />
       ) : view === 'detail' && selected ? (
         <GuideDetailScreen
+          key={`${selected.id}:${selectedRecipeId ?? 'guide'}`}
           guide={selected}
           initialRecipeId={selectedRecipeId ?? undefined}
           isSaved={favorites.includes(selected.id)}
