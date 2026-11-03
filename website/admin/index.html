@@ -108,9 +108,8 @@
         <p id="admin-identity" class="notice"></p>
         <div id="counts" class="counts"></div>
         <nav aria-label="Admin queues">
-          <button data-view="recipe" aria-pressed="true">Recipes</button
-          ><button data-view="builtin" aria-pressed="false">
-            Built-in recipes</button
+          <button data-view="recipe" aria-pressed="true">Pending recipes</button
+          ><button data-view="builtin" aria-pressed="false">Recipes</button
           ><button data-view="accounts" aria-pressed="false">
             Restricted accounts & deletion requests</button
           ><button data-view="users" aria-pressed="false">Users</button
@@ -132,9 +131,6 @@
           <label for="filter">Queue</label
           ><select id="filter">
             <option value="pending">Awaiting review</option>
-            <option value="reported">Open reports</option>
-            <option value="approved">Approved</option>
-            <option value="all">All submissions</option>
             <option value="trash">Trash</option></select
           ><label for="search">Search topic or content</label
           ><input

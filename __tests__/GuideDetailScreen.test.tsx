@@ -17,10 +17,23 @@ jest.mock('react-native/Libraries/Components/ScrollView/ScrollView', () => {
   };
 });
 
+jest.mock('react-native-image-picker', () => ({
+  launchImageLibrary: jest.fn(),
+}));
 jest.mock('../src/lib/supabase', () => ({
   supabase: { rpc: jest.fn(async () => ({ data: null, error: null })) },
 }));
 let mockSession: { user: { id: string } } | null = null;
+let mockPublished: Record<string, unknown>[] = [];
+jest.mock('../src/hooks/useRecipes', () => ({
+  useRecipes: () => ({
+    recipes: mockPublished,
+    mine: [],
+    ready: true,
+    more: false,
+    error: '',
+  }),
+}));
 jest.mock('../src/hooks/useCommunity', () => ({
   useCommunity: () => ({ session: mockSession, canContribute: false }),
 }));
@@ -344,4 +357,49 @@ test('a confirmed vote from the previous account cannot overwrite the new accoun
   );
   await screen.unmount();
   rpc.mockReset();
+});
+
+test('a saved approved submission opens in Recipes and later layout changes do not jump again', async () => {
+  mockPublished = [
+    {
+      id: 'approved-submission',
+      status: 'approved',
+      title: 'Published user recipe',
+      ingredients: 'Water',
+      instructions: 'Mix',
+      storage_notes: 'Store',
+      cautions: 'Care',
+      photos: [],
+      mine: false,
+    },
+  ];
+  const frames: Parameters<typeof requestAnimationFrame>[0][] = [];
+  const raf = jest
+    .spyOn(global, 'requestAnimationFrame')
+    .mockImplementation(callback => {
+      frames.push(callback);
+      return frames.length;
+    });
+  mockScrollTo.mockClear();
+  try {
+    const screen = await render(
+      <GuideDetailScreen
+        guide={ratingGuide()}
+        {...detailProps}
+        initialRecipeId="approved-submission"
+      />,
+    );
+    let card = screen.getByText('Published user recipe').parent;
+    while (card && !card.props.onLayout) card = card.parent;
+    if (!card) throw new Error('Published card layout handler missing');
+    await fireEvent(card, 'layout', { nativeEvent: { layout: { y: 400 } } });
+    frames.forEach(callback => callback(0));
+    expect(mockScrollTo).toHaveBeenCalledWith({ y: 376, animated: false });
+    const count = frames.length;
+    await fireEvent(card, 'layout', { nativeEvent: { layout: { y: 450 } } });
+    expect(frames).toHaveLength(count);
+  } finally {
+    mockPublished = [];
+    raf.mockRestore();
+  }
 });

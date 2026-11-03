@@ -110,7 +110,7 @@ export const policyDocuments = {
       title: '2. Information you provide',
       paragraphs: [
         'Browsing needs no account. An optional email-and-password account lets you save guides and recipes in the mobile app, sync them across devices, submit and manage recipes, and vote. Supabase Auth processes your email address and stores password credentials securely; INSTEAD never receives or stores plaintext passwords. Email codes are used only to confirm a new address or set/reset a password. We store your username, optional bio, saved-guide identifiers, recipe submissions, optional photos, votes, and reports. Approved profiles and recipes are public; your email address, pending submissions, and saved guides are private. Comments submitted in earlier app versions are retained until removed through account deletion or moderation; new comments are no longer accepted or displayed. Do not include private information in your profile, recipe submissions, or photos.',
-        'If you contact support, we receive the information you choose to send, such as your email address, message, device type, or screenshots. Do not include sensitive personal information that is not needed to answer your request.',
+        'Recipe reports and concerns are sent privately to info@insteadtry.com with the recipe record, your account ID, and verified email so we can investigate and follow up. We store the report and delivery status. If you contact support, we receive the information you choose to send, such as your email address, message, device type, or screenshots. Do not include sensitive personal information that is not needed to answer your request.',
       ],
     },
     {

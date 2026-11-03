@@ -16,8 +16,9 @@ try:
  fixture=base/'fixture.sql'
  fixture.write_text('''create role anon; create role authenticated; create role service_role;
 create schema auth;
-create table auth.users(id uuid primary key, email text, email_confirmed_at timestamptz, created_at timestamptz default now(), last_sign_in_at timestamptz, is_anonymous boolean default false,banned_until timestamptz);
+create table auth.users(id uuid primary key, email text, email_confirmed_at timestamptz, created_at timestamptz default now(), last_sign_in_at timestamptz, raw_user_meta_data jsonb default '{}', is_anonymous boolean default false,banned_until timestamptz);
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+create function auth.role() returns text language sql stable as $$ select nullif(current_setting('request.jwt.claim.role',true),'') $$;
 create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb) $$;
 create table auth.mfa_factors(id uuid primary key,user_id uuid references auth.users on delete cascade,factor_type text,status text);
 create table auth.sessions(id uuid primary key,user_id uuid references auth.users on delete cascade);
@@ -73,6 +74,9 @@ insert into public.community_comments(id,product_id,user_id,body,moderation_stat
  run(psql+['-f',str(root/'supabase/account-deletion-privacy.sql')])
  run(psql+['-f',str(root/'supabase/account-deletion-privacy.sql')])
  print(run(psql+['-f',str(root/'supabase/tests/account-deletion-privacy.test.sql')])[-800:])
+ run(psql+['-f',str(root/'supabase/recipe-concerns.sql')])
+ run(psql+['-f',str(root/'supabase/recipe-concerns.sql')])
+ print(run(psql+['-f',str(root/'supabase/tests/recipe-concerns.test.sql')])[-800:])
  run(psql+['-c',"""do $$ begin
 if exists(select 1 from information_schema.columns where table_schema='public' and table_name='community_moderation_audit' and column_name in ('qualifications','sources')) then raise exception 'Obsolete moderation audit columns remain'; end if;
 if not exists(select 1 from public.community_recipes where id='99000000-0000-0000-0000-000000000002' and admin_removed_at is not null and not review_record ? 'qualifications' and not review_record ? 'sources') then raise exception 'Legacy rejected recipe was not cleaned into Trash'; end if;
