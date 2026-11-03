@@ -1,3 +1,4 @@
+import { useAppBuild } from '../lib/appBuild';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from '../components/AnimatedPressable';
@@ -20,6 +21,7 @@ export function InfoScreen({
   error?: string;
   bottomInset?: number;
 }) {
+  const { appVersion, buildNumber } = useAppBuild();
   const [page, setPage] = useState<'safety' | 'terms' | 'privacy'>('safety');
   const [checked, setChecked] = useState(false);
   const [declined, setDeclined] = useState(false);
@@ -157,6 +159,11 @@ export function InfoScreen({
           )}
         </View>
       ) : null}
+      <Text selectable style={s.build}>
+        {appVersion && buildNumber
+          ? `Version ${appVersion} (Build ${buildNumber})`
+          : 'Version information unavailable'}
+      </Text>
     </ScrollView>
   );
 }
@@ -208,6 +215,12 @@ const s = StyleSheet.create({
   },
   body: { color: COLORS.ink, fontSize: 16, lineHeight: 24, marginBottom: 10 },
   section: { marginTop: 22 },
+  build: {
+    marginTop: 28,
+    color: COLORS.muted,
+    fontSize: 13,
+    textAlign: 'center',
+  },
   date: { marginTop: 16, color: COLORS.muted },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   tab: {
