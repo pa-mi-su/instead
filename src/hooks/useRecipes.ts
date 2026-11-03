@@ -3,6 +3,7 @@ import {
   useCommunityRevision,
 } from '../lib/communityUpdates';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { applyRecipeVote } from '../lib/recipeRating';
 import { communityError, communityRpc } from '../lib/community';
 import type { ReportReason } from '../lib/community';
 import {
@@ -35,6 +36,7 @@ export function useRecipes(
   const [more, setMore] = useState(false);
   const [mineMore, setMineMore] = useState(false);
   const lock = useRef(false);
+  const voteLocks = useRef(new Set<string>());
   const epoch = useRef(0);
   const store = client?.storage.from('recipe-photos');
   const decorate = useCallback(
@@ -239,19 +241,35 @@ export function useRecipes(
         ]);
         setMineMore(rows.length === 20);
       }),
-    vote: (recipe: Recipe, value: number) =>
-      run(async () => {
-        if (recipe.mine) {
-          setNotice('You cannot vote on your own recipe.');
-          return;
-        }
+    vote: async (recipe: Recipe, value: number) => {
+      if (recipe.mine) {
+        setNotice('You cannot vote on your own recipe.');
+        return;
+      }
+      if (voteLocks.current.has(recipe.id)) return;
+      voteLocks.current.add(recipe.id);
+      const version = epoch.current;
+      setError('');
+      try {
         await communityRpc(client, 'recipe_vote', {
           p_recipe: recipe.id,
           p_value: recipe.my_vote === value ? 0 : value,
         });
-        notifyCommunityChanged();
-        await refresh();
-      }),
+        if (version !== epoch.current) return;
+        const patch = (rows: Recipe[]) =>
+          rows.map(row =>
+            row.id === recipe.id
+              ? { ...row, ...applyRecipeVote(row, value) }
+              : row,
+          );
+        setRecipes(patch);
+        setMine(patch);
+      } catch (issue) {
+        if (version === epoch.current) setError(communityError(issue));
+      } finally {
+        voteLocks.current.delete(recipe.id);
+      }
+    },
     report: (recipe: Recipe, reason: ReportReason) =>
       run(async () => {
         await communityRpc(client, 'recipe_report', {

@@ -231,3 +231,86 @@ test('removing a recipe refreshes another mounted recipe list automatically', as
   await first.unmount();
   await second.unmount();
 });
+
+test('community votes patch the existing card without loading lists or photos again', async () => {
+  const m = mock();
+  const row = {
+    id: 'votable',
+    title: 'Votable',
+    photo_paths: [],
+    mine: false,
+    status: 'approved',
+    score: 0,
+    upvotes: 0,
+    downvotes: 0,
+    my_vote: 0,
+  };
+  m.rpc.mockImplementation(async name => ({
+    data: name === 'recipe_list' ? [row] : [],
+    error: null,
+  }));
+  const hook = await renderHook(() =>
+    useRecipes(m.client, 'natural-toothpaste', 'member'),
+  );
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
+  const reads = m.rpc.mock.calls.filter(
+    ([name]) => name === 'recipe_list',
+  ).length;
+  await act(() => hook.result.current.vote(hook.result.current.recipes[0]!, 1));
+  expect(hook.result.current.recipes[0]?.my_vote).toBe(1);
+  expect(hook.result.current.recipes[0]?.score).toBe(1);
+  expect(hook.result.current.ready).toBe(true);
+  await act(() =>
+    hook.result.current.vote(hook.result.current.recipes[0]!, -1),
+  );
+  expect(hook.result.current.recipes[0]?.score).toBe(-1);
+  expect(hook.result.current.recipes[0]?.upvotes).toBe(0);
+  await act(() =>
+    hook.result.current.vote(hook.result.current.recipes[0]!, -1),
+  );
+  expect(hook.result.current.recipes[0]?.my_vote).toBe(0);
+  expect(
+    m.rpc.mock.calls.filter(([name]) => name === 'recipe_list'),
+  ).toHaveLength(reads);
+  await hook.unmount();
+});
+
+test('a pending or failed vote leaves content and submission state unchanged', async () => {
+  const m = mock();
+  const row = {
+    id: 'votable',
+    title: 'Votable',
+    photo_paths: [],
+    mine: false,
+    status: 'approved',
+    score: 0,
+    upvotes: 0,
+    downvotes: 0,
+    my_vote: 0,
+  };
+  let rejectVote!: (reason: Error) => void;
+  m.rpc.mockImplementation(async name => {
+    if (name === 'recipe_vote')
+      return new Promise((_resolve, reject) => {
+        rejectVote = reject;
+      });
+    return { data: name === 'recipe_list' ? [row] : [], error: null };
+  });
+  const hook = await renderHook(() =>
+    useRecipes(m.client, 'natural-toothpaste', 'member'),
+  );
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
+  let request!: Promise<void>;
+  await act(() => {
+    request = hook.result.current.vote(hook.result.current.recipes[0]!, 1);
+  });
+  expect(hook.result.current.busy).toBe(false);
+  expect(hook.result.current.recipes[0]?.my_vote).toBe(0);
+  await act(async () => {
+    rejectVote(new Error('Offline'));
+    await request;
+  });
+  expect(hook.result.current.recipes[0]?.my_vote).toBe(0);
+  expect(hook.result.current.error).toBeTruthy();
+  await hook.unmount();
+});

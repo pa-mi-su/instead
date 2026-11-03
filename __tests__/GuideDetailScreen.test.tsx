@@ -35,13 +35,15 @@ jest.mock('../src/components/RecipeVoteButtons', () => ({
   RecipeVoteButtons: ({
     recipeId,
     rating,
+    onVote,
   }: {
     recipeId: string;
     rating: unknown;
+    onVote: (value: -1 | 1) => Promise<void>;
   }) =>
     require('react').createElement(
       require('react-native').Text,
-      { testID: `rating-${recipeId}` },
+      { testID: `rating-${recipeId}`, onPress: () => onVote(1) },
       JSON.stringify(rating),
     ),
 }));
@@ -248,6 +250,97 @@ test('failed vote refresh offers a retry instead of displaying stale or fabricat
     expect(
       screen.getByTestId(`rating-${guide.recipes[0]!.id}`).props.children,
     ).toContain('"score":2'),
+  );
+  await screen.unmount();
+  rpc.mockReset();
+});
+
+test('voting updates totals in place without full refresh or live reordering', async () => {
+  const original = ratingGuide();
+  const first = original.recipes[0]!;
+  const second = {
+    ...first,
+    id: 'builtin:second-test-recipe',
+    name: 'Second test recipe',
+  };
+  const guide = { ...original, recipes: [first, second] };
+  const rpc = supabase!.rpc as jest.Mock;
+  mockSession = { user: { id: 'member' } };
+  rpc.mockImplementation(async (name, args) => ({
+    data:
+      name === 'builtin_recipe_rating'
+        ? {
+            score: args.p_recipe === first.id ? 0 : 1,
+            upvotes: args.p_recipe === first.id ? 0 : 1,
+            downvotes: 0,
+            my_vote: 0,
+          }
+        : null,
+    error: null,
+  }));
+  const screen = await render(
+    <GuideDetailScreen guide={guide} {...detailProps} />,
+  );
+  await waitFor(() =>
+    expect(screen.getAllByTestId(/^rating-/)).toHaveLength(2),
+  );
+  const order = () =>
+    screen.getAllByTestId(/^rating-/).map(node => node.props.testID);
+  expect(order()).toEqual([`rating-${second.id}`, `rating-${first.id}`]);
+  const reads = rpc.mock.calls.filter(
+    ([name]) => name === 'builtin_recipe_rating',
+  ).length;
+  for (const vote of [1, 0, 1]) {
+    await fireEvent.press(screen.getByTestId(`rating-${first.id}`));
+    expect(screen.getByTestId(`rating-${first.id}`).props.children).toContain(
+      `"my_vote":${vote}`,
+    );
+    expect(order()).toEqual([`rating-${second.id}`, `rating-${first.id}`]);
+  }
+  expect(
+    rpc.mock.calls.filter(([name]) => name === 'builtin_recipe_rating'),
+  ).toHaveLength(reads);
+  await screen.unmount();
+  rpc.mockReset();
+});
+
+test('a confirmed vote from the previous account cannot overwrite the new account rating', async () => {
+  const guide = ratingGuide();
+  const recipe = guide.recipes[0]!;
+  let finishVote!: (value: unknown) => void;
+  mockSession = { user: { id: 'first' } };
+  const rpc = supabase!.rpc as jest.Mock;
+  rpc.mockImplementation(async name => {
+    if (name === 'builtin_recipe_vote')
+      return new Promise(resolve => {
+        finishVote = resolve;
+      });
+    return {
+      data: { score: 0, upvotes: 0, downvotes: 0, my_vote: 0 },
+      error: null,
+    };
+  });
+  const screen = await render(
+    <GuideDetailScreen guide={guide} {...detailProps} />,
+  );
+  await waitFor(() =>
+    expect(screen.getByTestId(`rating-${recipe.id}`)).toBeTruthy(),
+  );
+  let request!: Promise<void>;
+  await act(() => {
+    request = screen.getByTestId(`rating-${recipe.id}`).props.onPress();
+  });
+  mockSession = { user: { id: 'second' } };
+  await screen.rerender(<GuideDetailScreen guide={guide} {...detailProps} />);
+  await waitFor(() =>
+    expect(screen.getByTestId(`rating-${recipe.id}`)).toBeTruthy(),
+  );
+  await act(async () => {
+    finishVote({ data: null, error: null });
+    await request;
+  });
+  expect(screen.getByTestId(`rating-${recipe.id}`).props.children).toContain(
+    '"my_vote":0',
   );
   await screen.unmount();
   rpc.mockReset();

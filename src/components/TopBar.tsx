@@ -39,6 +39,7 @@ export function TopBar({
 
   function chooseDestination(destination: () => void) {
     if (Platform.OS === 'ios') {
+      // Keep modal presentation serialized, without waiting for a fade animation.
       pendingDestination.current = destination;
       closeMenu();
       return;
@@ -85,7 +86,7 @@ export function TopBar({
       <Modal
         visible={menuOpen}
         transparent
-        animationType="fade"
+        animationType={Platform.OS === 'ios' ? 'none' : 'fade'}
         onRequestClose={closeMenu}
         onDismiss={finishMenuDismissal}
         statusBarTranslucent
