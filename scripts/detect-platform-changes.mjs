@@ -18,24 +18,43 @@ const sharedFiles = new Set([
   'scripts/generate-icons.mjs',
   'scripts/reserve-mobile-build.mjs',
   'scripts/require-release-ci.mjs',
+  'scripts/detect-platform-changes.mjs',
   'tsconfig.json',
 ]);
+
+function isDocumentation(file) {
+  return (
+    file.startsWith('docs/') ||
+    file.startsWith('release/') ||
+    /\.md$/i.test(file) ||
+    /(^|\/)readme(?:\.[^/]*)?$/i.test(file)
+  );
+}
 
 export function classifyPlatformChanges(files) {
   let android = false;
   let ios = false;
 
   for (const file of files) {
-    if (file.startsWith('android/')) android = true;
-    else if (file.startsWith('ios/')) ios = true;
+    if (isDocumentation(file) || /\.web\.[jt]sx?$/.test(file)) continue;
+    if (file.startsWith('android/') || /\.android\.[jt]sx?$/.test(file))
+      android = true;
+    else if (file.startsWith('ios/') || /\.ios\.[jt]sx?$/.test(file))
+      ios = true;
     else if (file === 'Gemfile' || file === 'Gemfile.lock') ios = true;
-    else if (file === 'scripts/upload-google-play.mjs') android = true;
+    else if (
+      [
+        'scripts/upload-google-play.mjs',
+        'scripts/google-play-release.mjs',
+      ].includes(file)
+    )
+      android = true;
     else if (
       sharedFiles.has(file) ||
       file.startsWith('assets/') ||
       file.startsWith('patches/') ||
       file.startsWith('vendor/') ||
-      (file.startsWith('src/') && file !== 'src/policies.ts')
+      file.startsWith('src/')
     ) {
       android = true;
       ios = true;
@@ -43,6 +62,56 @@ export function classifyPlatformChanges(files) {
   }
 
   return { android, ios };
+}
+
+// Keep deployment scope separate: Next.js and the public static site have
+// different build outputs and hosting requirements.
+export function classifyChanges(files) {
+  const native = classifyPlatformChanges(files);
+  const relevant = files.filter(file => !isDocumentation(file));
+  const website = relevant.some(
+    file =>
+      file.startsWith('website/') ||
+      [
+        'src/policies.ts',
+        'src/catalog.ts',
+        'scripts/build-policy-site.mjs',
+        'package.json',
+        'package-lock.json',
+        '.github/workflows/ci.yml',
+        'scripts/detect-platform-changes.mjs',
+      ].includes(file),
+  );
+  const web = relevant.some(
+    file =>
+      file.startsWith('web/') ||
+      /\.web\.[jt]sx?$/.test(file) ||
+      (file.startsWith('src/') &&
+        !file.startsWith('src/screens/') &&
+        !file.startsWith('src/components/') &&
+        !/\.(ios|android)\.[jt]sx?$/.test(file)) ||
+      file.startsWith('assets/') ||
+      [
+        'package.json',
+        'package-lock.json',
+        'scripts/generate-env.mjs',
+        '.github/workflows/ci.yml',
+        'scripts/detect-platform-changes.mjs',
+      ].includes(file),
+  );
+  const quality =
+    native.android ||
+    native.ios ||
+    web ||
+    website ||
+    relevant.some(
+      file =>
+        file.startsWith('supabase/') ||
+        file.startsWith('scripts/') ||
+        file.startsWith('__tests__/') ||
+        /(?:eslint|prettier|jest)/.test(file),
+    );
+  return { ...native, web, website, quality };
 }
 
 function writeOutputs(result) {
@@ -56,20 +125,38 @@ function writeOutputs(result) {
 function run() {
   const args = process.argv.slice(2);
   if (args[0] === '--all') {
-    writeOutputs({ android: true, ios: true });
+    writeOutputs({
+      android: true,
+      ios: true,
+      web: true,
+      website: true,
+      quality: true,
+    });
     return;
   }
 
   const [base, head] = args;
   if (!base || !head) throw new Error('Expected base and head commit refs.');
   if (/^0+$/.test(base)) {
-    writeOutputs({ android: true, ios: true });
+    writeOutputs({
+      android: true,
+      ios: true,
+      web: true,
+      website: true,
+      quality: true,
+    });
     return;
   }
 
   const files = execFileSync(
     'git',
-    ['diff', '--name-only', `${base}...${head}`],
+    [
+      'diff',
+      '--name-only',
+      '--no-renames',
+      process.env.DIFF_MODE === 'push' ? base : `${base}...${head}`,
+      ...(process.env.DIFF_MODE === 'push' ? [head] : []),
+    ],
     {
       encoding: 'utf8',
     },
@@ -79,7 +166,7 @@ function run() {
   process.stdout.write(`Changed files:\n${files.join('\n')}\n`);
   writeOutputs(
     Object.fromEntries(
-      Object.entries(classifyPlatformChanges(files)).map(([key, value]) => [
+      Object.entries(classifyChanges(files)).map(([key, value]) => [
         key,
         value,
       ]),

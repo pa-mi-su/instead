@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    branches: [main]
   push:
     branches:
       - main
@@ -11,7 +12,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+  queue: max
 
 jobs:
   changes:
@@ -20,6 +22,9 @@ jobs:
     outputs:
       android: ${{ steps.filter.outputs.android }}
       ios: ${{ steps.filter.outputs.ios }}
+      web: ${{ steps.filter.outputs.web }}
+      website: ${{ steps.filter.outputs.website }}
+      quality: ${{ steps.filter.outputs.quality }}
 
     steps:
       - name: Check out full history
@@ -31,12 +36,15 @@ jobs:
       - name: Select native builds
         id: filter
         env:
+          DIFF_MODE: ${{ github.event_name == 'push' && 'push' || 'pull_request' }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/detect-platform-changes.mjs "$BASE_SHA" "$HEAD_SHA"
 
   quality:
     name: Quality checks
+    needs: changes
+    if: needs.changes.outputs.quality == 'true'
     timeout-minutes: 15
     runs-on: ubuntu-latest
 
@@ -57,12 +65,12 @@ jobs:
         run: npm ci
 
       - name: Install web dependencies
+        if: needs.changes.outputs.web == 'true'
         run: npm --prefix web ci
 
       - name: Reject production vulnerabilities
         run: |
           node scripts/audit-native.mjs
-          npm --prefix web audit --omit=dev
 
       - name: Verify native code
         run: npm run verify
@@ -76,15 +84,20 @@ jobs:
           sudo apt-get install -y postgresql
           INSTEAD_PG_BIN="$(pg_config --bindir)" python3 scripts/test-community-db.py
 
+      - name: Verify pipeline routing
+        run: node --test scripts/test-detect-platform-changes.mjs scripts/test-require-release-ci.mjs scripts/test-google-play-release.mjs
+
       - name: Verify static administration site
+        if: needs.changes.outputs.website == 'true'
         run: |
           npm run website:build
           node --check website/admin/admin.mjs
           npx eslint website/admin/admin.mjs website/admin/auth-security.mjs --env browser,es2022 --parser-options '{"ecmaVersion":2022,"sourceType":"module"}'
-          node --test scripts/test-detect-platform-changes.mjs scripts/test-mobile-release-changes.mjs scripts/test-require-release-ci.mjs
 
       - name: Verify website
+        if: needs.changes.outputs.web == 'true'
         run: |
+          npm --prefix web audit --omit=dev
           npm --prefix web run lint
           npm run web:test
 
@@ -128,7 +141,7 @@ jobs:
       ${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' ||
           vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' ||
           vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' ||
-          'macos-26' }}
+          'macos-26-intel' }}
     timeout-minutes: 45
     steps:
       - name: Check out repository
@@ -189,6 +202,7 @@ jobs:
       - name: Require quality and every applicable mobile build
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
+          QUALITY_EXPECTED: ${{ needs.changes.outputs.quality }}
           QUALITY_RESULT: ${{ needs.quality.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
           IOS_RESULT: ${{ needs.ios.result }}
@@ -197,8 +211,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$CHANGES_RESULT" = success
-          test "$QUALITY_RESULT" = success
-          for platform in ANDROID IOS; do
+          for platform in QUALITY ANDROID IOS; do
             expected_var="${platform}_EXPECTED"
             result_var="${platform}_RESULT"
             if [[ "${!expected_var}" == true ]]; then
@@ -214,8 +227,8 @@ jobs:
     timeout-minutes: 10
     if: >-
       always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      needs.quality.result == 'success'
-    needs: quality
+      needs.quality.result == 'success' && needs.changes.outputs.website == 'true'
+    needs: [changes, quality]
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -258,3 +271,18 @@ jobs:
             --distribution-id EMXS0LG36D5KE \
             --paths '/*' \
             --no-cli-pager
+
+  mobile-release:
+    name: Release changed mobile platforms
+    needs: [changes, required]
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      (needs.changes.outputs.android == 'true' || needs.changes.outputs.ios == 'true')
+    uses: ./.github/workflows/mobile-release.yml
+    with:
+      android: ${{ needs.changes.outputs.android == 'true' }}
+      ios: ${{ needs.changes.outputs.ios == 'true' }}
+    secrets: inherit
+    permissions:
+      contents: write
+      actions: read

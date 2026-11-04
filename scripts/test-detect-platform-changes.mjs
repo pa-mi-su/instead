@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { classifyPlatformChanges } from './detect-platform-changes.mjs';
+import {
+  classifyPlatformChanges,
+  classifyChanges,
+} from './detect-platform-changes.mjs';
 
 test('web and admin changes do not select native builds', () => {
   assert.deepEqual(
@@ -10,7 +13,6 @@ test('web and admin changes do not select native builds', () => {
       'website/admin/index.html',
       'web/src/app/page.tsx',
       'scripts/build-policy-site.mjs',
-      'src/policies.ts',
       'docs/admin-panel.md',
     ]),
     { android: false, ios: false },
@@ -76,12 +78,9 @@ test('manual mobile releases are limited to main before production credentials l
     /^ {2}changes:[\s\S]*?(?=^ {2}(?! )[a-z][\w-]*:|(?![\s\S]))/m,
   )?.[0];
   assert.ok(changesJob, 'mobile change-detection job exists');
-  assert.match(changesJob, /github\.event_name == 'workflow_dispatch'/);
+  assert.match(changesJob, /node scripts\/require-release-ci\.mjs/);
   assert.match(changesJob, /github\.ref == 'refs\/heads\/main'/);
-  assert.match(
-    changesJob,
-    /github\.event\.workflow_run\.head_branch == 'main'/,
-  );
+  assert.match(changesJob, /github\.ref == 'refs\/heads\/main'/);
   for (const jobName of ['android', 'ios']) {
     const job = workflow.match(
       new RegExp(
@@ -95,15 +94,16 @@ test('manual mobile releases are limited to main before production credentials l
   }
 });
 
-test('automatic mobile releases check published history instead of the previous commit', async () => {
-  const workflow = await readFile(
+test('automatic releases are called only after the required main gate', async () => {
+  const ci = await readFile('.github/workflows/ci.yml', 'utf8');
+  const release = await readFile(
     '.github/workflows/mobile-release.yml',
     'utf8',
   );
-  assert.match(workflow, /actions: read/);
-  assert.match(workflow, /GH_TOKEN: \$\{\{ github.token \}\}/);
-  assert.match(workflow, /node scripts\/detect-mobile-release-changes\.mjs/);
-  assert.doesNotMatch(workflow, /HEAD_SHA\}\^1/);
+  assert.match(ci, /needs: \[changes, required\]/);
+  assert.match(ci, /uses: \.\/\.github\/workflows\/mobile-release\.yml/);
+  assert.match(release, /workflow_call:/);
+  assert.doesNotMatch(release, /workflow_run:/);
 });
 
 test('reviewed vendor changes validate both mobile platforms', () => {
@@ -139,7 +139,7 @@ test('CI and TestFlight use the same configurable standard hosted runner and pin
     // Every result is a literal standard hosted label, never the raw variable.
     assert.equal(
       selection.replace(/\s+/g, ' ').trim(),
-      "${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' || vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' || vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' || 'macos-26' }}",
+      "${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' || vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' || vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' || 'macos-26-intel' }}",
     );
     assert.match(ios, /Xcode_26\.3\.app/);
     assert.doesNotMatch(ios, /continue-on-error/);
@@ -179,6 +179,7 @@ test('required gate rejects failed or unexpectedly skipped mobile builds', async
       env: {
         ...process.env,
         CHANGES_RESULT: 'success',
+        QUALITY_EXPECTED: 'true',
         QUALITY_RESULT: 'success',
         ANDROID_EXPECTED: 'true',
         IOS_EXPECTED: 'true',
@@ -201,6 +202,68 @@ test('required gate rejects failed or unexpectedly skipped mobile builds', async
     assert.notEqual(run({ IOS_RESULT: result }), 0);
     assert.notEqual(run({ ANDROID_RESULT: result }), 0);
   }
+  assert.equal(
+    run({
+      QUALITY_EXPECTED: 'false',
+      QUALITY_RESULT: 'skipped',
+      ANDROID_EXPECTED: 'false',
+      IOS_EXPECTED: 'false',
+      ANDROID_RESULT: 'skipped',
+      IOS_RESULT: 'skipped',
+    }),
+    0,
+  );
   assert.notEqual(run({ QUALITY_RESULT: 'failure' }), 0);
   assert.notEqual(run({ IOS_EXPECTED: '' }), 0);
+});
+
+test('documentation changes skip all builds, checks and deployment', () => {
+  assert.deepEqual(
+    classifyChanges([
+      'README.md',
+      'docs/setup.md',
+      'ios/README.md',
+      'web/README.md',
+    ]),
+    { android: false, ios: false, web: false, website: false, quality: false },
+  );
+});
+test('each platform selects only its own build', () => {
+  for (const [file, platform] of [
+    ['ios/Instead/AppDelegate.swift', 'ios'],
+    ['android/app/build.gradle', 'android'],
+    ['src/components/Scanner.ios.tsx', 'ios'],
+    ['src/components/Scanner.android.tsx', 'android'],
+    ['web/app/page.tsx', 'web'],
+    ['website/admin/admin.mjs', 'website'],
+  ]) {
+    const result = classifyChanges([file]);
+    for (const key of ['ios', 'android', 'web', 'website'])
+      assert.equal(result[key], key === platform, `${file}: ${key}`);
+    assert.equal(result.quality, true);
+  }
+});
+test('policy and catalog changes rebuild their consumers', () => {
+  for (const file of ['src/policies.ts', 'src/catalog.ts'])
+    assert.deepEqual(classifyChanges([file]), {
+      android: true,
+      ios: true,
+      web: true,
+      website: true,
+      quality: true,
+    });
+});
+
+test('main releases can reach Play production and staged rollouts', async () => {
+  const release = await readFile(
+    '.github/workflows/mobile-release.yml',
+    'utf8',
+  );
+  assert.match(
+    release,
+    /options: \[configured, internal, alpha, beta, production\]/,
+  );
+  assert.match(release, /vars\.ANDROID_PLAY_TRACK \|\| 'production'/);
+  assert.match(release, /GOOGLE_PLAY_USER_FRACTION/);
+  assert.doesNotMatch(release, /GOOGLE_PLAY_TRACK: internal/);
 });

@@ -175,11 +175,22 @@ CI also runs the native SQL integration suite against a disposable local Postgre
 
 `.github/workflows/ci.yml` runs for pull requests and pushes to `main`:
 
-- Quality/security checks run for every change.
+- Quality/security checks run for relevant code, configuration, backend and test changes. Documentation-only changes return the required status without builds or deployments.
 - Android debug and iOS simulator builds run independently when their platform or shared mobile code changes. Web-only and documentation-only changes skip native builds; `.github/workflows/ci.yml` and `scripts/detect-platform-changes.mjs` define the current classification.
-- After successful CI on `main`, the static policy site and admin console are rebuilt and deployed to S3/CloudFront. The Next.js `web/` app is built and tested in CI, but this deploy job does not publish it.
+- After successful quality checks on `main`, changes affecting the static policy site or admin console are deployed to S3/CloudFront. The Next.js `web/` app is built and tested in CI, but this deploy job does not publish it.
 
-After successful main-branch CI, `.github/workflows/mobile-release.yml` detects mobile-impacting changes and, when applicable, creates a signed Android App Bundle and uploads it to Google Play **Internal Testing**, and/or archives and uploads iOS to **TestFlight**. Android and iOS builds use separate version counters and platform credentials. Artifacts are retained for 14 days. A manual dispatch on `main` selects both platforms. These jobs do not publish a public Google Play production or Apple App Store release.
+After the required checks pass on a `main` push, CI calls the reusable
+`.github/workflows/mobile-release.yml` for exactly the affected platforms. Android
+builds a signed AAB and uploads to the configured Google Play track (`internal`,
+`alpha`, `beta`, or `production`), including staged production rollouts. The
+existing environment currently selects `internal`; changing `ANDROID_PLAY_TRACK`
+changes the destination of subsequent automatic releases. iOS uploads a signed
+archive to App Store Connect for TestFlight and App Store submission. Apple review
+is separate from binary upload. Artifacts are retained for 14 days, and each
+platform reserves its own sequential build number. Recovery dispatch on tested
+`main` supports selecting one platform and a Play track. Main runs queue rather
+than canceling previous merges. See [release safety](docs/release-safety.md) for
+routing, recovery, runner configuration and rollout settings.
 
 The public store checklist is separate from beta distribution. `npm run release:check` reads `release/readiness.json` and fails until the required owner attestations are complete. This is a manual local check; it is not currently a dependency of CI or the mobile beta-upload workflow. It is not a legal review or a guarantee of store approval. Do not infer public-launch readiness from successful CI, a TestFlight upload, or an Internal Testing upload. See [release safety](docs/release-safety.md) for the current owner decisions and disclosure checks.
 
