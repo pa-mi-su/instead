@@ -48,6 +48,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+            node scripts/require-release-ci.mjs
             node scripts/detect-platform-changes.mjs --all
           else
             node scripts/detect-mobile-release-changes.mjs
@@ -110,6 +111,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$ANDROID_UPLOAD_KEYSTORE_BASE64"
+          umask 077
           keystore="$RUNNER_TEMP/instead-upload.keystore"
           printf '%s' "$ANDROID_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$keystore"
           echo "INSTEAD_UPLOAD_STORE_FILE=$keystore" >> "$GITHUB_ENV"
@@ -158,6 +160,10 @@ jobs:
             GOOGLE_PLAY_BUNDLE_PATH="$bundle" \
             node scripts/upload-google-play.mjs
 
+      - name: Remove temporary Android credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/instead-upload.keystore" "$RUNNER_TEMP/google-play-service-account.json"
+
   ios:
     name: iOS TestFlight
     needs: changes
@@ -166,8 +172,8 @@ jobs:
     runs-on: >-
       ${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' ||
           vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' ||
-          vars.IOS_RUNNER == 'macos-26' && 'macos-26' ||
-          'macos-26-intel' }}
+          vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' ||
+          'macos-26' }}
     timeout-minutes: 60
     environment: production
     permissions:
@@ -212,9 +218,26 @@ jobs:
           npm run env:generate
           node scripts/check-profile-avatars.mjs
 
+      - name: Cache CocoaPods downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install
+
+      - name: Cache device compilation
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ${{ runner.temp }}/InsteadReleaseDerivedData/Build/Intermediates.noindex
+            ${{ runner.temp }}/InsteadReleaseDerivedData/ModuleCache.noindex
+            ${{ runner.temp }}/InsteadReleaseDerivedData/SDKStatCaches.noindex
+          key: ios-release-v1-${{ runner.os }}-${{ runner.arch }}-xcode26.3-${{ hashFiles('package-lock.json', 'ios/Podfile.lock', 'ios/Podfile', 'ios/Instead.xcodeproj/project.pbxproj') }}-${{ github.event.workflow_run.head_sha || github.sha }}
+          restore-keys: ios-release-v1-${{ runner.os }}-${{ runner.arch }}-xcode26.3-${{ hashFiles('package-lock.json', 'ios/Podfile.lock', 'ios/Podfile', 'ios/Instead.xcodeproj/project.pbxproj') }}-
 
       - name: Install iOS signing material
         env:
@@ -236,6 +259,7 @@ jobs:
           profile_plist="$RUNNER_TEMP/instead-profile.plist"
           keychain="$RUNNER_TEMP/instead-signing.keychain-db"
           keychain_password="$(uuidgen)"
+          umask 077
 
           printf '%s' "$IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64" | /usr/bin/base64 -D > "$certificate"
           printf '%s' "$IOS_PROVISIONING_PROFILE_BASE64" | /usr/bin/base64 -D > "$profile"
@@ -295,12 +319,14 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$archive" \
+            -derivedDataPath "$RUNNER_TEMP/InsteadReleaseDerivedData" \
             DEVELOPMENT_TEAM="$IOS_TEAM_ID" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_NAME" \
             CURRENT_PROJECT_VERSION="$build_number" \
             MARKETING_VERSION="$IOS_MARKETING_VERSION" \
+            -showBuildTimingSummary \
             archive
 
           cat > "$export_options" <<EOF
@@ -367,5 +393,6 @@ jobs:
           if [[ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" ]]; then
             rm -f "$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
           fi
+          rm -f "$RUNNER_TEMP/instead-distribution.p12" "$RUNNER_TEMP/instead.mobileprovision" "$RUNNER_TEMP/instead-profile.plist"
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ vars.APP_STORE_CONNECT_API_KEY_ID }}

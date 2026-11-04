@@ -43,12 +43,12 @@ Public branding uses “INSTEAD, USA” at the owner’s request. This does not 
 ## Hosted iOS runner recovery
 
 CI and TestFlight share a literal allowlist of four standard GitHub-hosted Mac
-labels. The default is `macos-26-intel`; Xcode stays pinned to 26.3. The host's CPU
+labels. The default is `macos-26`; Xcode stays pinned to 26.3. The host's CPU
 does not change the app's supported iOS devices or remove simulator/device builds.
 
 The repository Actions variable `IOS_RUNNER` can select `macos-15`,
-`macos-15-intel`, or `macos-26`. Empty, unknown, self-hosted, and larger-runner
-values all fall back to the literal `macos-26-intel` label. The raw variable is
+`macos-15-intel`, or `macos-26-intel`. Empty, unknown, self-hosted, and larger-runner
+values all fall back to the literal `macos-26` label. The raw variable is
 never returned as a runner target. This does not register a runner, grant new
 credentials, enable paid larger runners, or move signing credentials onto a local
 machine.
@@ -69,3 +69,43 @@ replace the required hosted checks.
 
 Official labels: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
 Xcode inventory: https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md
+
+## CI/CD performance audit — 2026-11-04
+
+Both repository workflows were reviewed: `ci.yml` (quality, native validation,
+website deployment) and `mobile-release.yml` (signed internal beta uploads).
+
+- Default iOS execution returns to the standard ARM `macos-26` pool with Xcode
+  26.3. Intel remains an explicit recovery override, not the permanent default.
+  Runner scheduling remains outside the repository's control.
+- Simulator validation compiles only the host architecture. Previously the generic
+  destination could build both simulator architectures. Android debug validation
+  similarly compiles arm64 only instead of four ABIs. Store bundles retain all
+  their existing device architectures; neither optimization limits user devices.
+- CocoaPods download caches are architecture scoped. Xcode DerivedData caches are
+  separated by architecture, Xcode, dependency/project hashes, and Debug/Release.
+  Release compilation never restores simulator compilation state. GitHub's cache
+  branch isolation prevents pull-request caches being restored on main releases.
+  No certificates, provisioning profiles, archives, IPA files, or API keys are
+  included in these caches. Xcode still performs dependency checking on every build.
+- Android validation now enables Gradle's existing build cache. npm and Gradle
+  dependency caches remain enabled. No tests or applicable native checks are removed.
+- Website deployment follows successful quality/security/database/web checks
+  independently of unrelated mobile compilation. The branch-required aggregate
+  still requires every selected native build to succeed and rejects unexpected skips.
+- Manual releases now also verify successful CI for the exact main commit before
+  any production job or build-number reservation starts.
+- Release jobs still wait for successful main CI, use the exact tested revision,
+  production environments, and independent durable build reservations. Both upload
+  to internal beta tracks only. Simulator/debug output is never uploaded to stores.
+- Temporary Android signing/service-account files and all temporary iOS signing
+  source files are removed in always-run cleanup steps. Production material stays
+  on GitHub-hosted release jobs, never a local runner.
+- Quality and website deployment now have explicit 15/10 minute limits. Xcode
+  prints a build timing summary so future slowdowns can be diagnosed with evidence.
+
+The pipeline deliberately retains PR validation, main validation, and separately
+signed release compilation: these test different revisions/configurations and
+cannot safely be treated as interchangeable artifacts. A first uncached build
+still takes longer than a warm build. No fixed end-to-end duration is promised
+until hosted measurements are available; provider outages cannot be fixed by YAML.

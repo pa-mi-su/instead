@@ -57,14 +57,14 @@ test('docs and backend-only changes do not select native builds', () => {
 test('web deploy still runs when native build jobs are skipped', async () => {
   const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
   const deployJob = workflow.match(
-    /  deploy-website:[\s\S]*?(?=\n  [a-z][\w-]*:|$)/,
+    / {2}deploy-website:[\s\S]*?(?=\n {2}[a-z][\w-]*:|$)/,
   )?.[0];
 
   assert.ok(deployJob, 'website deploy job exists');
   assert.match(deployJob, /if:\s*>-\s+always\(\)/);
   assert.match(deployJob, /github\.event_name == 'push'/);
   assert.match(deployJob, /github\.ref == 'refs\/heads\/main'/);
-  assert.match(deployJob, /needs\.required\.result == 'success'/);
+  assert.match(deployJob, /needs\.quality\.result == 'success'/);
 });
 
 test('manual mobile releases are limited to main before production credentials load', async () => {
@@ -73,7 +73,7 @@ test('manual mobile releases are limited to main before production credentials l
     'utf8',
   );
   const changesJob = workflow.match(
-    /^  changes:[\s\S]*?(?=^  (?! )[a-z][\w-]*:|(?![\s\S]))/m,
+    /^ {2}changes:[\s\S]*?(?=^ {2}(?! )[a-z][\w-]*:|(?![\s\S]))/m,
   )?.[0];
   assert.ok(changesJob, 'mobile change-detection job exists');
   assert.match(changesJob, /github\.event_name == 'workflow_dispatch'/);
@@ -131,7 +131,7 @@ test('CI and TestFlight use the same configurable standard hosted runner and pin
   ]) {
     const workflow = await readFile(file, 'utf8');
     const ios = workflow.match(
-      /^  ios:[\s\S]*?(?=^  (?! )[a-z][\w-]*:|(?![\s\S]))/m,
+      /^ {2}ios:[\s\S]*?(?=^ {2}(?! )[a-z][\w-]*:|(?![\s\S]))/m,
     )?.[0];
     assert.ok(ios);
     const selection = ios.match(/runs-on: >-([\s\S]*?)timeout-minutes:/)?.[1];
@@ -139,15 +139,68 @@ test('CI and TestFlight use the same configurable standard hosted runner and pin
     // Every result is a literal standard hosted label, never the raw variable.
     assert.equal(
       selection.replace(/\s+/g, ' ').trim(),
-      "${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' || vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' || vars.IOS_RUNNER == 'macos-26' && 'macos-26' || 'macos-26-intel' }}",
+      "${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' || vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' || vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' || 'macos-26' }}",
     );
     assert.match(ios, /Xcode_26\.3\.app/);
     assert.doesNotMatch(ios, /continue-on-error/);
   }
   const ci = await readFile('.github/workflows/ci.yml', 'utf8');
   assert.match(ci, /needs: \[changes, quality, android, ios\]/);
-  assert.match(
-    ci,
-    /test "\$IOS_RESULT" = success \|\| test "\$IOS_RESULT" = skipped/,
+  assert.match(ci, /IOS_EXPECTED: \$\{\{ needs.changes.outputs.ios \}\}/);
+  assert.match(ci, /test "\$\{!result_var\}" = success/);
+  assert.match(ci, /test "\$\{!expected_var\}" = false/);
+});
+
+test('validation limits architectures while store releases retain device support', async () => {
+  const ci = await readFile('.github/workflows/ci.yml', 'utf8');
+  const release = await readFile(
+    '.github/workflows/mobile-release.yml',
+    'utf8',
   );
+  assert.match(ci, /-PreactNativeArchitectures=arm64-v8a --build-cache/);
+  assert.match(ci, /ARCHS="\$\(uname -m\)" ONLY_ACTIVE_ARCH=YES/);
+  assert.doesNotMatch(release, /ONLY_ACTIVE_ARCH|reactNativeArchitectures=/);
+  assert.match(ci, /ios-debug-v1-/);
+  assert.match(release, /ios-release-v1-/);
+  assert.doesNotMatch(release, /ios-debug-v1-/);
+  assert.match(release, /Remove temporary Android credentials/);
+});
+
+test('required gate rejects failed or unexpectedly skipped mobile builds', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const ci = await readFile('.github/workflows/ci.yml', 'utf8');
+  const gate = ci.match(
+    / {2}required:[\s\S]*? {8}run: \|\n([\s\S]*?)(?=\n {2}deploy-website:)/,
+  )?.[1];
+  assert.ok(gate);
+  const script = gate.replace(/^ {10}/gm, '');
+  const run = changes =>
+    spawnSync('bash', ['-c', script], {
+      env: {
+        ...process.env,
+        CHANGES_RESULT: 'success',
+        QUALITY_RESULT: 'success',
+        ANDROID_EXPECTED: 'true',
+        IOS_EXPECTED: 'true',
+        ANDROID_RESULT: 'success',
+        IOS_RESULT: 'success',
+        ...changes,
+      },
+    }).status;
+  assert.equal(run({}), 0);
+  assert.equal(
+    run({
+      ANDROID_EXPECTED: 'false',
+      IOS_EXPECTED: 'false',
+      ANDROID_RESULT: 'skipped',
+      IOS_RESULT: 'skipped',
+    }),
+    0,
+  );
+  for (const result of ['skipped', 'failure', 'cancelled']) {
+    assert.notEqual(run({ IOS_RESULT: result }), 0);
+    assert.notEqual(run({ ANDROID_RESULT: result }), 0);
+  }
+  assert.notEqual(run({ QUALITY_RESULT: 'failure' }), 0);
+  assert.notEqual(run({ IOS_EXPECTED: '' }), 0);
 });

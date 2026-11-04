@@ -37,6 +37,7 @@ jobs:
 
   quality:
     name: Quality checks
+    timeout-minutes: 15
     runs-on: ubuntu-latest
 
     steps:
@@ -80,7 +81,7 @@ jobs:
           npm run website:build
           node --check website/admin/admin.mjs
           npx eslint website/admin/admin.mjs website/admin/auth-security.mjs --env browser,es2022 --parser-options '{"ecmaVersion":2022,"sourceType":"module"}'
-          node --test scripts/test-detect-platform-changes.mjs scripts/test-mobile-release-changes.mjs
+          node --test scripts/test-detect-platform-changes.mjs scripts/test-mobile-release-changes.mjs scripts/test-require-release-ci.mjs
 
       - name: Verify website
         run: |
@@ -116,7 +117,7 @@ jobs:
 
       - name: Build Android debug app
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace --console=plain
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a --build-cache --no-daemon --stacktrace --console=plain
 
   ios:
     name: iOS simulator build
@@ -126,10 +127,9 @@ jobs:
     runs-on: >-
       ${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' ||
           vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' ||
-          vars.IOS_RUNNER == 'macos-26' && 'macos-26' ||
-          'macos-26-intel' }}
+          vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' ||
+          'macos-26' }}
     timeout-minutes: 45
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -148,19 +148,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache CocoaPods downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install
 
+      - name: Cache simulator compilation
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ runner.temp }}/InsteadDerivedData
+          key: ios-debug-v1-${{ runner.os }}-${{ runner.arch }}-xcode26.3-${{ hashFiles('package-lock.json', 'ios/Podfile.lock', 'ios/Podfile', 'ios/Instead.xcodeproj/project.pbxproj') }}-${{ github.sha }}
+          restore-keys: ios-debug-v1-${{ runner.os }}-${{ runner.arch }}-xcode26.3-${{ hashFiles('package-lock.json', 'ios/Podfile.lock', 'ios/Podfile', 'ios/Instead.xcodeproj/project.pbxproj') }}-
+
       - name: Build iOS simulator app
         run: |
+          set -euo pipefail
           xcodebuild \
             -workspace ios/Instead.xcworkspace \
             -scheme Instead \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/InsteadDerivedData" \
+            ARCHS="$(uname -m)" ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO \
+            -showBuildTimingSummary \
             build
 
   required:
@@ -175,19 +192,30 @@ jobs:
           QUALITY_RESULT: ${{ needs.quality.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
           IOS_RESULT: ${{ needs.ios.result }}
+          ANDROID_EXPECTED: ${{ needs.changes.outputs.android }}
+          IOS_EXPECTED: ${{ needs.changes.outputs.ios }}
         run: |
           set -euo pipefail
           test "$CHANGES_RESULT" = success
           test "$QUALITY_RESULT" = success
-          test "$ANDROID_RESULT" = success || test "$ANDROID_RESULT" = skipped
-          test "$IOS_RESULT" = success || test "$IOS_RESULT" = skipped
+          for platform in ANDROID IOS; do
+            expected_var="${platform}_EXPECTED"
+            result_var="${platform}_RESULT"
+            if [[ "${!expected_var}" == true ]]; then
+              test "${!result_var}" = success
+            else
+              test "${!expected_var}" = false
+              test "${!result_var}" = skipped
+            fi
+          done
 
   deploy-website:
     name: Deploy website and admin
+    timeout-minutes: 10
     if: >-
       always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      needs.required.result == 'success'
-    needs: required
+      needs.quality.result == 'success'
+    needs: quality
     runs-on: ubuntu-latest
     environment: production
     permissions:

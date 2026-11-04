@@ -17,6 +17,7 @@ const sharedFiles = new Set([
   'scripts/generate-env.mjs',
   'scripts/generate-icons.mjs',
   'scripts/reserve-mobile-build.mjs',
+  'scripts/require-release-ci.mjs',
   'tsconfig.json',
 ]);
 
