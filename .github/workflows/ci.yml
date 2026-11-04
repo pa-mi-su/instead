@@ -141,7 +141,7 @@ jobs:
       ${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' ||
           vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' ||
           vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' ||
-          'macos-26-intel' }}
+          'macos-26' }}
     timeout-minutes: 45
     steps:
       - name: Check out repository

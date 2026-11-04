@@ -85,10 +85,10 @@ Web and static-site builds run only when their inputs change. The existing stati
 website deploys after successful quality checks; unrelated mobile builds do not
 hold it up. No new hosting service is created.
 
-The standard hosted iOS default is `macos-26-intel`, which completed PR #59's iOS
-build on November 4, 2026. Recent ARM jobs reported capacity warnings and were
-cancelled before executing steps. `IOS_RUNNER` may override with one of the literal
-allowlisted standard hosted labels; unknown values fall back to Intel. Xcode is
+The standard hosted iOS default is Apple Silicon `macos-26`. Recent ARM jobs
+reported capacity warnings and were cancelled before executing steps; runner
+provisioning failures must be reported as infrastructure failures. `IOS_RUNNER` may override with one of the literal
+allowlisted standard hosted labels; unknown values fall back to Apple Silicon. Xcode is
 pinned to 26.3. Hosted capacity and store availability cannot be guaranteed by YAML.
 
 CI validates one simulator/Android ABI; signed store builds retain existing device

@@ -139,7 +139,7 @@ test('CI and TestFlight use the same configurable standard hosted runner and pin
     // Every result is a literal standard hosted label, never the raw variable.
     assert.equal(
       selection.replace(/\s+/g, ' ').trim(),
-      "${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' || vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' || vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' || 'macos-26-intel' }}",
+      "${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' || vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' || vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' || 'macos-26' }}",
     );
     assert.match(ios, /Xcode_26\.3\.app/);
     assert.doesNotMatch(ios, /continue-on-error/);
