@@ -162,9 +162,8 @@ jobs:
     name: iOS TestFlight
     needs: changes
     if: needs.changes.outputs.ios == 'true'
-    # Use the separate Intel pool while hosted Apple Silicon capacity is constrained.
-    # Xcode still builds the normal iOS simulator/device targets.
-    runs-on: macos-15-intel
+    # Use the newer macOS pool; keep Xcode 26.3 pinned below.
+    runs-on: macos-26
     timeout-minutes: 60
     environment: production
     permissions:
