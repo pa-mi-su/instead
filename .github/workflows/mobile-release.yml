@@ -1,14 +1,26 @@
 name: Mobile Release
 
 on:
-  workflow_run:
-    workflows:
-      - CI
-    branches:
-      - main
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      android:
+        type: boolean
+        required: true
+      ios:
+        type: boolean
+        required: true
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to release from tested main
+        type: choice
+        default: both
+        options: [both, android, ios]
+      android_track:
+        description: Play destination (configured uses the production environment variable)
+        type: choice
+        default: configured
+        options: [configured, internal, alpha, beta, production]
 
 permissions:
   contents: read
@@ -17,15 +29,12 @@ permissions:
 concurrency:
   group: instead-mobile-release
   cancel-in-progress: false
+  queue: max
 
 jobs:
   changes:
     name: Detect mobile release changes
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       android: ${{ steps.filter.outputs.android }}
@@ -35,7 +44,7 @@ jobs:
       - name: Check out full history
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -43,18 +52,27 @@ jobs:
         id: filter
         env:
           GH_TOKEN: ${{ github.token }}
+          ANDROID_CHANGED: ${{ inputs.android }}
+          IOS_CHANGED: ${{ inputs.ios }}
+          RELEASE_PLATFORM: ${{ inputs.platform }}
           EVENT_NAME: ${{ github.event_name }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
-            node scripts/detect-platform-changes.mjs --all
+            node scripts/require-release-ci.mjs
+            case "$RELEASE_PLATFORM" in
+              both) printf 'android=true\nios=true\n' >> "$GITHUB_OUTPUT" ;;
+              android) printf 'android=true\nios=false\n' >> "$GITHUB_OUTPUT" ;;
+              ios) printf 'android=false\nios=true\n' >> "$GITHUB_OUTPUT" ;;
+              *) exit 1 ;;
+            esac
           else
-            node scripts/detect-mobile-release-changes.mjs
+            printf 'android=%s\nios=%s\n' "$ANDROID_CHANGED" "$IOS_CHANGED" >> "$GITHUB_OUTPUT"
           fi
 
   android:
-    name: Android internal testing
+    name: Android Google Play
     needs: changes
     if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
@@ -67,7 +85,7 @@ jobs:
       - name: Check out the tested revision
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Set up Node.js
@@ -86,7 +104,7 @@ jobs:
       - name: Reserve next build number
         env:
           GH_TOKEN: ${{ github.token }}
-          BUILD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          BUILD_SHA: ${{ github.sha }}
           BUILD_PLATFORM: android
         run: node scripts/reserve-mobile-build.mjs
 
@@ -110,6 +128,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$ANDROID_UPLOAD_KEYSTORE_BASE64"
+          umask 077
           keystore="$RUNNER_TEMP/instead-upload.keystore"
           printf '%s' "$ANDROID_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$keystore"
           echo "INSTEAD_UPLOAD_STORE_FILE=$keystore" >> "$GITHUB_ENV"
@@ -138,12 +157,13 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload to Google Play Internal Testing
+      - name: Upload to selected Google Play track
         env:
           ANDROID_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.ANDROID_PLAY_SERVICE_ACCOUNT_JSON }}
           GOOGLE_PLAY_PACKAGE_NAME: ${{ vars.ANDROID_PLAY_PACKAGE_NAME }}
-          GOOGLE_PLAY_TRACK: internal
-          GOOGLE_PLAY_RELEASE_STATUS: ${{ vars.ANDROID_PLAY_RELEASE_STATUS }}
+          GOOGLE_PLAY_TRACK: ${{ inputs.android_track != '' && inputs.android_track != 'configured' && inputs.android_track || vars.ANDROID_PLAY_TRACK || 'production' }}
+          GOOGLE_PLAY_RELEASE_STATUS: ${{ vars.ANDROID_PLAY_RELEASE_STATUS || 'completed' }}
+          GOOGLE_PLAY_USER_FRACTION: ${{ vars.ANDROID_PLAY_USER_FRACTION }}
           GOOGLE_PLAY_RELEASE_NAME: INSTEAD ${{ vars.APP_VERSION }} (${{ env.INSTEAD_BUILD_NUMBER }})
         run: |
           set -euo pipefail
@@ -158,16 +178,20 @@ jobs:
             GOOGLE_PLAY_BUNDLE_PATH="$bundle" \
             node scripts/upload-google-play.mjs
 
+      - name: Remove temporary Android credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/instead-upload.keystore" "$RUNNER_TEMP/google-play-service-account.json"
+
   ios:
-    name: iOS TestFlight
+    name: iOS App Store Connect
     needs: changes
     if: needs.changes.outputs.ios == 'true'
     # Only named standard hosted pools are allowed; never use an arbitrary runner label.
     runs-on: >-
       ${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' ||
           vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' ||
-          vars.IOS_RUNNER == 'macos-26' && 'macos-26' ||
-          'macos-26-intel' }}
+          vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' ||
+          'macos-26' }}
     timeout-minutes: 60
     environment: production
     permissions:
@@ -177,7 +201,7 @@ jobs:
       - name: Check out the tested revision
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Select Xcode 26.3
@@ -194,7 +218,7 @@ jobs:
       - name: Reserve next build number
         env:
           GH_TOKEN: ${{ github.token }}
-          BUILD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          BUILD_SHA: ${{ github.sha }}
           BUILD_PLATFORM: ios
         run: node scripts/reserve-mobile-build.mjs
 
@@ -212,9 +236,26 @@ jobs:
           npm run env:generate
           node scripts/check-profile-avatars.mjs
 
+      - name: Cache CocoaPods downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install
+
+      - name: Cache device compilation
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ${{ runner.temp }}/InsteadReleaseDerivedData/Build/Intermediates.noindex
+            ${{ runner.temp }}/InsteadReleaseDerivedData/ModuleCache.noindex
+            ${{ runner.temp }}/InsteadReleaseDerivedData/SDKStatCaches.noindex
+          key: ios-release-v1-${{ runner.os }}-${{ runner.arch }}-xcode26.3-${{ hashFiles('package-lock.json', 'ios/Podfile.lock', 'ios/Podfile', 'ios/Instead.xcodeproj/project.pbxproj') }}-${{ github.sha }}
+          restore-keys: ios-release-v1-${{ runner.os }}-${{ runner.arch }}-xcode26.3-${{ hashFiles('package-lock.json', 'ios/Podfile.lock', 'ios/Podfile', 'ios/Instead.xcodeproj/project.pbxproj') }}-
 
       - name: Install iOS signing material
         env:
@@ -236,6 +277,7 @@ jobs:
           profile_plist="$RUNNER_TEMP/instead-profile.plist"
           keychain="$RUNNER_TEMP/instead-signing.keychain-db"
           keychain_password="$(uuidgen)"
+          umask 077
 
           printf '%s' "$IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64" | /usr/bin/base64 -D > "$certificate"
           printf '%s' "$IOS_PROVISIONING_PROFILE_BASE64" | /usr/bin/base64 -D > "$profile"
@@ -295,12 +337,14 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$archive" \
+            -derivedDataPath "$RUNNER_TEMP/InsteadReleaseDerivedData" \
             DEVELOPMENT_TEAM="$IOS_TEAM_ID" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_NAME" \
             CURRENT_PROJECT_VERSION="$build_number" \
             MARKETING_VERSION="$IOS_MARKETING_VERSION" \
+            -showBuildTimingSummary \
             archive
 
           cat > "$export_options" <<EOF
@@ -367,5 +411,6 @@ jobs:
           if [[ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" ]]; then
             rm -f "$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
           fi
+          rm -f "$RUNNER_TEMP/instead-distribution.p12" "$RUNNER_TEMP/instead.mobileprovision" "$RUNNER_TEMP/instead-profile.plist"
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ vars.APP_STORE_CONNECT_API_KEY_ID }}

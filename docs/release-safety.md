@@ -1,6 +1,25 @@
 # Release safety and operations
 
-Merging to main after successful CI uploads beta builds to TestFlight and Google Play internal testing. The Android workflow fixes the track to internal; the iOS workflow uploads without submitting a public App Store release. `npm run release:check` remains the separate public-launch checklist and is intentionally not a prerequisite for beta testing. The fields are owner attestations, not legal approval supplied by software; do not mark incomplete reviews complete merely to bypass them.
+PRs from any branch targeting `main` validate affected platforms. Merging a PR runs
+CI on the merged revision, then calls the reusable mobile release workflow for
+only the selected platforms. No `workflow_run` history lookup or second automatic
+workflow trigger is needed. Signing uses the protected `production` environment.
+iOS archives upload to App Store Connect and become available in TestFlight and
+for App Store submission; uploading does not bypass Apple's review.
+
+Android uploads use `ANDROID_PLAY_TRACK` from the production environment:
+`internal`, `alpha` (closed), `beta` (open), or `production`. The existing setting
+remains `internal` until deliberately changed. If unset, the workflow defaults to
+`production`. Set `ANDROID_PLAY_RELEASE_STATUS` to `completed`, `draft`, or
+`inProgress`; staged rollouts also require `ANDROID_PLAY_USER_FRACTION` strictly
+between 0 and 1. The uploader validates the Play edit before committing it and
+fails visibly if Play rejects the release. Store permissions, app review, and
+required testing still apply. The recovery dispatch supports selecting one
+platform and an explicit Android track, and requires green CI for the exact main
+commit. Normal merge deployments do not require dispatch or manual build steps.
+
+The public-launch checklist remains `npm run release:check`. Do not mark incomplete
+owner attestations complete to bypass the checklist.
 
 ## Actual remaining owner decisions
 
@@ -26,7 +45,7 @@ The deletion handler removes both legacy and opaque-folder recipe photos through
 ## Verification
 
 - `npm run verify` and `npm run safety:test`
-- `npm run web:test`
+- `npm run website:build`
 - Apply safeguards twice in a disposable PostgreSQL database and run `supabase/tests/safeguards.test.sql`; the fixtures must never run on production.
 - Signed-in end-to-end tests require explicit tester agreement. Never accept legal terms or delete a real account on the owner's behalf for testing.
 - The first-use receipt is local. Contributions additionally require account-linked, server-timestamped acceptance of policy version 2026-10-16.2. Keep the SQL version and src/policies.ts synchronized.
@@ -40,32 +59,51 @@ The deletion handler removes both legacy and opaque-folder recipe photos through
 
 Public branding uses “INSTEAD, USA” at the owner’s request. This does not establish a legal entity or resolve the operator identification requirement. The legal-name and jurisdiction attestations remain unset pending appropriate review.
 
-## Hosted iOS runner recovery
+## CI/CD routing and hosted builds
 
-CI and TestFlight share a literal allowlist of four standard GitHub-hosted Mac
-labels. The default is `macos-26-intel`; Xcode stays pinned to 26.3. The host's CPU
-does not change the app's supported iOS devices or remove simulator/device builds.
+| Changed files                              | Native builds/uploads | Website build and S3/CloudFront deployment |
+| ------------------------------------------ | --------------------- | ------------------------------------------ |
+| `ios/`, `*.ios.tsx`, Gemfile               | iOS                   | No                                         |
+| `android/`, `*.android.tsx`, Play uploader | Android               | No                                         |
+| `website/`, static-site builder            | Neither               | Yes                                        |
+| Shared `src/`, assets, root dependencies   | Both as applicable    | Catalog/policy/dependency changes          |
+| Documentation only                         | Neither               | No                                         |
 
-The repository Actions variable `IOS_RUNNER` can select `macos-15`,
-`macos-15-intel`, or `macos-26`. Empty, unknown, self-hosted, and larger-runner
-values all fall back to the literal `macos-26-intel` label. The raw variable is
-never returned as a runner target. This does not register a runner, grant new
-credentials, enable paid larger runners, or move signing credentials onto a local
-machine.
+`src/policies.ts` is consumed by mobile and the public policy builder, so it
+must rebuild all consumers. Workflow and routing changes validate their affected
+platforms. Rename detection is disabled so moving a file between platforms selects
+both its old and new consumers. PR comparisons use the merge base; push comparisons
+use the actual before/after commits, including multi-commit pushes.
 
-If a hosted pool stops assigning runners, select an allowed label with Xcode 26.3
-available and retry the failed iOS job and its dependents. Preserve passed quality
-and Android results. Delete the variable to restore the default. A pool switch is
-a recovery attempt, not a guarantee of capacity.
+The stable required status remains `Quality and Android` for compatibility with
+existing branch protection. It validates change detection, quality, and every
+selected native build, rejects unexpected skips, and succeeds for documentation
+changes without running builds. Quality retains authorization/deletion tests,
+security auditing, PostgreSQL policy tests, linting, type checks and unit tests.
+Static-site builds run only when their inputs change. The existing static
+website deploys after successful quality checks; unrelated mobile builds do not
+hold it up. No new hosting service is created.
 
-Edits to either build workflow now select both native validation jobs before
-merge. The required aggregate check still rejects failed/cancelled applicable
-iOS jobs. Release detection still compares against each platform's last
-successful upload, preserving app changes missed during an outage.
+The standard hosted iOS default is Apple Silicon `macos-26`. Recent ARM jobs
+reported capacity warnings and were cancelled before executing steps; runner
+provisioning failures must be reported as infrastructure failures. `IOS_RUNNER` may override with one of the literal
+allowlisted standard hosted labels; unknown values fall back to Apple Silicon. Xcode is
+pinned to 26.3. Hosted capacity and store availability cannot be guaranteed by YAML.
 
-An empty runner name, zero executed steps, and “job was not acquired” indicates
-runner provisioning failed before compilation. A local build or new PR does not
-replace the required hosted checks.
+CI validates one simulator/Android ABI; signed store builds retain existing device
+architectures. CocoaPods downloads and architecture/configuration-scoped native
+compilation are cached. Signing files are excluded and removed after release jobs.
+Build numbers are reserved durably per platform and never reused after failures.
 
-Official labels: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
-Xcode inventory: https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md
+Pull-request checks use a single pending slot and cancel superseded runs, so
+new commits do not wait behind obsolete PR builds. Main and release concurrency
+queues use `queue: max` and do not cancel in-progress runs. This avoids the default single-pending queue discarding intermediate merges
+with changes to a different platform. Up to 100 runs can queue; overflow is visible
+as cancellation. Each release checks out its tested SHA. Failed releases can be
+retried from their failed jobs, preserving successful platform uploads.
+
+Official references:
+
+- [GitHub runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+- [Intel macOS 26 image inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md)
+- [GitHub concurrency queues](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)

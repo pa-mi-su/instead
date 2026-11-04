@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    branches: [main]
   push:
     branches:
       - main
@@ -11,7 +12,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  queue: ${{ github.event_name == 'pull_request' && 'single' || 'max' }}
 
 jobs:
   changes:
@@ -20,6 +22,8 @@ jobs:
     outputs:
       android: ${{ steps.filter.outputs.android }}
       ios: ${{ steps.filter.outputs.ios }}
+      website: ${{ steps.filter.outputs.website }}
+      quality: ${{ steps.filter.outputs.quality }}
 
     steps:
       - name: Check out full history
@@ -31,12 +35,16 @@ jobs:
       - name: Select native builds
         id: filter
         env:
+          DIFF_MODE: ${{ github.event_name == 'push' && 'push' || 'pull_request' }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/detect-platform-changes.mjs "$BASE_SHA" "$HEAD_SHA"
 
   quality:
     name: Quality checks
+    needs: changes
+    if: needs.changes.outputs.quality == 'true'
+    timeout-minutes: 15
     runs-on: ubuntu-latest
 
     steps:
@@ -48,20 +56,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            web/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install native dependencies
         run: npm ci
 
-      - name: Install web dependencies
-        run: npm --prefix web ci
-
       - name: Reject production vulnerabilities
         run: |
           node scripts/audit-native.mjs
-          npm --prefix web audit --omit=dev
 
       - name: Verify native code
         run: npm run verify
@@ -75,17 +77,15 @@ jobs:
           sudo apt-get install -y postgresql
           INSTEAD_PG_BIN="$(pg_config --bindir)" python3 scripts/test-community-db.py
 
+      - name: Verify pipeline routing
+        run: node --test scripts/test-detect-platform-changes.mjs scripts/test-require-release-ci.mjs scripts/test-google-play-release.mjs
+
       - name: Verify static administration site
+        if: needs.changes.outputs.website == 'true'
         run: |
           npm run website:build
           node --check website/admin/admin.mjs
           npx eslint website/admin/admin.mjs website/admin/auth-security.mjs --env browser,es2022 --parser-options '{"ecmaVersion":2022,"sourceType":"module"}'
-          node --test scripts/test-detect-platform-changes.mjs scripts/test-mobile-release-changes.mjs
-
-      - name: Verify website
-        run: |
-          npm --prefix web run lint
-          npm run web:test
 
   android:
     name: Android debug build
@@ -116,7 +116,7 @@ jobs:
 
       - name: Build Android debug app
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace --console=plain
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a --build-cache --no-daemon --stacktrace --console=plain
 
   ios:
     name: iOS simulator build
@@ -126,10 +126,9 @@ jobs:
     runs-on: >-
       ${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' ||
           vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' ||
-          vars.IOS_RUNNER == 'macos-26' && 'macos-26' ||
-          'macos-26-intel' }}
+          vars.IOS_RUNNER == 'macos-26-intel' && 'macos-26-intel' ||
+          'macos-26' }}
     timeout-minutes: 45
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -148,19 +147,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache CocoaPods downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Install CocoaPods dependencies
         working-directory: ios
         run: pod install
 
+      - name: Cache simulator compilation
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ runner.temp }}/InsteadDerivedData
+          key: ios-debug-v1-${{ runner.os }}-${{ runner.arch }}-xcode26.3-${{ hashFiles('package-lock.json', 'ios/Podfile.lock', 'ios/Podfile', 'ios/Instead.xcodeproj/project.pbxproj') }}-${{ github.sha }}
+          restore-keys: ios-debug-v1-${{ runner.os }}-${{ runner.arch }}-xcode26.3-${{ hashFiles('package-lock.json', 'ios/Podfile.lock', 'ios/Podfile', 'ios/Instead.xcodeproj/project.pbxproj') }}-
+
       - name: Build iOS simulator app
         run: |
+          set -euo pipefail
           xcodebuild \
             -workspace ios/Instead.xcworkspace \
             -scheme Instead \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/InsteadDerivedData" \
+            ARCHS="$(uname -m)" ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO \
+            -showBuildTimingSummary \
             build
 
   required:
@@ -172,22 +188,33 @@ jobs:
       - name: Require quality and every applicable mobile build
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
+          QUALITY_EXPECTED: ${{ needs.changes.outputs.quality }}
           QUALITY_RESULT: ${{ needs.quality.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
           IOS_RESULT: ${{ needs.ios.result }}
+          ANDROID_EXPECTED: ${{ needs.changes.outputs.android }}
+          IOS_EXPECTED: ${{ needs.changes.outputs.ios }}
         run: |
           set -euo pipefail
           test "$CHANGES_RESULT" = success
-          test "$QUALITY_RESULT" = success
-          test "$ANDROID_RESULT" = success || test "$ANDROID_RESULT" = skipped
-          test "$IOS_RESULT" = success || test "$IOS_RESULT" = skipped
+          for platform in QUALITY ANDROID IOS; do
+            expected_var="${platform}_EXPECTED"
+            result_var="${platform}_RESULT"
+            if [[ "${!expected_var}" == true ]]; then
+              test "${!result_var}" = success
+            else
+              test "${!expected_var}" = false
+              test "${!result_var}" = skipped
+            fi
+          done
 
   deploy-website:
     name: Deploy website and admin
+    timeout-minutes: 10
     if: >-
       always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      needs.required.result == 'success'
-    needs: required
+      needs.quality.result == 'success' && needs.changes.outputs.website == 'true'
+    needs: [changes, quality]
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -230,3 +257,19 @@ jobs:
             --distribution-id EMXS0LG36D5KE \
             --paths '/*' \
             --no-cli-pager
+
+  mobile-release:
+    name: Release changed mobile platforms
+    needs: [changes, required]
+    if: >-
+      always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.required.result == 'success' &&
+      (needs.changes.outputs.android == 'true' || needs.changes.outputs.ios == 'true')
+    uses: ./.github/workflows/mobile-release.yml
+    with:
+      android: ${{ needs.changes.outputs.android == 'true' }}
+      ios: ${{ needs.changes.outputs.ios == 'true' }}
+    secrets: inherit
+    permissions:
+      contents: write
+      actions: read

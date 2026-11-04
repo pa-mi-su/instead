@@ -1,6 +1,6 @@
 # INSTEAD public policy site and admin console
 
-`website/` contains the public support/policy pages and the separate static `/admin` console. It is distinct from the Next.js guide-directory application in `web/`.
+`website/` contains the public support/policy pages and the separate static `/admin` console.
 
 ## Public site
 
@@ -27,4 +27,4 @@ The console supports community moderation and built-in recipe editing. The built
 
 The static output is hosted in the private S3 bucket `insteadtry-website-160885294528` through CloudFront distribution `EMXS0LG36D5KE`, with `insteadtry.com` and `www.insteadtry.com` aliases. CI deploys `website/dist/` and invalidates CloudFront after a successful push to `main`; do not upload the repository, local environment files, or privileged credentials.
 
-The website deployment job runs `npm run website:build` with the production URL and publishable key, then uses the repository's OIDC role to synchronize the generated site and invalidate the distribution. The Next.js app under `web/` is separately linted, built, and tested in CI; it is not part of this S3/CloudFront deployment job.
+The website deployment job runs `npm run website:build` with the production URL and publishable key, then uses the repository's OIDC role to synchronize the generated site and invalidate the distribution.

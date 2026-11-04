@@ -1,5 +1,6 @@
 import { createSign } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { playRelease } from './google-play-release.mjs';
 
 const requiredEnvironment = [
   'GOOGLE_APPLICATION_CREDENTIALS',
@@ -31,15 +32,13 @@ if (!existsSync(bundlePath)) {
   throw new Error(`Android App Bundle not found: ${bundlePath}`);
 }
 
-const supportedStatuses = new Set([
-  'completed',
-  'draft',
-  'halted',
-  'inProgress',
-]);
-if (!supportedStatuses.has(status)) {
-  throw new Error(`Unsupported Google Play release status: ${status}`);
-}
+// Validate track/rollout before any OAuth or Play API mutation.
+const release = playRelease({
+  track,
+  status,
+  name: releaseName,
+  fraction: process.env.GOOGLE_PLAY_USER_FRACTION,
+});
 
 const credentials = JSON.parse(readFileSync(credentialsPath, 'utf8'));
 if (!credentials.client_email || !credentials.private_key) {
@@ -142,14 +141,16 @@ try {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         track,
-        releases: [
-          {
-            name: releaseName,
-            status,
-            versionCodes: [String(versionCode)],
-          },
-        ],
+        releases: [{ ...release, versionCodes: [String(versionCode)] }],
       }),
+    },
+  );
+  await googleRequest(
+    `${baseUrl}/edits/${encodeURIComponent(editId)}:validate`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
     },
   );
   await googleRequest(`${baseUrl}/edits/${encodeURIComponent(editId)}:commit`, {
