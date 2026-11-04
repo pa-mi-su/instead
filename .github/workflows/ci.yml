@@ -122,7 +122,9 @@ jobs:
     name: iOS simulator build
     needs: changes
     if: needs.changes.outputs.ios == 'true'
-    runs-on: macos-15
+    # Use the separate Intel pool while hosted Apple Silicon capacity is constrained.
+    # Xcode still builds the normal iOS simulator/device targets.
+    runs-on: macos-15-intel
     timeout-minutes: 45
 
     steps:
