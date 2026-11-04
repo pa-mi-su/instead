@@ -326,3 +326,24 @@ test('git comparisons handle multi-commit pushes and cross-platform renames', as
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('PR updates cancel obsolete checks while main deployments preserve queued merges', async () => {
+  const ci = await readFile('.github/workflows/ci.yml', 'utf8');
+  const concurrency = ci.match(/^concurrency:[\s\S]*?(?=^jobs:)/m)?.[0];
+  assert.ok(concurrency);
+  assert.ok(
+    concurrency.includes(
+      "cancel-in-progress: ${{ github.event_name == 'pull_request' }}",
+    ),
+  );
+  assert.ok(
+    concurrency.includes(
+      "queue: ${{ github.event_name == 'pull_request' && 'single' || 'max' }}",
+    ),
+  );
+  const release = await readFile(
+    '.github/workflows/mobile-release.yml',
+    'utf8',
+  );
+  assert.match(release, /cancel-in-progress: false\n  queue: max/);
+});

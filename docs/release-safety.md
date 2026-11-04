@@ -95,8 +95,9 @@ architectures. CocoaPods downloads and architecture/configuration-scoped native
 compilation are cached. Signing files are excluded and removed after release jobs.
 Build numbers are reserved durably per platform and never reused after failures.
 
-Main and release concurrency queues use `queue: max` and do not cancel in-progress
-runs. This avoids the default single-pending queue discarding intermediate merges
+Pull-request checks use a single pending slot and cancel superseded runs, so
+new commits do not wait behind obsolete PR builds. Main and release concurrency
+queues use `queue: max` and do not cancel in-progress runs. This avoids the default single-pending queue discarding intermediate merges
 with changes to a different platform. Up to 100 runs can queue; overflow is visible
 as cancellation. Each release checks out its tested SHA. Failed releases can be
 retried from their failed jobs, preserving successful platform uploads.
