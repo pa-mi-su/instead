@@ -80,3 +80,31 @@ test('My INSTEAD has account management without duplicate saved lists', async ()
   await screen.unmount();
   rpc.mockReset();
 });
+
+test('deletion hides submissions and ignores a read that fails after records are removed', async () => {
+  const rpc = supabase!.rpc as jest.Mock;
+  let finish!: (value: unknown) => void;
+  rpc.mockImplementationOnce(
+    () =>
+      new Promise(resolve => {
+        finish = resolve;
+      }),
+  );
+  const screen = await render(
+    <AccountScreen community={account('first')} {...props} />,
+  );
+  await screen.rerender(
+    <AccountScreen
+      community={{ ...account('first'), deletionInProgress: true }}
+      {...props}
+    />,
+  );
+  await act(() => {
+    finish({ data: null, error: new Error('Account deleted') });
+  });
+  expect(screen.queryByText('My recipe submissions')).toBeNull();
+  expect(screen.queryByText('Refresh submissions')).toBeNull();
+  expect(screen.queryByRole('alert')).toBeNull();
+  await screen.unmount();
+  rpc.mockReset();
+});

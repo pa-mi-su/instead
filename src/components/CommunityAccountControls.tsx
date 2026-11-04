@@ -53,9 +53,9 @@ export function CommunityAccountControls({
         </View>
       ) : c.account?.deletion_requested_at ? (
         <Text>
-          Deletion requested. Your public contributions are hidden. Permanent
-          deletion is being processed; contact info@insteadtry.com if you need
-          help.
+          Your account is pending deletion. Your public contributions remain
+          hidden until deletion is complete. Retry below, or contact
+          info@insteadtry.com if you need help.
         </Text>
       ) : c.account?.suspended ? (
         <Text>

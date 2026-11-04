@@ -39,7 +39,8 @@ export function AccountScreen({
   const requestVersion = useRef(0);
   const refresh = useCallback(async () => {
     const version = ++requestVersion.current;
-    if (!userId || !supabase) {
+    setError('');
+    if (!userId || !supabase || community.deletionInProgress) {
       setRecipes([]);
       setLoading(false);
       return;
@@ -57,7 +58,7 @@ export function AccountScreen({
     } finally {
       if (version === requestVersion.current) setLoading(false);
     }
-  }, [userId]);
+  }, [userId, community.deletionInProgress]);
   useEffect(() => {
     const pending = requestVersion;
     setRecipes([]);
@@ -111,80 +112,87 @@ export function AccountScreen({
         onSignInRequest={() => undefined}
       />
       <View style={styles.optionList}>
-        {userId && !community.finishingSignup && !community.accountLoading && (
-          <>
-            <Text style={styles.optionName}>My recipe submissions</Text>
-            <Text style={styles.optionDetail}>
-              Track review status or remove a recipe you submitted.
-            </Text>
-            {loading && <Text>Loading your recipes…</Text>}
-            {!loading && recipes.length === 0 && (
+        {userId &&
+          !community.deletionInProgress &&
+          !community.finishingSignup &&
+          !community.accountLoading && (
+            <>
+              <Text style={styles.optionName}>My recipe submissions</Text>
               <Text style={styles.optionDetail}>
-                You have no submissions yet.
+                Track review status or remove a recipe you submitted.
               </Text>
-            )}
-            {recipes.map(recipe => (
-              <View key={recipe.id} style={styles.optionCard}>
-                <Text style={styles.optionLabel}>
-                  {recipe.status === 'pending'
-                    ? 'AWAITING REVIEW'
-                    : recipe.status === 'approved'
-                    ? 'PUBLISHED'
-                    : 'NOT PUBLISHED'}
-                </Text>
-                <Text style={styles.optionName}>{recipe.title}</Text>
+              {loading && <Text>Loading your recipes…</Text>}
+              {!loading && recipes.length === 0 && (
                 <Text style={styles.optionDetail}>
-                  {guides.find(guide => guide.id === recipe.product_id)
-                    ?.title ?? recipe.product_id}
+                  You have no submissions yet.
                 </Text>
-                {!!recipe.moderation_note && (
+              )}
+              {recipes.map(recipe => (
+                <View key={recipe.id} style={styles.optionCard}>
+                  <Text style={styles.optionLabel}>
+                    {recipe.status === 'pending'
+                      ? 'AWAITING REVIEW'
+                      : recipe.status === 'approved'
+                      ? 'PUBLISHED'
+                      : 'NOT PUBLISHED'}
+                  </Text>
+                  <Text style={styles.optionName}>{recipe.title}</Text>
                   <Text style={styles.optionDetail}>
-                    {recipe.moderation_note}
+                    {guides.find(guide => guide.id === recipe.product_id)
+                      ?.title ?? recipe.product_id}
                   </Text>
-                )}
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={removing === recipe.id}
-                  onPress={() =>
-                    Alert.alert(
-                      'Remove this recipe?',
-                      'It will disappear from the public recipe list. You can submit it again later.',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Remove recipe',
-                          style: 'destructive',
-                          onPress: () => withdraw(recipe),
-                        },
-                      ],
-                    )
-                  }
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    removing === recipe.id && { opacity: 0.5 },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={styles.actionButtonText}>
-                    {removing === recipe.id ? 'Removing…' : 'Remove my recipe'}
-                  </Text>
-                </Pressable>
-              </View>
-            ))}
-            <Pressable
-              accessibilityRole="button"
-              disabled={loading}
-              onPress={() => refresh()}
-              style={({ pressed }) => [
-                styles.actionButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={styles.actionButtonText}>Refresh submissions</Text>
-            </Pressable>
-          </>
+                  {!!recipe.moderation_note && (
+                    <Text style={styles.optionDetail}>
+                      {recipe.moderation_note}
+                    </Text>
+                  )}
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={removing === recipe.id}
+                    onPress={() =>
+                      Alert.alert(
+                        'Remove this recipe?',
+                        'It will disappear from the public recipe list. You can submit it again later.',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Remove recipe',
+                            style: 'destructive',
+                            onPress: () => withdraw(recipe),
+                          },
+                        ],
+                      )
+                    }
+                    style={({ pressed }) => [
+                      styles.actionButton,
+                      removing === recipe.id && { opacity: 0.5 },
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.actionButtonText}>
+                      {removing === recipe.id
+                        ? 'Removing…'
+                        : 'Remove my recipe'}
+                    </Text>
+                  </Pressable>
+                </View>
+              ))}
+              <Pressable
+                accessibilityRole="button"
+                disabled={loading}
+                onPress={() => refresh()}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.actionButtonText}>Refresh submissions</Text>
+              </Pressable>
+            </>
+          )}
+        {!!error && !community.deletionInProgress && (
+          <Text accessibilityRole="alert">{error}</Text>
         )}
-        {!!error && <Text accessibilityRole="alert">{error}</Text>}
       </View>
     </ScrollView>
   );
