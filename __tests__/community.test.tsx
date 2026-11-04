@@ -821,3 +821,74 @@ test('signing out clears credentials and returns to sign in', async () => {
   expect(hook.result.current.authMode).toBe('signin');
   expect(hook.result.current.session).toBeNull();
 });
+
+test('deletion stays in progress through server cleanup and ignores late profile failures and reloads', async () => {
+  const m = mockClient(member);
+  let finish!: (value: { data: null; error: null }) => void;
+  const invoke = jest.fn(
+    () =>
+      new Promise<{ data: null; error: null }>(resolve => {
+        finish = resolve;
+      }),
+  );
+  m.client.functions = { invoke };
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() => expect(hook.result.current.accountReady).toBe(true));
+  let failProfile!: (value: { data: unknown; error: unknown }) => void;
+  const original = m.rpc.getMockImplementation()!;
+  m.rpc.mockImplementation((name, args) =>
+    name === 'community_profile_me'
+      ? new Promise(resolve => {
+          failProfile = resolve;
+        })
+      : original(name, args),
+  );
+  await act(() => hook.result.current.retryAccount());
+  let pending!: Promise<boolean>;
+  await act(() => {
+    pending = hook.result.current.requestDeletion();
+  });
+  await waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+  expect(hook.result.current.deletionInProgress).toBe(true);
+  expect(hook.result.current.deletionComplete).toBe(false);
+  expect(hook.result.current.canContribute).toBe(false);
+  const profileReads = m.rpc.mock.calls.filter(
+    ([name]) => name === 'community_profile_me',
+  ).length;
+  await act(async () => {
+    failProfile({ data: null, error: new Error('Account removed') });
+    notifyCommunityChanged();
+  });
+  expect(hook.result.current.profileLoadError).toBe('');
+  expect(
+    m.rpc.mock.calls.filter(([name]) => name === 'community_profile_me'),
+  ).toHaveLength(profileReads);
+  await act(async () => {
+    finish({ data: null, error: null });
+    await pending;
+  });
+  expect(hook.result.current.deletionInProgress).toBe(false);
+  expect(hook.result.current.deletionComplete).toBe(true);
+  expect(hook.result.current.session).toBeNull();
+  hook.unmount();
+});
+test('a thrown deletion transport failure ends progress and leaves a genuine pending request retryable', async () => {
+  const m = mockClient(member);
+  m.client.functions = {
+    invoke: jest.fn(async () => {
+      throw new Error('Network offline');
+    }),
+  };
+  const hook = await renderHook(() =>
+    useCommunity(m.client, 'natural-toothpaste'),
+  );
+  await waitFor(() => expect(hook.result.current.accountReady).toBe(true));
+  await act(() => hook.result.current.requestDeletion());
+  expect(hook.result.current.deletionInProgress).toBe(false);
+  expect(hook.result.current.deletionComplete).toBe(false);
+  expect(hook.result.current.notice).toMatch(/could not finish/);
+  expect(m.auth.signOut).not.toHaveBeenCalled();
+  hook.unmount();
+});

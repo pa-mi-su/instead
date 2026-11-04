@@ -65,6 +65,8 @@ export function useCommunity(
   >('other');
   const [notice, setNotice] = useState('');
   const [deletionComplete, setDeletionComplete] = useState(false);
+  const [deletionInProgress, setDeletionInProgress] = useState(false);
+  const deletionActive = useRef(false);
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [finishingSignup, setFinishingSignup] = useState(false);
@@ -92,6 +94,7 @@ export function useCommunity(
   }, []);
   const loadAccount = useCallback(
     async (targetUserId = userId) => {
+      if (deletionActive.current) return false;
       const version = ++accountGeneration.current;
       const previousProfile = profileRef.current;
       if (!targetUserId) {
@@ -167,6 +170,7 @@ export function useCommunity(
     [client, userId],
   );
   const refresh = useCallback(async () => {
+    if (deletionActive.current) return;
     const version = ++generation.current;
     if (!includeComments) {
       setComments([]);
@@ -348,13 +352,16 @@ export function useCommunity(
   );
   const canManage = Boolean(
     verified &&
+      !deletionInProgress &&
       accountUserId === userId &&
       accountLoadStatus === 'ready' &&
       account &&
       !account.suspended &&
       !account.deletion_requested_at,
   );
-  const canEditProfile = Boolean(verified && !account?.deletion_requested_at);
+  const canEditProfile = Boolean(
+    verified && !deletionInProgress && !account?.deletion_requested_at,
+  );
   const canContribute = Boolean(canManage && account?.policy_accepted);
   function acceptPolicy() {
     return run(async () => {
@@ -390,24 +397,47 @@ export function useCommunity(
   }
   function requestDeletion() {
     return run(async () => {
-      await communityRpc(client, 'community_request_deletion');
-      notifyCommunityChanged();
-      await Promise.all([loadAccount(), refresh()]);
-      if (client?.functions) {
-        const result = await client.functions.invoke('delete-account');
-        if (!result.error) {
+      deletionActive.current = true;
+      setDeletionInProgress(true);
+      setProfileLoadError('');
+      // Ignore reads that started before deletion removed their records.
+      accountGeneration.current++;
+      generation.current++;
+      try {
+        await communityRpc(client, 'community_request_deletion');
+        let completed = false;
+        try {
+          if (client?.functions) {
+            const result = await client.functions.invoke('delete-account');
+            completed = !result.error;
+          }
+        } catch {
+          // A network failure leaves the request pending and retryable.
+        }
+        if (completed && client) {
           await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+          resetAuthForm();
           setSession(null);
+          setProfile(null);
+          setAccount(null);
+          setBlocks([]);
           setDraft('');
           setNotice('');
           notifyCommunityChanged({ type: 'account-deleted', userId: userId! });
           setDeletionComplete(true);
           return;
         }
+        // Refresh pending status only after the actual deletion attempt ends.
+        notifyCommunityChanged();
+        deletionActive.current = false;
+        await loadAccount();
+        setNotice(
+          'Deletion requested. Public contributions are hidden. Automatic deletion could not finish; use Retry account deletion or contact info@insteadtry.com.',
+        );
+      } finally {
+        deletionActive.current = false;
+        setDeletionInProgress(false);
       }
-      setNotice(
-        'Deletion requested. Public contributions are hidden. Automatic deletion could not finish; use Retry account deletion or contact info@insteadtry.com.',
-      );
     });
   }
   function sendCode() {
@@ -762,6 +792,7 @@ export function useCommunity(
     unblock,
     requestDeletion,
     deletionComplete,
+    deletionInProgress,
     dismissDeletionConfirmation: () => setDeletionComplete(false),
     email,
     setEmail,

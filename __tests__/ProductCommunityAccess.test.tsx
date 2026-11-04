@@ -151,3 +151,38 @@ test('clearing a password resets its visibility before another is entered', asyn
   );
   expect(screen.getByLabelText('Password').props.secureTextEntry).toBe(true);
 });
+
+function DeletionHarness({ deleting }: { deleting: boolean }) {
+  const c = useCommunity(client, 'natural-toothpaste');
+  return (
+    <ProductCommunityAccess
+      community={{
+        ...c,
+        session: { user: { id: 'test', email_confirmed_at: 'today' } },
+        deletionInProgress: deleting,
+        profileLoadError: 'Profile no longer exists',
+        accountReady: true,
+        accountLoading: false,
+        account: {
+          policy_accepted: true,
+          suspended: false,
+          deletion_requested_at: 'today',
+        },
+        blocks: [],
+      }}
+      purpose="account"
+      onSignInRequest={() => undefined}
+    />
+  );
+}
+test('deletion shows dedicated progress without profile errors, retry buttons, or account controls', async () => {
+  const screen = await render(<DeletionHarness deleting />);
+  expect(screen.getByLabelText('Deleting your account')).toBeTruthy();
+  expect(screen.queryByText(/Could not load your profile/)).toBeNull();
+  expect(screen.queryByText('Retry account deletion')).toBeNull();
+  expect(screen.queryByText('Sign out')).toBeNull();
+  await screen.rerender(<DeletionHarness deleting={false} />);
+  expect(screen.queryByLabelText('Deleting your account')).toBeNull();
+  expect(screen.getByText('Retry account deletion')).toBeTruthy();
+  expect(screen.queryByText(/Could not load your profile/)).toBeNull();
+});
