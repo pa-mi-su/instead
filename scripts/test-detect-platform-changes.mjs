@@ -47,14 +47,9 @@ test('shared app code, assets, and dependencies select both platforms', () => {
   }
 });
 
-test('docs and workflow-only changes do not select native builds', () => {
+test('docs and backend-only changes do not select native builds', () => {
   assert.deepEqual(
-    classifyPlatformChanges([
-      'README.md',
-      '.github/workflows/ci.yml',
-      '.github/workflows/mobile-release.yml',
-      'supabase/builtin-recipe-admin.sql',
-    ]),
+    classifyPlatformChanges(['README.md', 'supabase/builtin-recipe-admin.sql']),
     { android: false, ios: false },
   );
 });
@@ -116,4 +111,43 @@ test('reviewed vendor changes validate both mobile platforms', () => {
     android: true,
     ios: true,
   });
+});
+
+test('build workflow changes validate both native platforms before merge', () => {
+  for (const file of [
+    '.github/workflows/ci.yml',
+    '.github/workflows/mobile-release.yml',
+  ]) {
+    assert.deepEqual(classifyPlatformChanges([file]), {
+      android: true,
+      ios: true,
+    });
+  }
+});
+test('CI and TestFlight use the same configurable standard hosted runner and pinned Xcode', async () => {
+  for (const file of [
+    '.github/workflows/ci.yml',
+    '.github/workflows/mobile-release.yml',
+  ]) {
+    const workflow = await readFile(file, 'utf8');
+    const ios = workflow.match(
+      /^  ios:[\s\S]*?(?=^  (?! )[a-z][\w-]*:|(?![\s\S]))/m,
+    )?.[0];
+    assert.ok(ios);
+    const selection = ios.match(/runs-on: >-([\s\S]*?)timeout-minutes:/)?.[1];
+    assert.ok(selection);
+    // Every result is a literal standard hosted label, never the raw variable.
+    assert.equal(
+      selection.replace(/\s+/g, ' ').trim(),
+      "${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' || vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' || vars.IOS_RUNNER == 'macos-26' && 'macos-26' || 'macos-26-intel' }}",
+    );
+    assert.match(ios, /Xcode_26\.3\.app/);
+    assert.doesNotMatch(ios, /continue-on-error/);
+  }
+  const ci = await readFile('.github/workflows/ci.yml', 'utf8');
+  assert.match(ci, /needs: \[changes, quality, android, ios\]/);
+  assert.match(
+    ci,
+    /test "\$IOS_RESULT" = success \|\| test "\$IOS_RESULT" = skipped/,
+  );
 });
