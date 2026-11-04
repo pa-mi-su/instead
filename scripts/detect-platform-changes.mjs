@@ -5,6 +5,8 @@ import path from 'node:path';
 
 const sharedFiles = new Set([
   'App.tsx',
+  '.github/workflows/ci.yml',
+  '.github/workflows/mobile-release.yml',
   'app.json',
   'babel.config.js',
   'index.js',

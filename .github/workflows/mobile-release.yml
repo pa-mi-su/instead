@@ -162,8 +162,12 @@ jobs:
     name: iOS TestFlight
     needs: changes
     if: needs.changes.outputs.ios == 'true'
-    # Use the newer macOS pool; keep Xcode 26.3 pinned below.
-    runs-on: macos-26
+    # Only named standard hosted pools are allowed; never use an arbitrary runner label.
+    runs-on: >-
+      ${{ vars.IOS_RUNNER == 'macos-15' && 'macos-15' ||
+          vars.IOS_RUNNER == 'macos-15-intel' && 'macos-15-intel' ||
+          vars.IOS_RUNNER == 'macos-26' && 'macos-26' ||
+          'macos-26-intel' }}
     timeout-minutes: 60
     environment: production
     permissions:

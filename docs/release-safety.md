@@ -39,3 +39,33 @@ The deletion handler removes both legacy and opaque-folder recipe photos through
 - https://supabase.com/docs/guides/auth/managing-user-data
 
 Public branding uses “INSTEAD, USA” at the owner’s request. This does not establish a legal entity or resolve the operator identification requirement. The legal-name and jurisdiction attestations remain unset pending appropriate review.
+
+## Hosted iOS runner recovery
+
+CI and TestFlight share a literal allowlist of four standard GitHub-hosted Mac
+labels. The default is `macos-26-intel`; Xcode stays pinned to 26.3. The host's CPU
+does not change the app's supported iOS devices or remove simulator/device builds.
+
+The repository Actions variable `IOS_RUNNER` can select `macos-15`,
+`macos-15-intel`, or `macos-26`. Empty, unknown, self-hosted, and larger-runner
+values all fall back to the literal `macos-26-intel` label. The raw variable is
+never returned as a runner target. This does not register a runner, grant new
+credentials, enable paid larger runners, or move signing credentials onto a local
+machine.
+
+If a hosted pool stops assigning runners, select an allowed label with Xcode 26.3
+available and retry the failed iOS job and its dependents. Preserve passed quality
+and Android results. Delete the variable to restore the default. A pool switch is
+a recovery attempt, not a guarantee of capacity.
+
+Edits to either build workflow now select both native validation jobs before
+merge. The required aggregate check still rejects failed/cancelled applicable
+iOS jobs. Release detection still compares against each platform's last
+successful upload, preserving app changes missed during an outage.
+
+An empty runner name, zero executed steps, and “job was not acquired” indicates
+runner provisioning failed before compilation. A local build or new PR does not
+replace the required hosted checks.
+
+Official labels: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+Xcode inventory: https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md
