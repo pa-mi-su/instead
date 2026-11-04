@@ -267,3 +267,70 @@ test('main releases can reach Play production and staged rollouts', async () => 
   assert.match(release, /GOOGLE_PLAY_USER_FRACTION/);
   assert.doesNotMatch(release, /GOOGLE_PLAY_TRACK: internal/);
 });
+
+test('native build inputs are not mistaken for documentation', () => {
+  assert.equal(
+    classifyChanges(['android/app/src/main/jni/CMakeLists.txt']).android,
+    true,
+  );
+  assert.equal(classifyChanges(['ios/Instead/data.txt']).ios, true);
+});
+
+test('git comparisons handle multi-commit pushes and cross-platform renames', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, renameSync, rmSync } =
+    await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join, resolve } = await import('node:path');
+  const { execFileSync } = await import('node:child_process');
+  const directory = mkdtempSync(join(tmpdir(), 'instead-routing-'));
+  const detector = resolve('scripts/detect-platform-changes.mjs');
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
+  const commit = () => {
+    git('add', '.');
+    git(
+      '-c',
+      'user.name=CI Test',
+      '-c',
+      'user.email=ci@example.invalid',
+      'commit',
+      '-m',
+      'fixture',
+    );
+    return git('rev-parse', 'HEAD');
+  };
+  const detect = (base, head, mode) =>
+    execFileSync(process.execPath, [detector, base, head], {
+      cwd: directory,
+      encoding: 'utf8',
+      env: { ...process.env, DIFF_MODE: mode, GITHUB_OUTPUT: '' },
+    });
+  try {
+    git('init');
+    writeFileSync(join(directory, 'README.md'), 'base');
+    const base = commit();
+    mkdirSync(join(directory, 'ios'));
+    writeFileSync(join(directory, 'ios', 'Native.swift'), 'native');
+    commit();
+    writeFileSync(join(directory, 'README.md'), 'docs after native change');
+    const head = commit();
+    const push = detect(base, head, 'push');
+    assert.match(push, /ios=true/);
+    assert.match(push, /android=false/);
+    mkdirSync(join(directory, 'android'));
+    renameSync(
+      join(directory, 'ios', 'Native.swift'),
+      join(directory, 'android', 'Native.swift'),
+    );
+    const renamed = commit();
+    const result = detect(head, renamed, 'pull_request');
+    assert.match(result, /ios=true/);
+    assert.match(result, /android=true/);
+    writeFileSync(join(directory, 'README.md'), 'docs only');
+    const docs = commit();
+    assert.match(detect(renamed, docs, 'push'), /quality=false/);
+    assert.match(detect('0'.repeat(40), docs, 'push'), /android=true/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

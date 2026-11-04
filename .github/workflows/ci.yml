@@ -276,7 +276,8 @@ jobs:
     name: Release changed mobile platforms
     needs: [changes, required]
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.required.result == 'success' &&
       (needs.changes.outputs.android == 'true' || needs.changes.outputs.ios == 'true')
     uses: ./.github/workflows/mobile-release.yml
     with:

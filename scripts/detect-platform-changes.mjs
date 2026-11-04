@@ -153,6 +153,7 @@ function run() {
     [
       'diff',
       '--name-only',
+      '-z',
       '--no-renames',
       process.env.DIFF_MODE === 'push' ? base : `${base}...${head}`,
       ...(process.env.DIFF_MODE === 'push' ? [head] : []),
@@ -161,7 +162,7 @@ function run() {
       encoding: 'utf8',
     },
   )
-    .split('\n')
+    .split('\0')
     .filter(Boolean);
   process.stdout.write(`Changed files:\n${files.join('\n')}\n`);
   writeOutputs(
