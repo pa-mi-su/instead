@@ -45,7 +45,7 @@ The deletion handler removes both legacy and opaque-folder recipe photos through
 ## Verification
 
 - `npm run verify` and `npm run safety:test`
-- `npm run web:test`
+- `npm run website:build`
 - Apply safeguards twice in a disposable PostgreSQL database and run `supabase/tests/safeguards.test.sql`; the fixtures must never run on production.
 - Signed-in end-to-end tests require explicit tester agreement. Never accept legal terms or delete a real account on the owner's behalf for testing.
 - The first-use receipt is local. Contributions additionally require account-linked, server-timestamped acceptance of policy version 2026-10-16.2. Keep the SQL version and src/policies.ts synchronized.
@@ -61,16 +61,15 @@ Public branding uses “INSTEAD, USA” at the owner’s request. This does not 
 
 ## CI/CD routing and hosted builds
 
-| Changed files                              | Native builds/uploads | Web validation   | S3/CloudFront deployment                           |
-| ------------------------------------------ | --------------------- | ---------------- | -------------------------------------------------- |
-| `ios/`, `*.ios.tsx`, Gemfile               | iOS                   | No               | No                                                 |
-| `android/`, `*.android.tsx`, Play uploader | Android               | No               | No                                                 |
-| `web/`                                     | Neither               | Yes              | No: separate Next.js app has no hosting configured |
-| `website/`, static-site builder            | Neither               | No               | Yes                                                |
-| Shared `src/`, assets, root dependencies   | Both as applicable    | Shared consumers | Catalog/policy/dependency changes                  |
-| Markdown/text documentation only           | Neither               | No               | No                                                 |
+| Changed files                              | Native builds/uploads | Website build and S3/CloudFront deployment |
+| ------------------------------------------ | --------------------- | ------------------------------------------ |
+| `ios/`, `*.ios.tsx`, Gemfile               | iOS                   | No                                         |
+| `android/`, `*.android.tsx`, Play uploader | Android               | No                                         |
+| `website/`, static-site builder            | Neither               | Yes                                        |
+| Shared `src/`, assets, root dependencies   | Both as applicable    | Catalog/policy/dependency changes          |
+| Documentation only                         | Neither               | No                                         |
 
-`src/policies.ts` is consumed by mobile, web, and the public policy builder, so it
+`src/policies.ts` is consumed by mobile and the public policy builder, so it
 must rebuild all consumers. Workflow and routing changes validate their affected
 platforms. Rename detection is disabled so moving a file between platforms selects
 both its old and new consumers. PR comparisons use the merge base; push comparisons
@@ -81,7 +80,7 @@ existing branch protection. It validates change detection, quality, and every
 selected native build, rejects unexpected skips, and succeeds for documentation
 changes without running builds. Quality retains authorization/deletion tests,
 security auditing, PostgreSQL policy tests, linting, type checks and unit tests.
-Web and static-site builds run only when their inputs change. The existing static
+Static-site builds run only when their inputs change. The existing static
 website deploys after successful quality checks; unrelated mobile builds do not
 hold it up. No new hosting service is created.
 

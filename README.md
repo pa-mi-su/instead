@@ -2,7 +2,7 @@
 
 INSTEAD is a practical directory of everyday product alternatives and household or personal-care recipes. It helps people find options, understand how they are presented, and see the limits and cautions attached to them. The content is educational: natural ingredients, community votes, and editorial approval do not establish that a recipe is safe or effective.
 
-This repository contains three related experiences: the React Native mobile app, a Next.js guide-directory web app, and a small static public-policy site with a private moderator console. Their data paths differ, so changes and deployments are not interchangeable.
+This repository contains the React Native iOS/Android app and the static public website with its private moderator console. The website and admin console are hosted together on S3 and CloudFront.
 
 ## Product behavior
 
@@ -22,8 +22,6 @@ flowchart LR
   RN[React Native iOS and Android] -->|bundled directory + local saves| NativeStore[Device storage]
   RN -->|Auth and scoped RPCs| SB[Supabase Auth, Postgres, Storage]
   RN -->|barcode lookup on request| OFF[Open Food Facts]
-  Web[Next.js web app] -->|published guide rows| SB
-  Web -->|Auth and scoped RPCs| SB
   Admin[Static moderator console] -->|publishable key + protected RPCs| SB
   Policy[Static policy and support pages] -->|built from src/policies.ts| CDN[S3 and CloudFront]
   Admin --> CDN
@@ -32,7 +30,6 @@ flowchart LR
 | Component                            | Responsibility                                                                      | Runtime data source                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/`, `ios/`, `android/`           | React Native mobile app and native platform shells                                  | Mobile guide topics and baseline recipes are bundled in `src/catalog.ts`; the app overlays administrator-managed recipe edits from the `builtin_recipe_catalog` RPC. Community content, account state, votes, and cloud saves use scoped Supabase RPCs. Local saves remain available on-device. |
-| `web/`                               | Next.js guide-directory application                                                 | Reads published rows from Supabase `public.guides`; account and community features use Supabase Auth/RPCs. Its production hosting is separate from the static-site deployment in this repository's CI workflow.                                                                                 |
 | `website/`                           | Script-free policy/support pages plus the static `/admin` console                   | Policy text comes from `src/policies.ts`. The admin shell embeds only the Supabase URL and public publishable key; each privileged operation is authorized by the database. CI publishes this directory's generated `website/dist/` to the dedicated S3 bucket and invalidates CloudFront.      |
 | `supabase/`                          | SQL schema, security-definer RPCs, grants, RLS/storage policies, and database tests | PostgreSQL/Auth/Storage. Client applications use the public publishable key and authenticated user session; no service-role key belongs in a client.                                                                                                                                            |
 | `supabase/functions/delete-account/` | Account deletion orchestration                                                      | Verifies the caller with Supabase Auth, removes that account's recipe photos from Storage, then deletes the Auth user so dependent rows cascade. The service-role secret is confined to the Edge Function environment.                                                                          |
@@ -43,12 +40,11 @@ flowchart LR
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
 | Mobile UI          | React Native 0.86.2, React 19.2.3, TypeScript, React Native Community CLI                                 |
 | Native shells      | iOS/Xcode and Android/Gradle; native projects are committed and built independently                       |
-| Guide web app      | Next.js 16.4.2, React 19.2.8, TypeScript                                                                  |
 | Backend            | Supabase Auth, PostgreSQL, Storage, RPCs, and an Edge Function                                            |
-| Client persistence | AsyncStorage on mobile; browser storage for local web saves; private Supabase RPCs for cross-device saves |
+| Client persistence | AsyncStorage on mobile; private Supabase RPCs for cross-device saves                                      |
 | Quality            | Jest, PostgreSQL integration scripts, ESLint, Prettier, TypeScript, and platform builds in GitHub Actions |
 
-The mobile catalog is not a live copy of `public.guides`: it starts from the bundled TypeScript catalog, then asks Supabase for built-in recipe overrides on launch, when the app returns to the foreground, and every four minutes. A network/database failure leaves the bundled experience intact. The Next.js app reads the published `guides` table directly with no-store requests. The SQL `schema.sql` and `seed.sql` concern that guide table; they do not seed the mobile TypeScript catalog.
+The mobile catalog is not a live copy of `public.guides`: it starts from the bundled TypeScript catalog, then asks Supabase for built-in recipe overrides on launch, when the app returns to the foreground, and every four minutes. A network/database failure leaves the bundled experience intact. The SQL `schema.sql` and `seed.sql` concern that guide table; they do not seed the mobile TypeScript catalog.
 
 This split makes content operations different: an authorized administrator can edit, add, archive, or restore built-in recipe text in Supabase without a mobile software release. Clients receive those changes at their next successful catalog refresh. The editor does not change bundled photos. Changes to native screens, catalog structure, or other bundled code still require a software release.
 
@@ -70,7 +66,6 @@ src/navigation/                 App view routing and state
 src/screens/, src/components/    Mobile user interface
 src/lib/, src/hooks/             Supabase, catalog overlay, auth, and app logic
 ios/, android/                   Native iOS and Android projects
-web/                             Next.js guide-directory app
 website/                         Policy/support pages and admin-console source
 supabase/                        Database migrations, RPCs, and SQL tests
 supabase/functions/              Supabase Edge Functions
@@ -84,7 +79,7 @@ release/readiness.json           Store-release owner attestations
 
 ### Requirements
 
-- Node.js `>=22.11.0` for the repository; `web/` currently declares `>=22.13.0`.
+- Node.js `>=22.11.0`.
 - npm.
 - For iOS: macOS, Xcode, and CocoaPods.
 - For Android: Android Studio/SDK and JDK 17 for the CI-compatible build.
@@ -93,7 +88,6 @@ Install locked dependencies:
 
 ```bash
 npm ci
-npm --prefix web ci
 ```
 
 For iOS, install Pods when native dependencies change or on a fresh checkout:
@@ -111,13 +105,17 @@ Copy `.env.example` to `.env` for local development and set both Supabase values
 ```text
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-SITE_URL=http://localhost:3000
-SUPPORT_EMAIL=info@insteadtry.com
 ```
 
-The root `postinstall` and `env:generate` scripts read environment variables (injected environment values take precedence over `.env`) and write ignored configuration files: `src/config/generatedEnv.ts` and `web/.env.local`. The public website app reads the generated `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Keep URL and key together; the generator rejects a partial pair. Native offline mode can use bundled catalog content, but Supabase-backed account/community features and the web directory need live configuration.
+The root `postinstall` and `env:generate` scripts read environment variables
+(injected values take precedence over `.env`) and write the ignored native
+configuration file `src/config/generatedEnv.ts`. Keep the Supabase URL and public
+key together; the generator rejects a partial pair. Native offline mode uses the
+bundled catalog, while account/community features require live configuration.
 
-`SITE_URL` supplies website/social metadata and defaults to localhost. `SUPPORT_EMAIL` defaults to `info@insteadtry.com`. In production the website builder requires the public Supabase URL and publishable key. Use only an HTTPS project URL in production. Never use a service-role or secret key in client configuration.
+The production website builder reads the public Supabase URL and publishable key
+from its deployment environment. Use an HTTPS project URL and never a service-role
+or secret key in client configuration.
 
 ### Run
 
@@ -129,17 +127,13 @@ npm run ios       # iOS simulator by default
 npm run android   # running emulator or connected device required
 ```
 
-Run the Next.js guide-directory app separately:
-
-```bash
-npm run web
-```
-
-Then open `http://localhost:3000`. The static policy/admin site is built separately with `npm run website:build`; its output is `website/dist/`.
+Build the public policy/admin site with `npm run website:build`; its output is
+`website/dist/`. GitHub Actions deploys that output to S3/CloudFront after relevant
+changes are merged to `main`.
 
 ## Supabase provisioning and migrations
 
-For a **new Supabase project**, `supabase/schema.sql` creates the published guide table and `supabase/seed.sql` loads the web guide rows. Community features use separate migrations and do not replace the guide directory. For an **existing project**, do not replay one-time scripts. First check the current database and the migration notes in [community setup](docs/community-setup.md), [admin panel](docs/admin-panel.md), and [release safety](docs/release-safety.md); those documents describe required dependency order and rollout-specific operations.
+For a **new Supabase project**, `supabase/schema.sql` creates the published guide table and `supabase/seed.sql` loads the legacy guide rows. Community features use separate migrations and do not replace the guide directory. For an **existing project**, do not replay one-time scripts. First check the current database and the migration notes in [community setup](docs/community-setup.md), [admin panel](docs/admin-panel.md), and [release safety](docs/release-safety.md); those documents describe required dependency order and rollout-specific operations.
 
 At a high level, the community database is assembled from one-time base migrations (`community.sql`, then `recipes.sql`) followed by repeatable migrations. For a new install or schema audit, the dependency order is:
 
@@ -164,12 +158,10 @@ Run the standard project suite:
 ```bash
 npm run verify       # Prettier, ESLint, TypeScript, native Jest tests
 npm run safety:test  # repository safety and build-detection tests
-npm run web:test     # Next.js production build and rendered HTML tests
-npm run web:build    # Next.js production build only
 npm run release:check # owner attestations required before public store release
 ```
 
-CI also runs the native SQL integration suite against a disposable local PostgreSQL cluster, builds the static policy/admin site, lints and builds the Next.js app, and runs platform-change detector tests. SQL test fixtures explicitly roll back; do not point them at a live Supabase project.
+CI also runs the native SQL integration suite against a disposable local PostgreSQL cluster, builds the static policy/admin site, and runs platform-change detector tests. SQL test fixtures explicitly roll back; do not point them at a live Supabase project.
 
 ## CI, deployment, and store releases
 
@@ -177,7 +169,7 @@ CI also runs the native SQL integration suite against a disposable local Postgre
 
 - Quality/security checks run for relevant code, configuration, backend and test changes. Documentation-only changes return the required status without builds or deployments.
 - Android debug and iOS simulator builds run independently when their platform or shared mobile code changes. Web-only and documentation-only changes skip native builds; `.github/workflows/ci.yml` and `scripts/detect-platform-changes.mjs` define the current classification.
-- After successful quality checks on `main`, changes affecting the static policy site or admin console are deployed to S3/CloudFront. The Next.js `web/` app is built and tested in CI, but this deploy job does not publish it.
+- After successful quality checks on `main`, changes affecting the static policy site or admin console are deployed to S3/CloudFront.
 
 After the required checks pass on a `main` push, CI calls the reusable
 `.github/workflows/mobile-release.yml` for exactly the affected platforms. Android

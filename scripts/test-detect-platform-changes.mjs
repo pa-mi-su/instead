@@ -6,12 +6,11 @@ import {
   classifyChanges,
 } from './detect-platform-changes.mjs';
 
-test('web and admin changes do not select native builds', () => {
+test('website and admin changes do not select native builds', () => {
   assert.deepEqual(
     classifyPlatformChanges([
       'website/admin/admin.mjs',
       'website/admin/index.html',
-      'web/src/app/page.tsx',
       'scripts/build-policy-site.mjs',
       'docs/admin-panel.md',
     ]),
@@ -219,13 +218,8 @@ test('required gate rejects failed or unexpectedly skipped mobile builds', async
 
 test('documentation changes skip all builds, checks and deployment', () => {
   assert.deepEqual(
-    classifyChanges([
-      'README.md',
-      'docs/setup.md',
-      'ios/README.md',
-      'web/README.md',
-    ]),
-    { android: false, ios: false, web: false, website: false, quality: false },
+    classifyChanges(['README.md', 'docs/setup.md', 'ios/README.md']),
+    { android: false, ios: false, website: false, quality: false },
   );
 });
 test('each platform selects only its own build', () => {
@@ -234,11 +228,10 @@ test('each platform selects only its own build', () => {
     ['android/app/build.gradle', 'android'],
     ['src/components/Scanner.ios.tsx', 'ios'],
     ['src/components/Scanner.android.tsx', 'android'],
-    ['web/app/page.tsx', 'web'],
     ['website/admin/admin.mjs', 'website'],
   ]) {
     const result = classifyChanges([file]);
-    for (const key of ['ios', 'android', 'web', 'website'])
+    for (const key of ['ios', 'android', 'website'])
       assert.equal(result[key], key === platform, `${file}: ${key}`);
     assert.equal(result.quality, true);
   }
@@ -248,7 +241,6 @@ test('policy and catalog changes rebuild their consumers', () => {
     assert.deepEqual(classifyChanges([file]), {
       android: true,
       ios: true,
-      web: true,
       website: true,
       quality: true,
     });

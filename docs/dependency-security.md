@@ -1,5 +1,7 @@
 # Dependency security review — October 16, 2026
 
+Historical record: the undeployed Next.js application was removed on November 4, 2026. Current website/admin hosting uses the static `website/` build on S3/CloudFront.
+
 The PR check failed on npm security advisories, before app verification. Compatible transitive security updates are locked, Next.js/eslint-config-next are updated to 16.4.2, and web sharp is updated to 0.35.5. The website production audit remains strict and has zero findings.
 
 Native overrides use brace-expansion 5.0.12, Metro's image-size 2.0.4, and @istanbuljs/load-nyc-config's js-yaml 4.3.2. Metro has two parser call sites. The default export remains available in 2.0.4, but filesystem path input was removed. A tracked patch makes Metro read file bytes before parsing asset dimensions; postinstall applies the patch and fails if it no longer applies. The Istanbul loader calls YAML.load, which remains available in 4.3.2. Tests and native bundling must verify these integration boundaries. React Native stays at 0.86.2.

@@ -1,5 +1,7 @@
 # Repository audit — July 28, 2026
 
+Historical record: the undeployed Next.js application was removed on November 4, 2026. Current website/admin hosting uses the static `website/` build on S3/CloudFront.
+
 ## Scope
 
 The audit covered the React Native application, Next.js website, shared data

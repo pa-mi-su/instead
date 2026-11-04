@@ -22,7 +22,6 @@ jobs:
     outputs:
       android: ${{ steps.filter.outputs.android }}
       ios: ${{ steps.filter.outputs.ios }}
-      web: ${{ steps.filter.outputs.web }}
       website: ${{ steps.filter.outputs.website }}
       quality: ${{ steps.filter.outputs.quality }}
 
@@ -57,16 +56,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            web/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install native dependencies
         run: npm ci
-
-      - name: Install web dependencies
-        if: needs.changes.outputs.web == 'true'
-        run: npm --prefix web ci
 
       - name: Reject production vulnerabilities
         run: |
@@ -93,13 +86,6 @@ jobs:
           npm run website:build
           node --check website/admin/admin.mjs
           npx eslint website/admin/admin.mjs website/admin/auth-security.mjs --env browser,es2022 --parser-options '{"ecmaVersion":2022,"sourceType":"module"}'
-
-      - name: Verify website
-        if: needs.changes.outputs.web == 'true'
-        run: |
-          npm --prefix web audit --omit=dev
-          npm --prefix web run lint
-          npm run web:test
 
   android:
     name: Android debug build

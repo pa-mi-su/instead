@@ -64,8 +64,7 @@ export function classifyPlatformChanges(files) {
   return { android, ios };
 }
 
-// Keep deployment scope separate: Next.js and the public static site have
-// different build outputs and hosting requirements.
+// The public website and admin console share one static deployment.
 export function classifyChanges(files) {
   const native = classifyPlatformChanges(files);
   const relevant = files.filter(file => !isDocumentation(file));
@@ -82,27 +81,9 @@ export function classifyChanges(files) {
         'scripts/detect-platform-changes.mjs',
       ].includes(file),
   );
-  const web = relevant.some(
-    file =>
-      file.startsWith('web/') ||
-      /\.web\.[jt]sx?$/.test(file) ||
-      (file.startsWith('src/') &&
-        !file.startsWith('src/screens/') &&
-        !file.startsWith('src/components/') &&
-        !/\.(ios|android)\.[jt]sx?$/.test(file)) ||
-      file.startsWith('assets/') ||
-      [
-        'package.json',
-        'package-lock.json',
-        'scripts/generate-env.mjs',
-        '.github/workflows/ci.yml',
-        'scripts/detect-platform-changes.mjs',
-      ].includes(file),
-  );
   const quality =
     native.android ||
     native.ios ||
-    web ||
     website ||
     relevant.some(
       file =>
@@ -111,7 +92,7 @@ export function classifyChanges(files) {
         file.startsWith('__tests__/') ||
         /(?:eslint|prettier|jest)/.test(file),
     );
-  return { ...native, web, website, quality };
+  return { ...native, website, quality };
 }
 
 function writeOutputs(result) {
@@ -128,7 +109,6 @@ function run() {
     writeOutputs({
       android: true,
       ios: true,
-      web: true,
       website: true,
       quality: true,
     });
@@ -141,7 +121,6 @@ function run() {
     writeOutputs({
       android: true,
       ios: true,
-      web: true,
       website: true,
       quality: true,
     });
