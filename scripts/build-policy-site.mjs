@@ -41,7 +41,7 @@ const deletion = `${section(
 <p><a class="button" href="mailto:info@insteadtry.com?subject=INSTEAD%20account%20deletion">Email an account-deletion request</a></p>
 ${section(
   'Delete from the app',
-  'Sign in, open any topic’s account controls, choose Delete account, and confirm. The request hides your public contributions and disables new contributions while deletion is attempted. If cleanup fails, retry or contact support.',
+  'Sign in, open My INSTEAD from the menu, choose Delete account in its separate account-deletion section, and confirm. The request hides your public contributions and disables new contributions while deletion is attempted. If cleanup fails, retry or contact support.',
 )}
 ${section(
   'What is deleted',

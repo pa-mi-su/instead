@@ -5,8 +5,8 @@ Implemented October 16, 2026; policy version `2026-10-16.2`.
 ## Implemented behavior
 
 - First use requires an unchecked acknowledgement and explicit Agree & continue. Declining leaves the directory inaccessible. Safety, Terms, and Privacy remain readable before agreement.
-- Mobile has a permanent Info screen with bundled offline policies. Web has Info & Safety and policy pages accessible without acceptance.
-- Native AsyncStorage and browser local storage hold only version and acceptance timestamp. Browsing acceptance stays local. Contributing additionally requires explicit account-linked acceptance of the current version, recorded with a server timestamp in Supabase. A version change, cleared storage, reinstall, or another device prompts again. This is local UX acknowledgement, not an authenticated server audit trail or a signed waiver. A failed write leaves the gate closed and shows an error.
+- Mobile has a permanent Info screen with bundled offline policies. The static public website has Safety, Terms, Privacy, Support, and deletion-help pages accessible without app acceptance.
+- The native safety receipt in AsyncStorage holds policy version and acceptance timestamp. The static public policy pages do not require that receipt. Supabase sessions are separately persisted in native AsyncStorage; the admin uses sessionStorage for its session. Browsing acceptance stays local. Contributing additionally requires explicit account-linked acceptance of the current version, recorded with a server timestamp in Supabase. A version change, cleared storage, reinstall, or another device prompts again. This is local UX acknowledgement, not an authenticated server audit trail or a signed waiver. A failed write leaves the gate closed and shows an error.
 - `src/policies.ts` supplies the same Terms and Privacy text to mobile and web. `src/disclaimer.ts` supplies shared medical/safety wording and receipt parsing. Bump POLICY_VERSION whenever material terms or safety acknowledgement text changes.
 - No medical/dental advice, diagnosis/treatment, clinician relationship, emergency reliance, guarantees of natural-product safety, or professional endorsement by moderation/votes is claimed. Rights that cannot lawfully be waived are reserved.
 
@@ -19,6 +19,7 @@ Qualified health/formulation review is needed for health recipes and claims, dos
 Verify public policy/support URLs and support inbox delivery before store release. Native offline policies work independently of public hosting. Store declarations must match the app's health content, data use, and moderation behavior.
 
 Sources consulted (guidance, not legal approval):
+
 - https://termly.io/resources/articles/medical-disclaimer-examples/
 - https://www.ftc.gov/business-guidance/resources/health-products-compliance-guidance
 - https://developer.apple.com/app-store/review/guidelines/#physical-harm
