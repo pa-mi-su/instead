@@ -23,3 +23,35 @@ Run Jest, typecheck, ESLint, safety tests, the disposable PostgreSQL suite, and 
 After merge and deployment, test on the next beta: submit a recipe, approve it in Pending recipes, refresh the guide, confirm it appears once under Recipes, open it from Saved, and send a concern. Check the inbox and admin Open reports; mark the concern reviewed and confirm it leaves that filter. Test both catalogue and user recipes. Keep normal browsing available when signed out; report submission should ask the user to sign in.
 
 Production backend verification on November 3, 2026: migration applied; JWT-protected Edge Function deployed; dedicated SMTP authentication passed; a disposable verified account submitted a real catalogue report, received HTTP 200, and produced one stored delivery timestamp after SMTP acceptance. The QA account and its private records were deleted afterward. Inbox receipt still needs the owner’s confirmation. Frontend behavior requires the merged website deployment and next mobile beta.
+
+## Personal concerns and blocked content
+
+Recipe pages contain recipe actions and contribution prerequisites, not account
+management. Reporting keeps the recipe visible, marks it “Concern submitted” for
+that signed-in user, and explains that blocking the contributor hides their
+recipes. Reporting does not unpublish a recipe for other people. Existing
+server-side contributor-block filters remain in force.
+
+My INSTEAD has independent cards for Blocked recipes, Recipes submitted for
+concern, and Delete your account. The blocked list names the recipe associated
+with the contributor block and explains that all that contributor's recipes are
+hidden for this account. Unblocking restores access through the existing scoped
+RPC. Concerns list private recipe titles, reasons, and submitted/reviewed status;
+no other reporter's details or email addresses are returned.
+
+Apply `recipe-concern-history.sql` after `recipe-concerns.sql`. The authenticated
+`community_my_recipe_concerns()` function derives identity from Auth, has an empty
+search path, and returns only the caller's latest 500 concern summaries. Direct
+table reads and anonymous function execution remain denied. Reporter deletion
+continues to cascade the stored concerns. The UI clears or hides old-account
+history immediately on account changes, ignores stale responses, bounds requests
+to 15 seconds, and offers a retry when history cannot load. A concern update uses
+a dedicated notification so it does not reload account setup or reorder recipes.
+
+The hamburger menu destinations are Home, My INSTEAD, Saved, and Info & Safety.
+The existing iOS modal-dismissal serialization is preserved.
+
+Backend rollout November 5, 2026: the private history function was applied and
+its authenticated-only execute permissions verified. No report fixtures or
+account mutations were run in production. The frontend requires the merged PR
+and next beta; verify report, block/unblock, history, and deletion on that build.

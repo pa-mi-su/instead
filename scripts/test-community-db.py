@@ -76,6 +76,9 @@ insert into public.community_comments(id,product_id,user_id,body,moderation_stat
  print(run(psql+['-f',str(root/'supabase/tests/account-deletion-privacy.test.sql')])[-800:])
  run(psql+['-f',str(root/'supabase/recipe-concerns.sql')])
  run(psql+['-f',str(root/'supabase/recipe-concerns.sql')])
+ run(psql+['-f',str(root/'supabase/recipe-concern-history.sql')])
+ run(psql+['-f',str(root/'supabase/recipe-concern-history.sql')])
+ print(run(psql+['-f',str(root/'supabase/tests/recipe-concern-history.test.sql')])[-800:])
  print(run(psql+['-f',str(root/'supabase/tests/recipe-concerns.test.sql')])[-800:])
  run(psql+['-c',"""do $$ begin
 if exists(select 1 from information_schema.columns where table_schema='public' and table_name='community_moderation_audit' and column_name in ('qualifications','sources')) then raise exception 'Obsolete moderation audit columns remain'; end if;

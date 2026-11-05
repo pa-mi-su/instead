@@ -1,3 +1,4 @@
+import { notifyRecipeConcernChanged } from '../hooks/useRecipeConcerns';
 import { useEffect, useRef, useState } from 'react';
 import {
   Modal,
@@ -18,11 +19,15 @@ export function ReportRecipeButton({
   title,
   signedIn,
   onSignIn,
+  reported = false,
+  canBlock = false,
 }: {
   productId: string;
   recipeId: string;
   title: string;
   signedIn: boolean;
+  reported?: boolean;
+  canBlock?: boolean;
   onSignIn: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -31,9 +36,11 @@ export function ReportRecipeButton({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const lock = useRef(false);
   useEffect(() => {
     if (!signedIn) {
+      setSubmitted(false);
       setDetails('');
       setMessage('');
       setSent(false);
@@ -58,6 +65,8 @@ export function ReportRecipeButton({
           'Could not send the report email. Your report may be saved; retry to finish sending it.',
         );
       setSent(true);
+      setSubmitted(true);
+      notifyRecipeConcernChanged();
       setDetails('');
       setMessage(
         'Your report was sent to INSTEAD. Thank you for raising your concern.',
@@ -85,6 +94,18 @@ export function ReportRecipeButton({
   );
   return (
     <>
+      {signedIn && (reported || submitted) && (
+        <View style={local.reported} accessibilityLiveRegion="polite">
+          <Text style={styles.optionName}>Concern submitted</Text>
+          <Text style={styles.optionDetail}>
+            You submitted this recipe for review. Reporting a concern does not
+            hide the recipe.
+            {canBlock
+              ? ' If you don’t want to see it, block the contributor below.'
+              : ''}
+          </Text>
+        </View>
+      )}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Report or raise a concern about ${title}`}
@@ -173,4 +194,12 @@ export function ReportRecipeButton({
 const local = StyleSheet.create({
   content: { paddingTop: 60, paddingBottom: 45 },
   input: { minHeight: 110 },
+  reported: {
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#B7C9AC',
+    backgroundColor: '#F0F4E8',
+    borderRadius: 16,
+  },
 });

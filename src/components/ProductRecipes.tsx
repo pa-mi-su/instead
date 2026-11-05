@@ -1,3 +1,4 @@
+import type { RecipeConcern } from '../hooks/useRecipeConcerns';
 import { imageContentType } from '../lib/imageUpload';
 import { useState, type RefObject } from 'react';
 import { Bookmark } from 'lucide-react-native';
@@ -29,7 +30,9 @@ export function RecipeContent({
   onRecipeLayout,
   targetRecipeId,
   targetRef,
+  concerns = [],
 }: {
+  concerns?: RecipeConcern[];
   onRecipeLayout?: () => void;
   targetRecipeId?: string;
   targetRef?: RefObject<View | null>;
@@ -227,10 +230,20 @@ export function RecipeContent({
               <Text>Community score: {recipe.score}</Text>
             )}
             <ReportRecipeButton
+              key={userId ?? 'guest'}
               productId={productId}
               recipeId={recipe.id}
               title={recipe.title}
               signedIn={Boolean(userId)}
+              reported={
+                recipe.reported ||
+                concerns.some(
+                  item =>
+                    item.recipe_id === recipe.id &&
+                    item.product_id === productId,
+                )
+              }
+              canBlock={!recipe.mine && canManage}
               onSignIn={onSignInRequest}
             />
           </>

@@ -55,3 +55,14 @@ test('signed-in reports send IDs and concern text, never client-supplied identit
     ),
   ).toBeTruthy();
 });
+
+test('an existing concern is marked without hiding the recipe or claiming a new submission', async () => {
+  const screen = await render(
+    <ReportRecipeButton {...props} signedIn reported canBlock />,
+  );
+  expect(screen.getByText('Concern submitted')).toBeTruthy();
+  expect(screen.getByText(/block the contributor below/)).toBeTruthy();
+  expect(
+    screen.getByLabelText('Report or raise a concern about A recipe'),
+  ).toBeTruthy();
+});
