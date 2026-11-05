@@ -1,3 +1,12 @@
+import { Platform } from 'react-native';
+import {
+  refreshRecipeVisibility,
+  useRecipeVisibility,
+} from '../src/hooks/useRecipeVisibility';
+jest.mock('../src/hooks/useRecipeVisibility', () => ({
+  refreshRecipeVisibility: jest.fn(),
+  useRecipeVisibility: jest.fn(() => ({ acceptReport: jest.fn() })),
+}));
 import { fireEvent, render } from '@testing-library/react-native';
 import { ReportRecipeButton } from '../src/components/ReportRecipeButton';
 import { supabase } from '../src/lib/supabase';
@@ -51,17 +60,17 @@ test('signed-in reports send IDs and concern text, never client-supplied identit
   });
   expect(
     await screen.findByText(
-      'Your report was sent to INSTEAD. Thank you for raising your concern.',
+      'Your report was sent to INSTEAD. This recipe is now hidden from your account. It remains available to others unless an admin removes it.',
     ),
   ).toBeTruthy();
 });
 
-test('an existing concern is marked without hiding the recipe or claiming a new submission', async () => {
+test('a restored reported recipe keeps its duplicate-report guard', async () => {
   const screen = await render(
-    <ReportRecipeButton {...props} signedIn reported canBlock />,
+    <ReportRecipeButton {...props} signedIn reported />,
   );
-  expect(screen.getByText('Concern submitted')).toBeTruthy();
-  expect(screen.getByText(/block the contributor below/)).toBeTruthy();
+  expect(screen.getByText('Concern already submitted')).toBeTruthy();
+  expect(screen.queryByText(/Reporting a concern does not/)).toBeNull();
   expect(
     screen.getByLabelText('Report or raise a concern about A recipe'),
   ).toBeTruthy();
@@ -80,4 +89,31 @@ test('a reported recipe cannot submit another concern through the button', async
   await fireEvent.press(button);
   expect(screen.queryByText('Send report')).toBeNull();
   expect(invoke).toHaveBeenCalledTimes(previous);
+});
+
+test('a successful report closes its confirmation before hiding the card', async () => {
+  const acceptReport = jest.fn();
+  (useRecipeVisibility as jest.Mock).mockReturnValue({ acceptReport });
+  const platform = jest.replaceProperty(Platform, 'OS', 'android');
+  const refresh = refreshRecipeVisibility as jest.Mock;
+  refresh.mockClear();
+  const screen = await render(<ReportRecipeButton {...props} signedIn />);
+  await fireEvent.press(
+    screen.getByLabelText('Report or raise a concern about A recipe'),
+  );
+  await fireEvent.changeText(
+    screen.getByLabelText('Describe your concern'),
+    'Please check this recipe',
+  );
+  await fireEvent.press(screen.getByText('Send report'));
+  expect(acceptReport).not.toHaveBeenCalled();
+  expect(refresh).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByText('Close'));
+  expect(acceptReport).toHaveBeenCalledWith(
+    'topic',
+    'builtin:recipe',
+    'A recipe',
+  );
+  expect(refresh).toHaveBeenCalledTimes(1);
+  platform.restore();
 });

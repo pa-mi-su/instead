@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { COLORS } from '../styles';
 
 export function AccountSection({
@@ -29,7 +30,13 @@ export function AccountSection({
       </Text>
       {count !== undefined && <Text style={accountStyles.count}>{count}</Text>}
       {collapsible && (
-        <Text style={accountStyles.expandIcon}>{expanded ? '−' : '+'}</Text>
+        <View style={accountStyles.chevron}>
+          {expanded ? (
+            <ChevronUp size={22} color={COLORS.ink} />
+          ) : (
+            <ChevronDown size={22} color={COLORS.ink} />
+          )}
+        </View>
       )}
     </View>
   );
@@ -86,6 +93,7 @@ export const accountStyles = StyleSheet.create({
     fontWeight: '700',
     overflow: 'hidden',
   },
+  chevron: { backgroundColor: '#EDF1E8', borderRadius: 20, padding: 7 },
   expandIcon: {
     color: COLORS.ink,
     fontSize: 24,

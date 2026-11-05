@@ -33,3 +33,5 @@ The `tests/*.test.sql` files use synthetic accounts and roll back their fixtures
 ### Account deletion audit privacy
 
 After `admin-membership.sql` and `builtin-recipe-admin.sql`, apply the repeatable `account-deletion-privacy.sql`. Both admin and self-service permanent Auth deletion then run the same transactional audit cleanup. See `docs/admin-panel.md` for rollout, historical limitations, backup/log retention and restore reconciliation. This migration must be applied separately; merging frontend code does not apply database migrations.
+
+13. Run `personal-recipe-visibility.sql` after all files above, before releasing personal recipe hiding. Reports hide the target only for the reporter; reviewed concerns automatically leave legacy history, and personal hiding persists until restored. Both catalogue and community recipes support the same private block/restore flow. This migration does not archive or unpublish recipes. Its one-time backfill includes existing concerns and will not re-hide restored recipes on later deployments.

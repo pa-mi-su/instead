@@ -1,0 +1,47 @@
+begin;
+do $$
+declare reporter uuid:=gen_random_uuid(); observer uuid:=gen_random_uuid(); author_id uuid:=gen_random_uuid(); recipe uuid:=gen_random_uuid(); product text:='natural-glass-cleaner'; builtin text:='builtin:visibilityFixture'; receipt uuid; denied boolean:=false;
+begin
+ insert into auth.users(id,email,email_confirmed_at) values(reporter,'visibility-report@example.invalid',now()),(observer,'visibility-observer@example.invalid',now()),(author_id,'visibility-author@example.invalid',now());
+ insert into public.community_profiles(user_id,nickname,username,bio) values(author_id,'VisibilityAuthor','VisibilityAuthor','');
+ insert into public.community_builtin_recipes(id,product_id,title,is_active) values(builtin,product,'Visibility catalogue fixture',true);
+ insert into public.community_recipes(id,product_id,user_id,title,ingredients,instructions,storage_notes,cautions,status,review_record)
+ values(recipe,product,author_id,'Visibility user recipe','Water and soap','Mix carefully','Store safely','Do not eat','approved',jsonb_build_object('reviewer','Fixture admin','note','Reviewed test recipe','reviewed_at',now()));
+ perform set_config('request.jwt.claim.sub',reporter::text,true);
+ perform public.community_saved_recipes_set(product,builtin,'Fixture',true);
+ perform public.community_saved_recipes_set(product,recipe::text,'Fixture',true);
+ receipt:=public.recipe_concern_submit(product,builtin,'Other','Please check this fixture');
+ perform public.recipe_concern_submit(product,recipe::text,'Other','Please check the user recipe');
+ if public.community_recipe_visible(product,builtin) or public.community_recipe_visible(product,recipe::text) then raise exception 'Report did not privately hide both recipe types'; end if;
+ if exists(select 1 from public.recipe_list(product) r where r.id=recipe) then raise exception 'Reported user recipe still listed'; end if;
+ if exists(select 1 from public.community_saved_recipes_list() s where s.recipe_id in (builtin,recipe::text)) then raise exception 'Hidden recipes exposed through Saved'; end if;
+ if (select recipes from public.community_profile_public('VisibilityAuthor')) <> '[]'::jsonb then raise exception 'Hidden recipe exposed through profile'; end if;
+ update public.recipe_concerns set reviewed_at=now() where user_id=reporter;
+ if exists(select 1 from public.recipe_concerns where user_id=reporter and hidden_at is null) then raise exception 'Reviewed history not cleared'; end if;
+ if public.community_recipe_visible(product,builtin) then raise exception 'Review restored private recipe'; end if;
+ perform public.community_recipe_hide(product,builtin,false,reporter);
+ if not public.community_recipe_visible(product,builtin) then raise exception 'Restore failed'; end if;
+ if public.recipe_concern_submit(product,builtin,'Unsafe advice','Different retry text')<>receipt then raise exception 'Restore/review allowed duplicate'; end if;
+ perform public.community_recipe_hide(product,builtin,true,reporter);
+ begin perform public.community_recipe_hide(product,builtin,false,observer); exception when insufficient_privilege then denied:=true; end;
+ if not denied then raise exception 'Wrong-account mutation allowed'; end if;
+ perform set_config('request.jwt.claim.sub',observer::text,true);
+ if not public.community_recipe_visible(product,builtin) or not public.community_recipe_visible(product,recipe::text) then raise exception 'Personal report hid recipe for observer'; end if;
+ if not exists(select 1 from public.recipe_list(product) r where r.id=recipe) then raise exception 'Review removed public recipe'; end if;
+ if exists(select 1 from public.community_hidden_recipes()) then raise exception 'Other account preferences leaked'; end if;
+ perform public.community_recipe_hide(product,recipe::text,true,observer);
+ if public.community_recipe_visible(product,recipe::text) then raise exception 'Community recipe block failed'; end if;
+ perform public.community_recipe_hide(product,recipe::text,false,observer);
+ update public.community_builtin_recipes set is_active=false where id=builtin;
+ update public.community_recipes set admin_removed_at=now() where id=recipe;
+ if exists(select 1 from public.recipe_list(product) r where r.id=recipe) then raise exception 'Archived community recipe remains public'; end if;
+ denied:=false;
+ begin perform public.community_saved_recipes_set(product,builtin,'Fixture',true); exception when others then denied:=true; end;
+ if not denied then raise exception 'Archived catalogue recipe can still be saved'; end if;
+ if has_table_privilege('authenticated','public.community_recipe_visibility','SELECT') or has_function_privilege('anon','public.community_hidden_recipes()','execute') then raise exception 'Private preferences exposed'; end if;
+ delete from public.community_recipes where id=recipe;
+ if exists(select 1 from public.community_recipe_visibility where recipe_id=recipe::text) then raise exception 'Deleted author recipe preference retained'; end if;
+ delete from auth.users where id=reporter;
+ if exists(select 1 from public.community_recipe_visibility where user_id=reporter) then raise exception 'Deleted user preferences retained'; end if;
+end $$;
+rollback;

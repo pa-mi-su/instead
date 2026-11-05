@@ -1,3 +1,7 @@
+jest.mock('lucide-react-native', () => ({
+  ChevronDown: 'ChevronDown',
+  ChevronUp: 'ChevronUp',
+}));
 import { act, fireEvent, render } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import {

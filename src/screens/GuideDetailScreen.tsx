@@ -1,3 +1,5 @@
+import { useRecipeVisibility } from '../hooks/useRecipeVisibility';
+import { BlockRecipeButton } from '../components/HiddenRecipes';
 import { useRecipeConcerns } from '../hooks/useRecipeConcerns';
 import {
   getCommunityRevision,
@@ -94,6 +96,10 @@ export function GuideDetailScreen({
   onOpenProfile: (username: string) => void;
   bottomInset: number;
 }) {
+  const visibility = useRecipeVisibility();
+  const targetHidden = Boolean(
+    initialRecipeId && visibility?.isHidden(guide.id, initialRecipeId),
+  );
   const ratingScope = useRef(0);
   const communityY = useRef(0);
   const [recipeRatings, setRecipeRatings] = useState<
@@ -191,6 +197,9 @@ export function GuideDetailScreen({
     if (
       !initialRecipeId ||
       catalogueTarget ||
+      targetHidden ||
+      initialRecipeId.startsWith('builtin:') ||
+      initialRecipeId.startsWith('admin:') ||
       !published.ready ||
       !published.more ||
       published.busy ||
@@ -202,7 +211,7 @@ export function GuideDetailScreen({
     if (requestedPages.current.has(offset)) return;
     requestedPages.current.add(offset);
     published.loadMore();
-  }, [initialRecipeId, catalogueTarget, published]);
+  }, [initialRecipeId, catalogueTarget, published, targetHidden]);
   async function voteRecipe(recipeId: string, value: -1 | 1) {
     const client = supabase;
     if (!client) throw new Error('Voting is unavailable right now.');
@@ -233,6 +242,12 @@ export function GuideDetailScreen({
     scrollRef.current?.scrollTo({ y: communityY.current, animated: true });
   return (
     <View style={styles.detailShell}>
+      {targetHidden && (
+        <Text style={styles.optionDetail}>
+          This recipe is hidden from your account. You can restore it in My
+          INSTEAD.
+        </Text>
+      )}
       <View style={styles.detailTopBar}>
         <Pressable
           onPress={onBack}
@@ -388,6 +403,12 @@ export function GuideDetailScreen({
                           item.recipe_id === recipe.id,
                       )}
                       onSignIn={requestSignIn}
+                    />
+                    <BlockRecipeButton
+                      productId={guide.id}
+                      recipeId={recipe.id}
+                      signedIn={verified}
+                      title={recipe.name}
                     />
                     {recipeRatings[recipe.id] ? (
                       <RecipeVoteButtons

@@ -108,6 +108,21 @@ end $$;"""])
  print(run(psql+['-f',str(root/'supabase/tests/recipe-saves-and-admin-users.test.sql')])[-800:])
  print(run(psql+['-f',str(root/'supabase/tests/recipe-voting.test.sql')])[-500:])
  print(run(psql+['-f',str(root/'supabase/tests/builtin-recipe-admin.test.sql')])[-500:])
+ run(psql+['-f',str(root/'supabase/personal-recipe-visibility.sql')])
+ run(psql+['-f',str(root/'supabase/personal-recipe-visibility.sql')])
+ print(run(psql+['-f',str(root/'supabase/tests/personal-recipe-visibility.test.sql')])[-800:])
+ run(psql+['-c',"""insert into auth.users(id,email,email_confirmed_at) values('97000000-0000-0000-0000-000000000001','visibility-reapply@example.invalid',now());
+insert into public.community_builtin_recipes(id,product_id,title,is_active) values('builtin:visibilityReapply','natural-glass-cleaner','Reapply fixture',true);
+select set_config('request.jwt.claim.sub','97000000-0000-0000-0000-000000000001',false);
+select public.recipe_concern_submit('natural-glass-cleaner','builtin:visibilityReapply','Other','Migration repeatability fixture');
+select public.community_recipe_hide('natural-glass-cleaner','builtin:visibilityReapply',false,'97000000-0000-0000-0000-000000000001');"""])
+ run(psql+['-f',str(root/'supabase/personal-recipe-visibility.sql')])
+ run(psql+['-c',"""do $$ begin
+if exists(select 1 from public.community_recipe_visibility where user_id='97000000-0000-0000-0000-000000000001') then raise exception 'Reapplying migration re-hid restored recipe'; end if;
+end $$;
+delete from auth.users where id='97000000-0000-0000-0000-000000000001';
+delete from public.community_builtin_recipes where id='builtin:visibilityReapply';"""])
+ print('Personal hiding is private across recipe types; repeated deployment preserves restored recipes.')
 finally:
  if started: run([str(bin/'pg_ctl'),'-D',str(base/'data'),'-m','immediate','stop'])
  shutil.rmtree(base)
