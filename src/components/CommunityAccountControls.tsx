@@ -11,7 +11,6 @@ export function CommunityAccountControls({
   community: ReturnType<typeof useCommunity>;
 }) {
   const [checked, setChecked] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [reading, setReading] = useState(false);
   const button = (label: string, action: () => unknown, disabled = c.busy) => (
     <Pressable
@@ -54,8 +53,8 @@ export function CommunityAccountControls({
       ) : c.account?.deletion_requested_at ? (
         <Text>
           Your account is pending deletion. Your public contributions remain
-          hidden until deletion is complete. Retry below, or contact
-          info@insteadtry.com if you need help.
+          hidden until deletion is complete. Manage deletion in My INSTEAD, or
+          contact info@insteadtry.com if you need help.
         </Text>
       ) : c.account?.suspended ? (
         <Text>
@@ -93,37 +92,6 @@ export function CommunityAccountControls({
       ) : (
         <Text>Your account has accepted the current community terms.</Text>
       )}
-      {!!c.blocks.length && (
-        <View>
-          <Text style={styles.optionName}>Blocked contributors</Text>
-          {c.blocks.map(block => (
-            <View key={block.id}>
-              <Text>{block.label}</Text>
-              {button(
-                'Unblock contributor',
-                () => c.unblock(block.id),
-                c.busy || !c.canManage,
-              )}
-            </View>
-          ))}
-        </View>
-      )}
-      {!!c.account?.deletion_requested_at &&
-        button('Retry account deletion', c.requestDeletion)}
-      {!c.account?.deletion_requested_at &&
-        button('Delete account', () => setDeleting(true))}
-      {deleting && !c.account?.deletion_requested_at && (
-        <View>
-          <Text>
-            Request permanent deletion of your account, saved guides, recipes,
-            votes, reports, agreements, and uploaded photos? Your public
-            contributions will be hidden immediately. Deletion cannot be undone
-            once processed.
-          </Text>
-          {button('Confirm account deletion request', c.requestDeletion)}
-          {button('Cancel', () => setDeleting(false))}
-        </View>
-      )}
       <Modal
         visible={reading}
         onRequestClose={() => setReading(false)}
@@ -142,3 +110,86 @@ export function CommunityAccountControls({
 const local = {
   loadFailure: { gap: 10 },
 };
+
+export function CommunityAccountManagement({
+  community: c,
+  section,
+}: {
+  community: ReturnType<typeof useCommunity>;
+  section: 'blocks' | 'deletion';
+}) {
+  const [deleting, setDeleting] = useState(false);
+  const button = (label: string, action: () => unknown, disabled = c.busy) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={action}
+      style={styles.actionButton}
+    >
+      <Text style={styles.actionButtonText}>{label}</Text>
+    </Pressable>
+  );
+  return (
+    <View style={styles.optionList}>
+      {section === 'blocks' && (
+        <View style={styles.optionCard}>
+          <Text accessibilityRole="header" style={styles.optionName}>
+            Blocked recipes
+          </Text>
+          <Text style={styles.optionDetail}>
+            Blocking a contributor hides all of their recipes for your account
+            only. Other people can still see them.
+          </Text>
+          {!c.blocks.length && (
+            <Text style={styles.optionDetail}>
+              You have no blocked contributors.
+            </Text>
+          )}
+          {c.blocks.map(block => (
+            <View key={block.id} style={styles.optionList}>
+              <Text style={styles.optionName}>
+                {block.label.replace(/^Recipe:\s*/i, '')}
+              </Text>
+              <Text style={styles.optionDetail}>
+                This contributor’s recipes are hidden from you.
+              </Text>
+              {button(
+                'Unblock contributor',
+                () => c.unblock(block.id),
+                c.busy || !c.canManage,
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+      {section === 'deletion' && (
+        <View style={styles.optionCard}>
+          <Text accessibilityRole="header" style={styles.optionName}>
+            Delete your account
+          </Text>
+          <Text style={styles.optionDetail}>
+            Permanently delete your account and its data. This is separate from
+            blocking a contributor or reporting a recipe.
+          </Text>
+          {!!c.account?.deletion_requested_at &&
+            button('Retry account deletion', c.requestDeletion)}
+          {!c.account?.deletion_requested_at &&
+            button('Delete account', () => setDeleting(true))}
+          {deleting && !c.account?.deletion_requested_at && (
+            <View>
+              <Text>
+                Request permanent deletion of your account, saved guides,
+                recipes, votes, reports, agreements, and uploaded photos? Your
+                public contributions will be hidden immediately. Deletion cannot
+                be undone once processed.
+              </Text>
+              {button('Confirm account deletion request', c.requestDeletion)}
+              {button('Cancel', () => setDeleting(false))}
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}

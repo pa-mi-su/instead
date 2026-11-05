@@ -55,3 +55,29 @@ test('signed-in reports send IDs and concern text, never client-supplied identit
     ),
   ).toBeTruthy();
 });
+
+test('an existing concern is marked without hiding the recipe or claiming a new submission', async () => {
+  const screen = await render(
+    <ReportRecipeButton {...props} signedIn reported canBlock />,
+  );
+  expect(screen.getByText('Concern submitted')).toBeTruthy();
+  expect(screen.getByText(/block the contributor below/)).toBeTruthy();
+  expect(
+    screen.getByLabelText('Report or raise a concern about A recipe'),
+  ).toBeTruthy();
+});
+
+test('a reported recipe cannot submit another concern through the button', async () => {
+  const invoke = supabase!.functions!.invoke as jest.Mock;
+  const previous = invoke.mock.calls.length;
+  const screen = await render(
+    <ReportRecipeButton {...props} signedIn reported />,
+  );
+  const button = screen.getByLabelText(
+    'Report or raise a concern about A recipe',
+  );
+  expect(button.props.accessibilityState.disabled).toBe(true);
+  await fireEvent.press(button);
+  expect(screen.queryByText('Send report')).toBeNull();
+  expect(invoke).toHaveBeenCalledTimes(previous);
+});

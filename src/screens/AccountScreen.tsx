@@ -1,3 +1,5 @@
+import { CommunityAccountManagement } from '../components/CommunityAccountControls';
+import { useRecipeConcerns } from '../hooks/useRecipeConcerns';
 import {
   notifyCommunityChanged,
   useCommunityRevision,
@@ -36,6 +38,7 @@ export function AccountScreen({
   const [removing, setRemoving] = useState<string | null>(null);
   const userId = community.session?.user.id;
   const revision = useCommunityRevision();
+  const reports = useRecipeConcerns(supabase, userId);
   const requestVersion = useRef(0);
   const refresh = useCallback(async () => {
     const version = ++requestVersion.current;
@@ -111,6 +114,64 @@ export function AccountScreen({
         purpose="account"
         onSignInRequest={() => undefined}
       />
+      {!!userId &&
+        !community.deletionInProgress &&
+        !community.finishingSignup &&
+        !community.accountLoading && (
+          <>
+            <CommunityAccountManagement
+              community={community}
+              section="blocks"
+            />
+            <View style={styles.optionCard}>
+              <Text accessibilityRole="header" style={styles.optionName}>
+                Submitted recipe concerns
+              </Text>
+              <Text style={styles.optionDetail}>
+                Your reports are private. Reporting requests a review; blocking
+                a contributor hides their recipes from your account.
+              </Text>
+              {reports.loading && <Text>Loading your concerns…</Text>}
+              {!!reports.error && (
+                <Text accessibilityRole="alert">
+                  Could not load your concerns. Try refreshing below.
+                </Text>
+              )}
+              {!reports.loading &&
+                !reports.error &&
+                !reports.concerns.length && (
+                  <Text style={styles.optionDetail}>
+                    You haven’t submitted any recipe concerns.
+                  </Text>
+                )}
+              {reports.concerns.map(report => (
+                <View key={report.id} style={styles.optionList}>
+                  <Text style={styles.optionName}>{report.title}</Text>
+                  <Text style={styles.optionDetail}>
+                    {report.reviewed_at ? 'Reviewed' : 'Submitted for review'} ·{' '}
+                    {report.reason}
+                  </Text>
+                  <Text style={styles.optionDetail}>
+                    {guides.find(guide => guide.id === report.product_id)
+                      ?.title ?? report.product_id}
+                  </Text>
+                </View>
+              ))}
+              <Pressable
+                accessibilityRole="button"
+                disabled={reports.loading}
+                onPress={reports.refresh}
+                style={styles.actionButton}
+              >
+                <Text style={styles.actionButtonText}>Refresh concerns</Text>
+              </Pressable>
+            </View>
+            <CommunityAccountManagement
+              community={community}
+              section="deletion"
+            />
+          </>
+        )}
       <View style={styles.optionList}>
         {userId &&
           !community.deletionInProgress &&

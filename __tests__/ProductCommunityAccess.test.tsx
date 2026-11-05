@@ -183,6 +183,7 @@ test('deletion shows dedicated progress without profile errors, retry buttons, o
   expect(screen.queryByText('Sign out')).toBeNull();
   await screen.rerender(<DeletionHarness deleting={false} />);
   expect(screen.queryByLabelText('Deleting your account')).toBeNull();
-  expect(screen.getByText('Retry account deletion')).toBeTruthy();
+  expect(screen.queryByText('Retry account deletion')).toBeNull();
+  // Deletion retry is now a separate section on AccountScreen.
   expect(screen.queryByText(/Could not load your profile/)).toBeNull();
 });

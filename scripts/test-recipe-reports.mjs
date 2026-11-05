@@ -27,6 +27,7 @@ function fixture({
   signedIn = true,
   claimed = true,
   catalogue = false,
+  limited = false,
 } = {}) {
   const calls = [],
     mail = [];
@@ -45,8 +46,16 @@ function fixture({
           recipe: { name: 'Full catalogue recipe', ingredients: ['Water'] },
         },
       ];
-    else if (url.endsWith('/rpc/recipe_concern_submit')) data = id;
-    else if (url.endsWith('/rpc/recipe_concern_claim')) data = claimed;
+    else if (url.endsWith('/rpc/recipe_concern_submit')) {
+      if (limited)
+        return new Response(
+          JSON.stringify({
+            message: 'Too many actions. Please try again later.',
+          }),
+          { status: 400 },
+        );
+      data = id;
+    } else if (url.endsWith('/rpc/recipe_concern_claim')) data = claimed;
     else if (options.method === 'PATCH') data = null;
     else
       data = [
@@ -188,4 +197,16 @@ test('catalogue recipe arrays render as readable lists, including numbered instr
   assert.match(email.html, /<li[^>]*>Jar/);
   assert.match(email.text, /Recipe name/);
   assert.match(email.text, /Keep dry/);
+});
+
+test('rate-limited reports return 429 and never attempt email delivery', async () => {
+  const f = fixture({ limited: true });
+  const response = await f.handler(f.request());
+  assert.equal(response.status, 429);
+  assert.match((await response.json()).message, /limit reached/);
+  assert.equal(f.mail.length, 0);
+  assert.equal(
+    f.calls.some(call => call.url.endsWith('/rpc/recipe_concern_claim')),
+    false,
+  );
 });

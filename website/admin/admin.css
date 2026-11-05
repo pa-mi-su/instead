@@ -352,3 +352,18 @@ footer {
 .admin-role-setup[open] summary {
   margin-bottom: 12px;
 }
+
+.concern-entries {
+  max-height: 360px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+.concern-entry {
+  padding: 12px 0;
+  border-top: 1px solid #d9ccb6;
+}
+.reports summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 10px 0;
+}

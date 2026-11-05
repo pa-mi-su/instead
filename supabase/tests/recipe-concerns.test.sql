@@ -23,8 +23,10 @@ begin
  user_concern:=public.recipe_concern_submit(product,user_recipe::text,'Other','First review concern.');
  update public.recipe_reports set created_at=now()-interval '1 hour' where recipe_id=user_recipe;
  insert into public.community_report_reviews(kind,content_id,reviewed_at) values('recipe',user_recipe,now()-interval '30 minutes');
- perform public.recipe_concern_submit(product,user_recipe::text,'Other','A different concern after the previous review.');
- if not exists(select 1 from public.recipe_reports where recipe_id=user_recipe and created_at>(select reviewed_at from public.community_report_reviews where kind='recipe' and content_id=user_recipe)) then raise exception 'New concern did not reopen review'; end if;
+ update public.recipe_concerns set created_at=now()-interval '2 days',reviewed_at=now()-interval '1 hour' where id=user_concern;
+ if public.recipe_concern_submit(product,user_recipe::text,'Unsafe advice','Changed text after review.')<>user_concern then raise exception 'Same account created a second concern after review'; end if;
+ if (select count(*) from public.recipe_concerns where recipe_id=user_recipe::text and user_id=who)<>1 then raise exception 'Duplicate report created'; end if;
+ if exists(select 1 from public.recipe_reports where recipe_id=user_recipe and created_at>(select reviewed_at from public.community_report_reviews where kind='recipe' and content_id=user_recipe)) then raise exception 'Duplicate report reopened review'; end if;
  delete from auth.users where id=author_id;
  if (select recipe_snapshot->>'deleted' from public.recipe_concerns where id=user_concern) is distinct from 'true' then raise exception 'Deleted author recipe content retained in reports'; end if;
  perform set_config('request.jwt.claim.role','service_role',true);

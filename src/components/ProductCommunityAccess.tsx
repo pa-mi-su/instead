@@ -442,75 +442,78 @@ export function ProductCommunityAccess({
           </View>
         </View>
       )}
-      {!!c.session && !c.passwordSetupReady && !c.finishingSignup && (
-        <View style={styles.optionCard}>
-          <Text>
-            Signed in{c.session.user.email ? ` as ${c.session.user.email}` : ''}
-            .
-          </Text>
-          {purpose === 'account' &&
-            !c.profileLoading &&
-            !c.account?.deletion_requested_at && (
-              <View style={local.profileSummary}>
-                {c.avatarUrl ? (
-                  <Image
-                    source={{ uri: c.avatarUrl }}
-                    style={local.profileAvatar}
-                  />
-                ) : (
-                  <View style={local.profileAvatarPlaceholder}>
-                    <Text style={local.profileAvatarInitial}>
-                      {(c.profile?.username ??
-                        c.username ??
-                        '?')[0]?.toUpperCase() ?? '?'}
+      {!!c.session &&
+        !c.passwordSetupReady &&
+        !c.finishingSignup &&
+        (purpose === 'account' || !c.canContribute) && (
+          <View style={styles.optionCard}>
+            <Text>
+              Signed in
+              {c.session.user.email ? ` as ${c.session.user.email}` : ''}.
+            </Text>
+            {purpose === 'account' &&
+              !c.profileLoading &&
+              !c.account?.deletion_requested_at && (
+                <View style={local.profileSummary}>
+                  {c.avatarUrl ? (
+                    <Image
+                      source={{ uri: c.avatarUrl }}
+                      style={local.profileAvatar}
+                    />
+                  ) : (
+                    <View style={local.profileAvatarPlaceholder}>
+                      <Text style={local.profileAvatarInitial}>
+                        {(c.profile?.username ??
+                          c.username ??
+                          '?')[0]?.toUpperCase() ?? '?'}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={local.profileCopy}>
+                    <Text style={local.profileUsername}>
+                      {c.profile?.username
+                        ? `@${c.profile.username}`
+                        : c.profileLoadError
+                        ? 'Profile unavailable'
+                        : 'Set your username'}
+                    </Text>
+                    <Text style={styles.optionDetail}>
+                      {c.profile?.bio || 'Add a short bio if you like.'}
                     </Text>
                   </View>
-                )}
-                <View style={local.profileCopy}>
-                  <Text style={local.profileUsername}>
-                    {c.profile?.username
-                      ? `@${c.profile.username}`
-                      : c.profileLoadError
-                      ? 'Profile unavailable'
-                      : 'Set your username'}
-                  </Text>
-                  <Text style={styles.optionDetail}>
-                    {c.profile?.bio || 'Add a short bio if you like.'}
-                  </Text>
+                  {button(
+                    'Update profile',
+                    () => setEditingProfile(true),
+                    c.busy || !c.canEditProfile,
+                  )}
+                  {!!c.profileLoadError && (
+                    <Text accessibilityRole="alert" style={local.inlineError}>
+                      Could not load your profile. You can still update it here.
+                    </Text>
+                  )}
+                  {editingProfile && (
+                    <ProfileEditor
+                      community={c}
+                      onClose={() => setEditingProfile(false)}
+                    />
+                  )}
                 </View>
-                {button(
-                  'Update profile',
-                  () => setEditingProfile(true),
-                  c.busy || !c.canEditProfile,
-                )}
-                {!!c.profileLoadError && (
-                  <Text accessibilityRole="alert" style={local.inlineError}>
-                    Could not load your profile. You can still update it here.
-                  </Text>
-                )}
-                {editingProfile && (
-                  <ProfileEditor
-                    community={c}
-                    onClose={() => setEditingProfile(false)}
-                  />
-                )}
-              </View>
-            )}
-          {purpose === 'account' &&
-            c.profileLoading &&
-            !c.account?.deletion_requested_at && (
-              <View
-                accessibilityRole="progressbar"
-                accessibilityLabel="Loading your profile"
-              >
-                <ActivityIndicator color={COLORS.ink} />
-                <Text>Loading your profile…</Text>
-              </View>
-            )}
-          {button('Sign out', c.signOut)}
-          <CommunityAccountControls community={c} />
-        </View>
-      )}
+              )}
+            {purpose === 'account' &&
+              c.profileLoading &&
+              !c.account?.deletion_requested_at && (
+                <View
+                  accessibilityRole="progressbar"
+                  accessibilityLabel="Loading your profile"
+                >
+                  <ActivityIndicator color={COLORS.ink} />
+                  <Text>Loading your profile…</Text>
+                </View>
+              )}
+            {purpose === 'account' && button('Sign out', c.signOut)}
+            <CommunityAccountControls community={c} />
+          </View>
+        )}
       {renderRecipes?.(c, onSignInRequest)}
     </View>
   );

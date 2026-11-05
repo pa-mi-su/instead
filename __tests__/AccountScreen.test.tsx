@@ -8,6 +8,14 @@ jest.mock('../src/lib/supabase', () => ({ supabase: { rpc: jest.fn() } }));
 jest.mock('../src/components/ProductCommunityAccess', () => ({
   ProductCommunityAccess: () => null,
 }));
+jest.mock('../src/hooks/useRecipeConcerns', () => ({
+  useRecipeConcerns: () => ({
+    concerns: [],
+    error: '',
+    loading: false,
+    refresh: jest.fn(),
+  }),
+}));
 jest.mock('../src/components/GuideCard', () => ({ GuideCard: () => null }));
 jest.mock('../src/components/AnimatedPressable', () => ({
   AnimatedPressable: require('react-native').Pressable,
@@ -17,7 +25,12 @@ const props = {
   bottomInset: 0,
 };
 const account = (id: string) =>
-  ({ session: { user: { id } } } as ReturnType<typeof useCommunity>);
+  ({
+    session: { user: { id } },
+    blocks: [],
+    busy: false,
+    canManage: true,
+  } as unknown as ReturnType<typeof useCommunity>);
 const recipe = {
   id: 'private-recipe',
   product_id: 'natural-toothpaste',

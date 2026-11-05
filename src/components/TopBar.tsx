@@ -1,4 +1,4 @@
-import { Bookmark, Info, Menu, UserRound, X } from 'lucide-react-native';
+import { Bookmark, Home, Info, Menu, UserRound, X } from 'lucide-react-native';
 import { type ReactNode, useRef, useState } from 'react';
 import {
   Modal,
@@ -128,6 +128,13 @@ export function TopBar({
 
             <View style={styles.menuItems}>
               <MenuItem
+                label="Home"
+                detail="Browse guides and recipes"
+                active={activeView === 'home'}
+                onPress={() => chooseDestination(onHome)}
+                icon={<Home size={21} color={COLORS.ink} />}
+              />
+              <MenuItem
                 label="My INSTEAD"
                 detail="Profile and your recipes"
                 active={activeView === 'account'}
@@ -143,7 +150,7 @@ export function TopBar({
                 count={savedCount}
               />
               <MenuItem
-                label="Info & safety"
+                label="Info & Safety"
                 detail="How INSTEAD works"
                 active={activeView === 'info'}
                 onPress={() => chooseDestination(onInfo)}

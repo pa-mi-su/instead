@@ -1,3 +1,4 @@
+import { useRecipeConcerns } from '../hooks/useRecipeConcerns';
 import {
   getCommunityRevision,
   notifyCommunityChanged,
@@ -113,6 +114,7 @@ export function GuideDetailScreen({
     false,
   );
 
+  const reports = useRecipeConcerns(supabase, community.session?.user.id);
   const published = useRecipes(supabase, guide.id, community.session?.user.id);
   useEffect(() => {
     const scope = ratingScope;
@@ -375,10 +377,16 @@ export function GuideDetailScreen({
                     </Text>
                     <Text style={styles.optionDetail}>{recipe.cautions}</Text>
                     <ReportRecipeButton
+                      key={community.session?.user.id ?? 'guest'}
                       productId={guide.id}
                       recipeId={recipe.id}
                       title={recipe.name}
                       signedIn={verified}
+                      reported={reports.concerns.some(
+                        item =>
+                          item.product_id === guide.id &&
+                          item.recipe_id === recipe.id,
+                      )}
                       onSignIn={requestSignIn}
                     />
                     {recipeRatings[recipe.id] ? (
@@ -422,6 +430,7 @@ export function GuideDetailScreen({
                   targetRef={destination.targetRef}
                   onRecipeLayout={destination.onLayout}
                   controller={published}
+                  concerns={reports.concerns}
                   mode="published"
                   productId={guide.id}
                   userId={community.session?.user.id}
@@ -446,7 +455,7 @@ export function GuideDetailScreen({
                 ? '02'
                 : '01'
             }
-            title="SUBMIT A RECIPE & ACCOUNT"
+            title="SUBMIT A RECIPE"
           >
             <ProductCommunity
               key={guide.id}

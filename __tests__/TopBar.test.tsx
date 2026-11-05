@@ -32,6 +32,7 @@ jest.mock('react-native/Libraries/Modal/Modal', () => ({
 }));
 jest.mock('lucide-react-native', () => ({
   Bookmark: () => null,
+  Home: () => null,
   Info: () => null,
   Menu: () => null,
   UserRound: () => null,
@@ -68,7 +69,7 @@ test('keeps the top bar focused on the brand and opens a labeled navigation draw
 
   expect(screen.screen.getByText('Your spaces')).toBeTruthy();
   expect(screen.screen.getByText('My INSTEAD')).toBeTruthy();
-  expect(screen.screen.getByText('Info & safety')).toBeTruthy();
+  expect(screen.screen.getByText('Info & Safety')).toBeTruthy();
   expect(
     screen.screen.getByRole('button', { name: 'Saved, 2 saved' }),
   ).toBeTruthy();
@@ -128,4 +129,25 @@ test('iPhone menu removes fade delay but waits for native dismissal before navig
       value: original,
     });
   }
+});
+
+test('Home is the first destination and returns to the directory', async () => {
+  const { screen, props } = await renderTopBar();
+  await fireEvent.press(
+    screen.getByRole('button', { name: 'Open navigation menu' }),
+  );
+  const destinations = screen
+    .getAllByRole('button')
+    .map(button => button.props.accessibilityLabel)
+    .filter(label =>
+      ['Home', 'My INSTEAD', 'Saved, 2 saved', 'Info & Safety'].includes(label),
+    );
+  expect(destinations).toEqual([
+    'Home',
+    'My INSTEAD',
+    'Saved, 2 saved',
+    'Info & Safety',
+  ]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Home' }));
+  expect(props.onHome).toHaveBeenCalledTimes(1);
 });
