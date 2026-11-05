@@ -4,7 +4,11 @@ Initial read-only audit: October 16, 2026. The findings below describe the state
 
 Setup completed later that day: insteadtry.com was registered at Namecheap, its SES identity and DKIM were verified in us-east-1, dedicated sender-scoped SMTP credentials were configured in Supabase, and code email templates were activated. The owner confirmed receipt of a test code email. AWS provides outgoing email delivery; Supabase provides authentication, database, and recipe photo storage.
 
-## Findings
+## Current documentation pointers
+
+The remainder is the **October 16 pre-setup audit**, including historical prices, quotas, DNS failures, and the old 600-second code proposal; those are not current operational claims. The recorded November Auth rollout uses 300-second codes and normal mobile password sign-in. Report emails use separate dedicated server-only SMTP credentials. See [community setup](community-setup.md), [Auth review](admin-auth-security-review.md), and [report delivery](recipe-publication-and-reports.md). Verify provider settings/quotas before operational decisions.
+
+## Historical findings
 
 - Current AWS account (ending 4528): SES in us-east-1 has production access, sending enabled, and HEALTHY enforcement status. Current quota: 50,000 recipients per 24 hours and 14 per second; zero sent in the last 24 hours at audit time.
 - SES in us-west-2 remains in the sandbox. Use us-east-1 for email even though Supabase is hosted in us-west-2. SES production approval, identities and SMTP credentials are regional; the application database does not need to share that region.
@@ -17,18 +21,18 @@ Setup completed later that day: insteadtry.com was registered at Namecheap, its 
 
 ## Proposed configuration
 
-| Setting | Value |
-| --- | --- |
-| SES region | us-east-1 |
-| Sender name | INSTEAD |
-| Sender address | no-reply@<confirmed-owned-domain> |
-| SMTP host | email-smtp.us-east-1.amazonaws.com |
-| SMTP port | 587 with STARTTLS |
-| SMTP username/password | Dedicated Instead SES SMTP credentials |
-| Credential location | Supabase Authentication SMTP settings only |
-| Code email | Subject: Your INSTEAD sign-in code; body includes `{{ .Token }}` |
-| Code lifetime | 600 seconds |
-| Code length | Keep eight digits |
+| Setting                | Value                                                            |
+| ---------------------- | ---------------------------------------------------------------- |
+| SES region             | us-east-1                                                        |
+| Sender name            | INSTEAD                                                          |
+| Sender address         | no-reply@<confirmed-owned-domain>                                |
+| SMTP host              | email-smtp.us-east-1.amazonaws.com                               |
+| SMTP port              | 587 with STARTTLS                                                |
+| SMTP username/password | Dedicated Instead SES SMTP credentials                           |
+| Credential location    | Supabase Authentication SMTP settings only                       |
+| Code email             | Subject: Your INSTEAD sign-in code; body includes `{{ .Token }}` |
+| Code lifetime          | 600 seconds                                                      |
+| Code length            | Keep eight digits                                                |
 
 Use a separate SMTP IAM user/group scoped to ses:SendRawEmail for Instead's verified identity and approved From address. Do not convert the local administrator's credentials or reuse Goodbuy's application keys. SMTP passwords differ from ordinary AWS secret access keys. Credentials must not be committed, placed in client environment variables, or pasted into chat.
 

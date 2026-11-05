@@ -1,5 +1,7 @@
 # Admin authentication review — 2026-11-01
 
+This is the dated November 1 review. Its test counts and rollout warnings describe that revision, not the current installed beta or a live provider-state check. See [community setup](community-setup.md) and the [root README](../README.md) for current source behavior. The owner later authorized enabling current-password enforcement despite the older build 426 recovery interruption.
+
 ## Changes
 
 - Ending a session immediately clears credentials, MFA setup material, private queue data, session storage, email challenge state, and resend/expiry timers. The login remains hidden until the session-ended dialog is dismissed, then opens at a blank email field.
