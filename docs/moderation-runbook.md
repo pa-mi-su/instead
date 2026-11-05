@@ -7,7 +7,9 @@ Authorized moderators can use the private website admin panel described in docs/
 ```sql
 select id, product_id, title, ingredients, instructions, storage_notes, cautions, source, photo_paths, created_at
 from public.community_recipes where status='pending' order by created_at;
-select recipe_id,reason,created_at from public.recipe_reports order by created_at desc;
+select id,product_id,recipe_id,reason,details,created_at
+from public.recipe_concerns where reviewed_at is null order by created_at;
+-- Legacy recipe_reports alone does not include every catalogue concern.
 select * from public.community_deletion_queue();
 ```
 
@@ -28,6 +30,6 @@ Reject personalized diagnosis/dosing, advice to stop prescribed care, unsupporte
 
 Approval requires an authorized admin to confirm they reviewed the full submission and every photo, and to enter a reason. The private audit records the admin, decision, reason, and time. Votes and admin approval do not establish safety or effectiveness. Rejecting content moves it directly to Trash. Legacy photos containing account UUIDs cannot be approved; migrate via Storage or request a resubmission in an opaque folder rather than editing paths only.
 
-To stop an abusive account, an owner can insert/update community_account_controls.suspended=true for that user's internal Auth ID. Existing tokens cannot bypass contribution checks, and public content is hidden. Keep moderation notes factual and avoid unnecessary personal or medical details. Users can block/unblock privately; no public contributor profile is needed.
+To stop an abusive account, use the admin panel's Restrict account action with a factual reason so authorization and audit behavior are preserved. Existing tokens cannot bypass contribution checks, and public content is hidden. Keep moderation notes factual and avoid unnecessary personal or medical details. Users can hide a recipe privately, report it (which also hides it for the reporter), or block/unblock a community contributor. Other users keep seeing published content until an explicit admin removal/archive action. Review does not automatically restore a reporter’s hidden recipe. See [recipe publication and reports](recipe-publication-and-reports.md).
 
 Do not automatically remove content based on report counts: coordinated reports could otherwise silence users. Human triage and timely response are operational requirements. When reviewers are unavailable, pending submissions remain unpublished.

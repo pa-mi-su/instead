@@ -1,56 +1,61 @@
 # Community accounts, passwords, and profiles
 
-Current product behavior: email-and-password accounts have a public username, optional short bio, and optional public avatar. Supabase Auth stores and verifies passwords; the app never stores plaintext passwords. Confirmed users can sync saved guides, submit recipes, and vote. Approved recipes show their author's public profile; email, pending submissions, and saved guides remain private. Comments are not accepted or displayed. Older comment rows and protected cleanup paths remain for account deletion and retention. Apply `supabase/private-account-hub.sql`, then `supabase/profile-avatars.sql`, after the existing community, recipe, safeguards, topic, and voting migrations. Apply `supabase/recipe-saves-and-admin-users.sql` after its listed prerequisites to enable per-recipe saves and the separate admin user directory. Both scripts are repeatable and preserve historical content. See [the Supabase SQL guide](../supabase/README.md) for the full dependency order.
+Current source behavior, audited November 5, 2026. For the complete database sequence, use [the Supabase guide](../supabase/README.md); do not replay one-time community/recipe migrations in an existing project.
 
-## Current project status (October 16, 2026)
+## Product and account boundaries
 
-The existing project was resumed and the community migration has been applied. Email signups are enabled; confirmation is required and anonymous sign-ins are disabled. The app uses passwords for normal sign-in. Email codes confirm new addresses or establish a password for accounts created by the older passwordless flow.
+Guests can browse guides/recipes and optionally scan barcodes. **Saving requires a verified, non-anonymous account** and uses account-owned Supabase bookmarks for guides and individual recipes. The Saved screen offers registration/sign-in to guests; it does not display or import old device-wide bookmarks. My INSTEAD contains profile/submission/personal-visibility/account controls, not a duplicate saved list.
 
-SES is verified for insteadtry.com in us-east-1 (DKIM SUCCESS). Custom SMTP and code email templates are active, and the owner confirmed receipt of a test email. Do not rerun the one-time migration or generate duplicate keys.
+Normal sign-in uses email/password. Signup collects a public username, password/confirmation, and optional bio; email confirmation is required. Optional public avatars are editable after sign-in. Approved community recipes link to the author's public profile; emails, saves, pending submissions, and reports stay private. The client persists Supabase sessions in AsyncStorage, not plaintext passwords. Sign-out resets auth fields and password visibility, clears the account view, and prevents late responses from restoring another account's state.
 
-## Activate the backend
+Verified active contributors must explicitly accept the current account-linked community terms before submitting or voting. Recipe submissions/photos remain unpublished until moderation. Reporting and personal recipe hiding use verified active-account checks; they are separate from publishing permission. No public comment feed is offered, although historical tables and cleanup functions remain.
 
-1. Run `supabase/community.sql` once in the existing Supabase project's SQL editor (project-owner privileges required). This adds separate tables and RPCs; it does not modify guides. This is a one-time transactional migration, not a repeatable seed script.
-2. Enable Email sign-in and user signups in Authentication → Providers. Disable anonymous sign-in unless needed for another feature; community writes reject anonymous accounts anyway.
-3. In Authentication → Settings, require at least 10 characters for passwords and enable breached-password protection if available on the project plan. In Authentication → Email Templates → Confirm signup, use a token-code template:
+## Configure a target environment
 
-   ```html
-   <h2>Confirm your INSTEAD account</h2>
-   <p>Enter this code in INSTEAD: {{ .Token }}</p>
-   <p>If you did not request this, ignore this email.</p>
-   ```
+1. Apply the ordered SQL migrations and deploy both Edge Functions from [the Supabase guide](../supabase/README.md). Source merges do not perform these operations.
+2. Enable email/password signup and require email confirmation. Keep anonymous sign-in disabled for this product. Database account checks independently reject anonymous, unverified, banned, restricted, and deletion-pending writes as appropriate.
+3. Match password rules to the app's minimum **10 characters**. Keep secure email-change/password-change settings consistent with the tested recovery flow. Supabase plan-dependent leaked-password protection is not replaced by a client-only check; the owner retained the Free plan in the recorded rollout.
+4. Configure **eight-digit email codes with 300-second server expiry**, send limits, and confirmation/recovery templates showing `{{ .Token }}`. Supabase Auth owns real expiry; browser/app timers alone cannot enforce it. The recorded November 1 settings are described in [the Auth review](admin-auth-security-review.md); verify each target project's actual saved settings.
+5. Configure custom SMTP in Supabase Auth using dedicated server-side sender credentials. Report-email SMTP is a separate Edge Function configuration. Never use a service-role or SMTP credential as client config.
+6. Supply `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` to native/static builds. Leaving both blank provides offline native browsing only. Follow the root README for environment generation.
 
-   Keep email confirmation enabled and set reasonable code expiry and send limits. Configure the Magic Link template to display `{{ .Token }}` for recovery codes instead of requiring a browser redirect. Normal sign-in uses the account password.
+The October 16 SES setup established the insteadtry.com sender in us-east-1 and custom Auth email delivery. That is dated deployment evidence, not a permanent deliverability guarantee. Keep inbound support verification separate from outbound sender verification. See [SES history](ses-audit.md).
 
-4. Configure custom SMTP for real users. Supabase's default sender is restricted and is unsuitable for a public launch. Keep sender credentials in Supabase, never in the app.
-5. Keep the public Supabase URL/key in the native `.env`; supply the same public values to the static website build through its deployment environment. Never put service-role keys in client configuration.
-6. Run `npm run verify`, `npm run website:build`, then test on a native device and two independent browsers with real email addresses. No test emails are sent by automated checks.
+## Confirmation and recovery
 
-Official references: [Email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless), [SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
+Signup verifies a signup token; normal sign-in verifies a password. **Forgot password?** sends an actual Supabase recovery code using `resetPasswordForEmail`, verifies it with token type `recovery`, and opens a five-minute password-reset window. The app checks password/confirmation and expires the verified form. Older passwordless accounts can use that recovery path to establish a password. A normal email sign-in session is not treated as recovery.
 
-## Current behavior and limits
+The historical build 426 recovery implementation was incompatible with current-password enforcement. The owner subsequently authorized the security rollout despite that older-build interruption. Use the updated app and verify hosted switches for the target environment rather than treating an old beta or dated note as the current contract.
 
-Browsing and device-local saves work without an account. Email-and-password accounts sync saved-guide identifiers across devices and allow recipe submissions, recipe voting, and private submission management in My INSTEAD. Usernames and optional bios are public through profile and approved-recipe RPCs; emails and account IDs are not shown publicly. Recipe submissions and photos require administrator review before publication. Votes express preference and do not prove safety or effectiveness. Email verification does not ensure one human per account; enable Supabase CAPTCHA protection before a large public launch.
+Account setup displays progress while profile/safeguard checks complete; failed checks offer retry. Account/profile reads are independent, bounded, and account-scoped so a slow response is not interpreted as a completed empty profile or another user's data.
 
-The account hub's saved-guide and recipe-list RPCs verify the authenticated account and expose no direct table access. RLS is enabled with no client table policies or grants. Only scoped RPCs have client execute permission. Private security-definer helpers have no client execute permission and an empty search path. Do not grant direct client writes to these tables. Signed-in account controls record deletion requests and invoke the `delete-account` Edge Function. It removes photos before deleting Auth and cascading community records; failures remain pending for retry or operator assistance. No admin key is shipped.
+## Saved, personal hiding, and deletion
 
-## Release checklist
+Guides and recipe bookmarks synchronize through private RPCs; direct client table access is denied. Account switches/sign-out hide the previous account's data. Saved recipe links preserve both topic and recipe IDs, wait for layout, and paginate published community content when needed to locate the exact card.
 
-- Confirm a guest can browse and save locally without an account.
-- Confirm a signed-in account syncs saves across devices, and a second account cannot see the first account's cloud saves.
-- Confirm a signed-in user can see and withdraw only their own recipe submissions.
-- Confirm recipe voting is tied to the signed-in account and is independent across users.
-- Verify incorrect/expired code errors, resend cooldown, policy acceptance, sign-out, app restart, offline retry, and rate limits.
-- Private-account integration assertions are in `supabase/tests/private-account-hub.test.sql`; run only in a disposable local database after the migration. They roll back their fixtures.
+Reporting hides one recipe only for its reporter. Blocking a recipe uses the same private preference for catalogue/community content; blocking a contributor hides that contributor's recipes. Hidden recipes can be restored in My INSTEAD. Restoring does not remove a report or allow another one; admin review does not restore it automatically. There is no current concern-history UI. See [reports and publication](recipe-publication-and-reports.md).
 
-## Current safeguards
+My INSTEAD has a separate deletion section with confirmation. A request hides public contributions, then invokes Storage-first permanent deletion. Progress stays visible during processing. Success clears local account state and shows confirmation; failure stays pending/retryable. The admin can initiate the same cleanup for eligible non-admin users through separately authorized controls. See [admin operations](admin-panel.md) for audit/privacy and backup limitations.
 
-After the original community, recipes, and directory-topics migrations, apply the repeatable `supabase/community-safeguards.sql`. It adds account-linked policy acceptance, pre-publication moderation, contributor blocking, suspension and deletion controls, and opaque photo folders. Deploy the `delete-account` Edge Function. These safeguards and the function were applied October 16, 2026. See `docs/moderation-runbook.md` for current review procedures and `docs/release-safety.md` for release requirements. The original SQL tests target the original schema; run `supabase/tests/safeguards.test.sql` after the safeguards in a disposable database.
+## Avatar deployment
 
-After `supabase/community-safeguards.sql` and `supabase/admin-panel.sql`, apply `supabase/simplify-admin-review.sql` to existing projects. It removes the obsolete qualification and evidence-source audit fields, clears those legacy keys from review records, and moves previously rejected entries into Trash. Rejection in the admin panel now sends content directly to Trash.
+Apply `profile-avatars.sql` before releasing avatar controls. JPEG, PNG, and WebP images up to 2 MiB are accepted. The native picker requests compatible images bounded to 512×512 without extra EXIF data; bytes determine the upload MIME type. Avatar images themselves are public. Account-owner policies and active-account checks protect writes.
 
-## Profile photo deployment check
+```bash
+node --env-file=.env scripts/check-profile-avatars.mjs
+```
 
-Apply `supabase/profile-avatars.sql` to the hosted database before shipping profile photos on either Android or iOS. This repeatable migration creates the avatar column, public avatar bucket, protected upload policies, and avatar save/read RPCs. A code release alone does not apply it. Newly verified accounts can upload JPEG, PNG, and WebP avatars up to 2 MB; suspended and deletion-pending accounts cannot upload.
+This readiness probe uses public configuration, checks bucket readiness, and verifies anonymous avatar mutations are denied. It does not sign in or upload an image. Both signed release jobs run it before compiling.
 
-Run `node --env-file=.env scripts/check-profile-avatars.mjs` after deployment. The check uses only the publishable/anon key, verifies that the bucket exists, and confirms that anonymous avatar updates are denied. It does not upload a photo or sign into an account. Both mobile release jobs now run this check before building, so missing backend setup blocks releases.
+## Account QA
+
+Use consenting/disposable test accounts; never accept terms or delete a real account merely to test a migration.
+
+- Guests browse but cannot save, vote, submit, or report without the relevant sign-in/verification checks.
+- Signup, wrong/expired codes, resend cooldown, recovery, password validation, sign-out, restart, and offline/error retry behave clearly.
+- Two accounts cannot read each other's saved items, submissions, reports, or hidden preferences; stale requests do not cross account boundaries.
+- Public profiles show only eligible published content; optional public avatars are handled distinctly from private recipe photos.
+- Submission/approval, Saved targeting, voting, report/hide/restore, contributor blocking, and global admin removal work for the applicable recipe types.
+- Deletion shows progress, success clears credentials/account data, and failed cleanup remains retryable.
+
+Run `npm run verify`, `npm run safety:test`, and `python3 scripts/test-community-db.py`. The database suite uses a disposable local cluster; fixtures must never be run in a hosted project. Real-device/provider integration remains a separate QA step.

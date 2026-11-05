@@ -1,35 +1,43 @@
 # Community recipe submissions and photos
 
-Recipes are attached to product IDs and approved recipes link to the contributor's public username and optional bio. Email-and-password accounts are required to submit, vote, report, and withdraw; email addresses remain private. INSTEAD has no comment feed. Historical comment records and their backend tables remain hidden for account-deletion cleanup and are not part of current user workflows.
+Current native clients accept recipe submissions, not comments. Verified active accounts with current community-policy acceptance can submit and vote. Approved recipes link to the contributor's public username, optional bio, and optional avatar; email and pending submissions remain private. Historical comment storage/RPCs are retained for compatibility/deletion.
 
-## Database and storage
+## Schema and Storage
 
-`supabase/recipes.sql` is a one-time additive migration after `community.sql`. Recipe text, votes, and reports are accessible through scoped RPCs. The private `recipe-photos` bucket accepts JPEG, PNG, and WebP, at most 5 MiB per photo and three photos per submission. Only the owner can upload in their own folder. Existing objects cannot be overwritten. Pending photos are private to the owner and administrators; approved-recipe photos are readable using five-minute signed URLs. Hiding a recipe stops new public links; existing links can persist for their short lifetime.
+Use [the ordered SQL guide](../supabase/README.md), not a direct table-edit approval workflow. `recipes.sql` is a one-time migration; safeguards/admin/voting/publication migrations provide the current authorization and review behavior.
 
-Each account may submit three recipes per rolling hour and change recipe votes 60 times/hour. One row per account/recipe stores -1 or +1; 0 removes the vote. Repeated desired vote values are idempotent. The private storage upload guard caps each account at 100 files and three unlinked uploads; failed submissions attempt to remove uploaded photos. If a network failure leaves three unattached files, an administrator must remove those orphaned objects through the Storage API/dashboard before further uploads. Do not delete storage metadata directly in SQL.
+The private `recipe-photos` bucket accepts JPEG, PNG, and WebP images, at most **5 MiB each** and **three per submission**. Native photos use the system library picker, compatible image representation, bounded dimensions, and no extra EXIF metadata requested. Upload MIME type is checked from bytes. Do not assume private information in image pixels is stripped.
 
-## Review queue (Supabase owner dashboard)
+New photo paths use an account-owned opaque folder rather than exposing Auth IDs. Existing objects cannot be overwritten. Pending photos are private to the owner/admins; approved-recipe photos can receive five-minute signed URLs when permitted. Removing/restricting content stops new authorized reads; previously issued URLs and downloaded copies can outlive that change. Legacy account-ID paths cannot be approved without proper Storage migration/resubmission.
 
-The admin review queue is in Supabase, not a public profile or client admin page. Inspect both the recipe and each photo before publication, including quantities, instructions, ingredient compatibility, storage and preservation, attribution, and product-specific risks. Publication is not a safety certification; votes reflect user preference only.
+Each account can submit **three recipes/hour** and change recipe votes **60 times/hour**. Votes are one -1/+1 row per account/recipe; 0 removes a vote, and repeated desired values are idempotent. Community authors cannot vote on their own recipes. Votes reflect preference, not safety.
+
+The upload guard caps an account at 100 files and three unlinked uploads. Failed submissions attempt to remove uploaded objects. If orphaned files block further uploads, an operator must inspect/remove them through Storage APIs/dashboard; do not delete only Storage metadata in SQL. There is no scheduled orphan-cleanup worker in this repository.
+
+## Review and publication
+
+Use the private [admin console](admin-panel.md): **Pending recipes** for full-content/photo review, then **Recipes** for published catalogue and community content. Approval records the authenticated reviewer and a specific reason; the full-review checkbox is required. Reviewer qualifications/evidence-source fields are not part of the current form. Rejecting content moves it to Trash. Restoring returns it to review and does not automatically approve it.
+
+Read ingredients/quantities, preparation, storage/preservation, cautions, attribution, and every photo. Publication does not certify safety or effectiveness. See [the moderation runbook](moderation-runbook.md) for review criteria and escalation.
+
+For owner-only investigation, SQL can list pending rows:
 
 ```sql
 select id, product_id, title, ingredients, instructions, storage_notes,
        cautions, source, photo_paths, created_at
-from public.community_recipes where status = 'pending'
+from public.community_recipes
+where status = 'pending' and admin_removed_at is null
 order by created_at;
--- Use the Storage dashboard to inspect the listed private recipe-photos files.
--- Approve or reject through community_moderate with documented reviewer metadata.
--- See docs/moderation-runbook.md; direct approval without a review record is rejected.
 ```
 
-For reports, join `recipe_reports` to `community_recipes` in the owner dashboard. To hide an approved recipe, change its status to rejected; public reads and new photo links then stop. Authors can withdraw their recipes and the client attempts to remove photo files. Withdrawn text remains for moderation until an administrator purges it. On an account-deletion request, delete its photo files through the Storage API first, then delete the Auth account (recipe rows/votes/reports cascade). A missed photo cleanup may leave private orphan files; the public policy does not expose those files. Schedule/manual orphan cleanup is an operations responsibility for now.
+Use protected moderation/removal RPCs or the console for decisions so authorization, review receipts, and audit behavior are preserved. Do not bypass them with direct status changes.
 
-## Client behavior and validation
+## Concerns, private blocking, and deletion
 
-Both native and web provide title, ingredients with quantities, instructions, storage/shelf life, cautions, optional credit, and optional photos with previews/removal. Text limits and photo counts are checked in clients and SQL/bucket policy. Browser photos are re-encoded and resized before upload; native photos use the system library picker with bounded dimensions and no extra EXIF metadata requested. Users should still avoid faces, addresses and private information in image pixels. Native picker requires rebuilding the app; iOS Pods are installed and the photo-library usage description is configured.
+Reports now cover catalogue/admin-created/community recipes through private `recipe_concerns`; legacy `recipe_reports` alone is not the full review queue. Use admin **Open reports** and [the report guide](recipe-publication-and-reports.md). Reporting or blocking one recipe hides it only for that account. Contributor blocking hides the contributor's recipes for that blocker. Review alone does not unpublish content or restore the reporter's personal choice; global removal requires an explicit admin action.
 
-`supabase/tests/recipes.test.sql` runs only in a disposable local database. It tests moderation visibility, private-photo RLS, foreign ownership, product separation, vote changes and idempotency, withdrawal and submission rate limits. Client tests cover field/photo limits, submission state, and cleanup after failure. Real-device photo selection and a real signed-in user upload still require an end-to-end device/browser check.
+Authors can withdraw their own submissions, and the client attempts photo cleanup. Withdrawn records remain subject to moderation/retention until purged or removed by account deletion. Self-service/admin account deletion uses the same Storage-first Edge Function followed by permanent Auth deletion/cascades. Failed cleanup stays pending for retry/operator assistance. Do not manually delete Auth first and leave files behind.
 
-## Current safeguards
+## Verification
 
-`community-safeguards.sql` supersedes the original approval procedure. Current apps accept and display recipes but no comments; legacy comment tables and moderation data remain only for cleanup and account deletion. An authenticated admin and a specific review reason are recorded for each decision; separate qualifications and evidence-source fields are not required. New photo folders are opaque and privately mapped to their owner. Legacy account-ID photo paths must be migrated before publication. Contributors can block authors and cannot vote on their own content. Account deletion removes legacy and opaque photo folders before Auth deletion through the deployed `delete-account` function; failed requests remain pending for retry or operator action.
+Run `npm run verify`, `npm run safety:test`, and `python3 scripts/test-community-db.py`. SQL fixtures use disposable local accounts/Storage tables; never run them in a hosted project. They test ownership, product separation, moderation, votes/limits, withdrawal, saves, reports, personal hiding, and deletion. Real native photo selection, authenticated uploads, signed URLs, and cross-account behavior still require physical-device/provider testing.
