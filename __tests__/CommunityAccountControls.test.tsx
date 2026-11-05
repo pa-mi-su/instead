@@ -29,21 +29,9 @@ test('recipe access controls never include block management or account deletion'
   expect(screen.queryByText('Unblock contributor')).toBeNull();
   expect(screen.queryByText('Delete account')).toBeNull();
 });
-test('blocked recipes have their own titled section and unblock the selected contributor', async () => {
-  const screen = await render(
-    <CommunityAccountManagement community={community} section="blocks" />,
-  );
-  expect(screen.queryByText('Surface cleaner')).toBeNull();
-  await fireEvent.press(screen.getByLabelText('Show blocked contributors'));
-  expect(screen.getByText('Surface cleaner')).toBeTruthy();
-  expect(screen.queryByText('Recipe: Surface cleaner')).toBeNull();
-  expect(screen.queryByText('Delete account')).toBeNull();
-  await fireEvent.press(screen.getByText('Unblock contributor'));
-  expect(unblock).toHaveBeenCalledWith('block');
-});
 test('deletion is a separate section and preserves explicit confirmation', async () => {
   const screen = await render(
-    <CommunityAccountManagement community={community} section="deletion" />,
+    <CommunityAccountManagement community={community} />,
   );
   expect(screen.queryByText('Unblock contributor')).toBeNull();
   await fireEvent.press(screen.getByText('Delete account'));

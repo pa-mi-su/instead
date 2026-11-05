@@ -16,7 +16,6 @@ import type {
   CommunityComment,
   ReportReason,
   CommunityAccountState,
-  BlockedContributor,
   CommunityProfile,
   AvatarUpload,
 } from '../lib/community';
@@ -37,7 +36,6 @@ export function useCommunity(
     'idle' | 'loading' | 'ready' | 'error'
   >('idle');
   const [accountLoadError, setAccountLoadError] = useState('');
-  const [blocks, setBlocks] = useState<BlockedContributor[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -107,14 +105,7 @@ export function useCommunity(
       setAccountLoadError('');
       setProfileLoadError('');
       setProfileLoading(true);
-      // Optional profile/block requests must never hold the account terms gate.
-      accountRpc<BlockedContributor[]>(client, 'community_blocks_list')
-        .then(rows => {
-          if (version === accountGeneration.current) setBlocks(rows);
-        })
-        .catch(() => {
-          if (version === accountGeneration.current) setBlocks([]);
-        });
+      // Profile reads must never hold the account terms gate.
       accountRpc<CommunityProfile[]>(client, 'community_profile_me')
         .then(rows => {
           if (version !== accountGeneration.current) return;
@@ -272,7 +263,6 @@ export function useCommunity(
     setUsername('');
     setBio('');
     setProfileLoadError('');
-    setBlocks([]);
     if (userId)
       loadAccount().catch(issue => {
         if (active) {
@@ -298,7 +288,6 @@ export function useCommunity(
         setSession(null);
         setAccount(null);
         setProfile(null);
-        setBlocks([]);
         setComments([]);
         setDraft('');
         setEmail('');
@@ -383,16 +372,8 @@ export function useCommunity(
       notifyCommunityChanged();
       await Promise.all([loadAccount(), refresh()]);
       setNotice(
-        'Contributor blocked. Their recipes are hidden for your account.',
+        'Contributor blocked. You will no longer see them or their recipes.',
       );
-    });
-  }
-  function unblock(id: string) {
-    return run(async () => {
-      await communityRpc(client, 'community_unblock', { p_block: id });
-      await Promise.all([loadAccount(), refresh()]);
-      setNotice('Contributor unblocked.');
-      notifyCommunityChanged();
     });
   }
   function requestDeletion() {
@@ -420,7 +401,6 @@ export function useCommunity(
           setSession(null);
           setProfile(null);
           setAccount(null);
-          setBlocks([]);
           setDraft('');
           setNotice('');
           notifyCommunityChanged({ type: 'account-deleted', userId: userId! });
@@ -786,10 +766,8 @@ export function useCommunity(
     accountLoadError,
     retryAccount: () => loadAccount(),
     canManage,
-    blocks: accountUserId === userId ? blocks : [],
     acceptPolicy,
     block,
-    unblock,
     requestDeletion,
     deletionComplete,
     deletionInProgress,

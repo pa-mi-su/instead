@@ -4,7 +4,7 @@ Current source behavior, audited November 5, 2026. For the complete database seq
 
 ## Product and account boundaries
 
-Guests can browse guides/recipes and optionally scan barcodes. **Saving requires a verified, non-anonymous account** and uses account-owned Supabase bookmarks for guides and individual recipes. The Saved screen offers registration/sign-in to guests; it does not display or import old device-wide bookmarks. My INSTEAD contains profile/submission/personal-visibility/account controls, not a duplicate saved list.
+Guests can browse guides/recipes and optionally scan barcodes. **Saving requires a verified, non-anonymous account** and uses account-owned Supabase bookmarks for guides and individual recipes. The Saved screen offers registration/sign-in to guests; it does not display or import old device-wide bookmarks. My INSTEAD contains profile/submission/account controls, not a duplicate saved list.
 
 Normal sign-in uses email/password. Signup collects a public username, password/confirmation, and optional bio; email confirmation is required. Optional public avatars are editable after sign-in. Approved community recipes link to the author's public profile; emails, saves, pending submissions, and reports stay private. The client persists Supabase sessions in AsyncStorage, not plaintext passwords. Sign-out resets auth fields and password visibility, clears the account view, and prevents late responses from restoring another account's state.
 
@@ -33,7 +33,7 @@ Account setup displays progress while profile/safeguard checks complete; failed 
 
 Guides and recipe bookmarks synchronize through private RPCs; direct client table access is denied. Account switches/sign-out hide the previous account's data. Saved recipe links preserve both topic and recipe IDs, wait for layout, and paginate published community content when needed to locate the exact card.
 
-Reporting hides one recipe only for its reporter. Blocking a recipe uses the same private preference for catalogue/community content; blocking a contributor hides that contributor's recipes. Hidden recipes can be restored in My INSTEAD. Restoring does not remove a report or allow another one; admin review does not restore it automatically. There is no current concern-history UI. See [reports and publication](recipe-publication-and-reports.md).
+Reporting or blocking permanently excludes the target for that account. A community action also excludes the contributor, all their published recipes across guides, and their profile. Catalogue recipes without a contributor are excluded individually. There is no history, blocked/hidden list, restoration, or unblock UI/API. Affected recipe bookmarks are removed privately. Other accounts retain access while admin review is pending or accepts the content; only explicit global removal changes their publication. See [permanent exclusions](permanent-recipe-exclusions.md).
 
 My INSTEAD has a separate deletion section with confirmation. A request hides public contributions, then invokes Storage-first permanent deletion. Progress stays visible during processing. Success clears local account state and shows confirmation; failure stays pending/retryable. The admin can initiate the same cleanup for eligible non-admin users through separately authorized controls. See [admin operations](admin-panel.md) for audit/privacy and backup limitations.
 
@@ -55,7 +55,7 @@ Use consenting/disposable test accounts; never accept terms or delete a real acc
 - Signup, wrong/expired codes, resend cooldown, recovery, password validation, sign-out, restart, and offline/error retry behave clearly.
 - Two accounts cannot read each other's saved items, submissions, reports, or hidden preferences; stale requests do not cross account boundaries.
 - Public profiles show only eligible published content; optional public avatars are handled distinctly from private recipe photos.
-- Submission/approval, Saved targeting, voting, report/hide/restore, contributor blocking, and global admin removal work for the applicable recipe types.
+- Submission/approval, Saved targeting, voting, permanent report/block exclusions and denied legacy undo calls, and global admin removal work for the applicable recipe types.
 - Deletion shows progress, success clears credentials/account data, and failed cleanup remains retryable.
 
 Run `npm run verify`, `npm run safety:test`, and `python3 scripts/test-community-db.py`. The database suite uses a disposable local cluster; fixtures must never be run in a hosted project. Real-device/provider integration remains a separate QA step.

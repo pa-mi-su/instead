@@ -2,7 +2,6 @@ import {
   refreshRecipeVisibility,
   useRecipeVisibility,
 } from '../hooks/useRecipeVisibility';
-import { notifyRecipeConcernChanged } from '../hooks/useRecipeConcerns';
 import { useEffect, useRef, useState } from 'react';
 import {
   Modal,
@@ -26,12 +25,14 @@ export function ReportRecipeButton({
   signedIn,
   onSignIn,
   reported = false,
+  authorUsername,
 }: {
   productId: string;
   recipeId: string;
   title: string;
   signedIn: boolean;
   reported?: boolean;
+  authorUsername?: string;
   onSignIn: () => void;
 }) {
   const visibility = useRecipeVisibility();
@@ -62,9 +63,8 @@ export function ReportRecipeButton({
   function dismissed() {
     if (refreshOnClose.current) {
       refreshOnClose.current = false;
-      if (sent) visibility?.acceptReport(productId, recipeId, title);
+      if (sent) visibility?.acceptReport(productId, recipeId, authorUsername);
       refreshRecipeVisibility();
-      notifyRecipeConcernChanged();
     }
   }
   async function submit() {
@@ -87,7 +87,7 @@ export function ReportRecipeButton({
         setSubmitted(true);
         setDeliveryDelayed(true);
         setMessage(
-          'Your report is saved and the recipe is hidden from your account. Email delivery is delayed; your report is available to the review team.',
+          'Your report is saved and the recipe is permanently removed from your account. Email delivery is delayed; your report is available to the review team.',
         );
         return;
       }
@@ -108,7 +108,7 @@ export function ReportRecipeButton({
       setDeliveryDelayed(false);
       setDetails('');
       setMessage(
-        'Your report was sent to INSTEAD. This recipe is now hidden from your account. It remains available to others unless an admin removes it.',
+        'Your report was sent to INSTEAD. This recipe is permanently removed from your account. It remains available to others unless an admin removes it.',
       );
     } catch (error) {
       setMessage(
@@ -246,8 +246,10 @@ export function ReportRecipeButton({
                   {details.length}/2,000 characters
                 </Text>
                 <Text style={local.notice}>
-                  Sending a report hides this recipe only for your account.
-                  Other people can still see it while it is reviewed.
+                  Sending a report permanently removes this recipe from your
+                  account. For community recipes, you will no longer see that
+                  contributor or their recipes. Other people can still see
+                  published content while it is reviewed.
                 </Text>
                 {!!message && <Text accessibilityRole="alert">{message}</Text>}
                 {button(

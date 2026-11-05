@@ -1,4 +1,4 @@
-import { HiddenRecipes } from '../components/HiddenRecipes';
+import { useRecipeVisibility } from '../hooks/useRecipeVisibility';
 import {
   AccountSection,
   accountStyles as a,
@@ -36,6 +36,7 @@ export function AccountScreen({
   guides: Guide[];
   bottomInset: number;
 }) {
+  const visibility = useRecipeVisibility();
   const [recipes, setRecipes] = useState<AccountRecipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -118,19 +119,6 @@ export function AccountScreen({
         purpose="account"
         onSignInRequest={() => undefined}
       />
-      {!!userId &&
-        !community.deletionInProgress &&
-        !community.finishingSignup &&
-        !community.accountLoading && (
-          <>
-            <CommunityAccountManagement
-              key={`${userId}:blocks`}
-              community={community}
-              section="blocks"
-            />
-            <HiddenRecipes />
-          </>
-        )}
       <View style={styles.optionList}>
         {userId &&
           !community.deletionInProgress &&
@@ -147,56 +135,61 @@ export function AccountScreen({
                     You have no submissions yet.
                   </Text>
                 )}
-                {recipes.map(recipe => (
-                  <View key={recipe.id} style={a.entry}>
-                    <Text style={styles.optionLabel}>
-                      {recipe.status === 'pending'
-                        ? 'AWAITING REVIEW'
-                        : recipe.status === 'approved'
-                        ? 'PUBLISHED'
-                        : 'NOT PUBLISHED'}
-                    </Text>
-                    <Text style={a.entryTitle}>{recipe.title}</Text>
-                    <Text style={styles.optionDetail}>
-                      {guides.find(guide => guide.id === recipe.product_id)
-                        ?.title ?? recipe.product_id}
-                    </Text>
-                    {!!recipe.moderation_note && (
+                {recipes
+                  .filter(
+                    recipe =>
+                      !visibility?.isHidden(recipe.product_id, recipe.id),
+                  )
+                  .map(recipe => (
+                    <View key={recipe.id} style={a.entry}>
+                      <Text style={styles.optionLabel}>
+                        {recipe.status === 'pending'
+                          ? 'AWAITING REVIEW'
+                          : recipe.status === 'approved'
+                          ? 'PUBLISHED'
+                          : 'NOT PUBLISHED'}
+                      </Text>
+                      <Text style={a.entryTitle}>{recipe.title}</Text>
                       <Text style={styles.optionDetail}>
-                        {recipe.moderation_note}
+                        {guides.find(guide => guide.id === recipe.product_id)
+                          ?.title ?? recipe.product_id}
                       </Text>
-                    )}
-                    <Pressable
-                      accessibilityRole="button"
-                      disabled={removing === recipe.id}
-                      onPress={() =>
-                        Alert.alert(
-                          'Remove this recipe?',
-                          'It will disappear from the public recipe list. You can submit it again later.',
-                          [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'Remove recipe',
-                              style: 'destructive',
-                              onPress: () => withdraw(recipe),
-                            },
-                          ],
-                        )
-                      }
-                      style={({ pressed }) => [
-                        a.button,
-                        removing === recipe.id && { opacity: 0.5 },
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <Text style={styles.actionButtonText}>
-                        {removing === recipe.id
-                          ? 'Removing…'
-                          : 'Remove my recipe'}
-                      </Text>
-                    </Pressable>
-                  </View>
-                ))}
+                      {!!recipe.moderation_note && (
+                        <Text style={styles.optionDetail}>
+                          {recipe.moderation_note}
+                        </Text>
+                      )}
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={removing === recipe.id}
+                        onPress={() =>
+                          Alert.alert(
+                            'Remove this recipe?',
+                            'It will disappear from the public recipe list. You can submit it again later.',
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Remove recipe',
+                                style: 'destructive',
+                                onPress: () => withdraw(recipe),
+                              },
+                            ],
+                          )
+                        }
+                        style={({ pressed }) => [
+                          a.button,
+                          removing === recipe.id && { opacity: 0.5 },
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Text style={styles.actionButtonText}>
+                          {removing === recipe.id
+                            ? 'Removing…'
+                            : 'Remove my recipe'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
                 <Pressable
                   accessibilityRole="button"
                   disabled={loading}
@@ -219,7 +212,6 @@ export function AccountScreen({
           <CommunityAccountManagement
             key={`${userId}:deletion`}
             community={community}
-            section="deletion"
           />
         )}
     </ScrollView>

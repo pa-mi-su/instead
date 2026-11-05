@@ -668,16 +668,11 @@ test('password reset cannot use failed verification or leave its verified form o
   hook.unmount();
 });
 
-test('community terms become ready without waiting for profile or blocked-user requests', async () => {
+test('community terms become ready without fetching a block-management list', async () => {
   const m = mockClient(member);
   const original = m.rpc.getMockImplementation()!;
-  let releaseBlocks!: (value: { data: unknown; error: unknown }) => void;
   let releaseProfile!: (value: { data: unknown; error: unknown }) => void;
   m.rpc.mockImplementation((name, args) => {
-    if (name === 'community_blocks_list')
-      return new Promise(resolve => {
-        releaseBlocks = resolve;
-      });
     if (name === 'community_profile_me')
       return new Promise(resolve => {
         releaseProfile = resolve;
@@ -691,9 +686,11 @@ test('community terms become ready without waiting for profile or blocked-user r
   expect(hook.result.current.accountLoading).toBe(false);
   expect(hook.result.current.profileLoading).toBe(true);
   await act(async () => {
-    releaseBlocks({ data: [], error: null });
     releaseProfile({ data: [{ username: 'Paul', bio: '' }], error: null });
   });
+  expect(
+    m.rpc.mock.calls.some(([name]) => name === 'community_blocks_list'),
+  ).toBe(false);
   expect(hook.result.current.profile?.username).toBe('Paul');
   expect(hook.result.current.profileLoading).toBe(false);
   hook.unmount();

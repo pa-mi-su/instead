@@ -123,6 +123,24 @@ end $$;
 delete from auth.users where id='97000000-0000-0000-0000-000000000001';
 delete from public.community_builtin_recipes where id='builtin:visibilityReapply';"""])
  print('Personal hiding is private across recipe types; repeated deployment preserves restored recipes.')
+ # Simulate an existing report that the superseded UI allowed the user to restore.
+ run(psql+['-c',"""insert into auth.users(id,email,email_confirmed_at) values('96000000-0000-0000-0000-000000000001','permanent-backfill@example.invalid',now());
+insert into public.community_builtin_recipes(id,product_id,title,is_active) values('builtin:permanentBackfill','natural-glass-cleaner','Permanent backfill fixture',true);
+select set_config('request.jwt.claim.sub','96000000-0000-0000-0000-000000000001',false);
+select public.recipe_concern_submit('natural-glass-cleaner','builtin:permanentBackfill','Other','Earlier reported recipe fixture');
+select public.community_recipe_hide('natural-glass-cleaner','builtin:permanentBackfill',false,'96000000-0000-0000-0000-000000000001');
+select public.community_saved_recipes_set('natural-glass-cleaner','builtin:permanentBackfill','Backfill fixture',true);"""])
+ run(psql+['-f',str(root/'supabase/permanent-recipe-exclusions.sql')])
+ run(psql+['-f',str(root/'supabase/permanent-recipe-exclusions.sql')])
+ run(psql+['-c',"""do $$ begin
+if not exists(select 1 from public.community_recipe_visibility where user_id='96000000-0000-0000-0000-000000000001' and recipe_id='builtin:permanentBackfill') then raise exception 'Existing restored report was not permanently excluded'; end if;
+if exists(select 1 from public.community_saved_recipes where user_id='96000000-0000-0000-0000-000000000001') then raise exception 'Reconciled report bookmark retained'; end if;
+if not exists(select 1 from public.community_builtin_recipes where id='builtin:permanentBackfill' and is_active) then raise exception 'Private backfill changed publication'; end if;
+end $$;
+delete from auth.users where id='96000000-0000-0000-0000-000000000001';
+delete from public.community_builtin_recipes where id='builtin:permanentBackfill';"""])
+ print(run(psql+['-f',str(root/'supabase/tests/permanent-recipe-exclusions.test.sql')])[-800:])
+ print('Permanent exclusions: no restore/history APIs; reporter-only contributor filtering and explicit global removal verified.')
 finally:
  if started: run([str(bin/'pg_ctl'),'-D',str(base/'data'),'-m','immediate','stop'])
  shutil.rmtree(base)

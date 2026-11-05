@@ -1,6 +1,5 @@
 import { useRecipeVisibility } from '../hooks/useRecipeVisibility';
-import { BlockRecipeButton } from './HiddenRecipes';
-import type { RecipeConcern } from '../hooks/useRecipeConcerns';
+import { BlockRecipeButton } from './BlockRecipeButton';
 import { imageContentType } from '../lib/imageUpload';
 import { useState, type RefObject } from 'react';
 import { Bookmark } from 'lucide-react-native';
@@ -23,8 +22,6 @@ export function RecipeContent({
   productId,
   userId,
   canContribute,
-  canManage,
-  onBlock,
   onSignInRequest,
   onOpenProfile,
   savedRecipeIds,
@@ -32,9 +29,7 @@ export function RecipeContent({
   onRecipeLayout,
   targetRecipeId,
   targetRef,
-  concerns = [],
 }: {
-  concerns?: RecipeConcern[];
   onRecipeLayout?: () => void;
   targetRecipeId?: string;
   targetRef?: RefObject<View | null>;
@@ -43,8 +38,6 @@ export function RecipeContent({
   productId: string;
   userId?: string;
   canContribute: boolean;
-  canManage: boolean;
-  onBlock: (id: string) => unknown;
   onSignInRequest: () => void;
   onOpenProfile: (username: string) => void;
   savedRecipeIds: string[];
@@ -238,14 +231,8 @@ export function RecipeContent({
               recipeId={recipe.id}
               title={recipe.title}
               signedIn={Boolean(userId)}
-              reported={
-                recipe.reported ||
-                concerns.some(
-                  item =>
-                    item.recipe_id === recipe.id &&
-                    item.product_id === productId,
-                )
-              }
+              reported={recipe.reported}
+              authorUsername={recipe.mine ? undefined : recipe.author_username}
               onSignIn={onSignInRequest}
             />
           </>
@@ -256,12 +243,10 @@ export function RecipeContent({
             recipeId={recipe.id}
             signedIn={Boolean(userId)}
             title={recipe.title}
+            communityRecipe={!recipe.mine}
+            authorUsername={recipe.mine ? undefined : recipe.author_username}
           />
         )}
-        {!recipe.mine &&
-          recipe.status === 'approved' &&
-          canManage &&
-          button('Block contributor', () => onBlock(recipe.id))}
         {recipe.mine &&
           button('Remove my recipe', () => setRemoveId(recipe.id))}
         {removeId === recipe.id && (
@@ -277,10 +262,19 @@ export function RecipeContent({
   if (mode === 'published')
     return (
       <View style={styles.optionList}>
-        {!r.ready && !r.error && <Text>Loading recipes…</Text>}
+        {(!r.ready || (visibility && !visibility.ready)) && !r.error && (
+          <Text>Loading recipes…</Text>
+        )}
         {!!r.error && <Text accessibilityRole="alert">{r.error}</Text>}
         {r.recipes
-          .filter(recipe => !visibility?.isHidden(productId, recipe.id))
+          .filter(
+            recipe =>
+              !visibility?.isHidden(
+                productId,
+                recipe.id,
+                recipe.author_username,
+              ),
+          )
           .map(card)}
         {r.more && button('Load more recipes', r.loadMore)}
       </View>
@@ -373,15 +367,36 @@ export function RecipeContent({
       )}
       {mode === 'all' &&
         r.recipes
-          .filter(recipe => !visibility?.isHidden(productId, recipe.id))
+          .filter(
+            recipe =>
+              !visibility?.isHidden(
+                productId,
+                recipe.id,
+                recipe.author_username,
+              ),
+          )
           .map(card)}
       {mode === 'all' && r.more && button('Load more recipes', r.loadMore)}
-      {!!r.mine.filter(recipe => recipe.status !== 'approved').length && (
+      {!!r.mine.filter(
+        recipe =>
+          recipe.status !== 'approved' &&
+          !visibility?.isHidden(productId, recipe.id, recipe.author_username),
+      ).length && (
         <View>
           <Text style={styles.optionName}>
             Your submissions · Only visible to you
           </Text>
-          {r.mine.filter(recipe => recipe.status !== 'approved').map(card)}
+          {r.mine
+            .filter(
+              recipe =>
+                recipe.status !== 'approved' &&
+                !visibility?.isHidden(
+                  productId,
+                  recipe.id,
+                  recipe.author_username,
+                ),
+            )
+            .map(card)}
         </View>
       )}
       {r.mineMore && button('Load more of your submissions', r.loadMoreMine)}

@@ -14,20 +14,20 @@ Every published recipe type offers **Report or raise a concern**. A verified, ac
 
 The concern transaction also creates a private hidden-recipe preference. The mobile report confirmation remains visible until it closes, then the recipe disappears for that account. Other accounts and guests continue seeing published content while review is pending and after an admin deems it acceptable. **Only explicit admin archive/removal changes global publication.** Report counts do not automatically remove recipes.
 
-**Block recipe** uses the same private hide/restore preference for catalogue and community recipes without submitting a concern. **Block contributor** additionally hides all eligible community recipes by that contributor for the blocker. The two scopes are distinct; catalogue recipes without a contributor can still be blocked individually.
+**Block recipe** permanently excludes a catalogue recipe. For community content, both reporting and **Block contributor** also exclude that contributor and their recipes across all guides and public profiles. There is no undo path and no report, hidden-content, or contributor-management section in My INSTEAD.
 
-My INSTEAD has separate, collapsible **Hidden recipes** and **Blocked contributors** sections with chevrons. Hidden entries can be restored; contributor blocks can be removed. Account deletion stays separate. There is **no current concern-history section**. Review automatically clears the legacy history entry, without deleting the report receipt or restoring a personally hidden recipe. Older private-history APIs remain compatible with installed clients.
+Published community reads apply exclusions before pagination. Saved and profiles also filter them; affected recipe bookmarks are removed only from the acting account. Future recipes by an excluded contributor stay unavailable to that account. The global catalogue cache remains public and unmodified; private filter data contains IDs/public usernames only, not displayable history. Own submissions are filtered too if the account excluded one of its own published recipes.
 
-Published community lists filter private hiding before pagination. Saved and public-profile recipe lists also filter it; bookmarks remain stored, so restoring an eligible recipe makes its bookmark available again. Public catalogue data stays global; the app filters it separately using the signed-in account's preferences. Account-scoped client state clears on switches/deletion and ignores late responses. Own-submission management remains available for removal/status tracking.
+The final migration rejects old restore/unblock/history-mutation RPCs and returns empty legacy history/block lists. The app removes the corresponding components/hooks, rather than merely collapsing them. See [the exact permanent-exclusion contract](permanent-recipe-exclusions.md).
 
 ## Duplicate prevention and spam controls
 
-- One immutable concern per account/recipe, including after review, history clearing, or personal restoration. Changing text or retrying does not replace the original report or create another.
+- One immutable concern per account/recipe, including after review. Changing text or retrying does not replace the original report or create another.
 - Verified active accounts only; suspended, banned, anonymous, unverified, and deletion-pending accounts cannot submit concerns.
 - Per-account advisory transaction locking serializes simultaneous submissions.
 - Limits: **10 new concerns per rolling hour**, **30 per rolling 24 hours**, and **30 successful submission/retry requests per hour** across recipes. Duplicate retries use the request quota without another creation slot. Rate-limited requests return HTTP 429 before mail delivery.
 - A five-minute email claim prevents concurrent sends; completed receipts are not resent. Legacy duplicate rows are preserved and a delivered receipt is preferred.
-- Personal recipe block/restore verifies the expected Auth account and has its own **60 operations/hour** quota. Restoring never clears the permanent report guard.
+- Permanent recipe exclusion verifies the expected Auth account and has its own **60 operations/hour** quota. No restore or unblock operation is allowed.
 
 These controls do not establish one-human-per-account or immunity to coordinated account creation. Do not weaken server checks because the app disables a button.
 
@@ -39,7 +39,7 @@ Catalogue text IDs are never cast to UUIDs. A community reference is resolved fr
 
 ## Email and deployment
 
-Follow [the full SQL order](../supabase/README.md). Apply `recipe-concerns.sql`, then `recipe-concern-history.sql`, then `personal-recipe-visibility.sql` after their prerequisites. The last migration backfills existing reports once; a private marker prevents later deployment from re-hiding deliberate restores. Do not remove that marker or report receipts to reset the UI.
+Follow [the full SQL order](../supabase/README.md). Apply `recipe-concerns.sql`, `recipe-concern-history.sql`, `personal-recipe-visibility.sql`, then **`permanent-recipe-exclusions.sql`** after their prerequisites. The last file supersedes reversible behavior and privately reconciles earlier reports/blocks, including previously restored reports. It does not change any recipe's global publication. Do not remove permanent receipts or migration markers.
 
 Deploy `supabase/functions/report-recipe/index.ts` as `report-recipe` with platform JWT verification enabled. Configure only server secrets:
 
@@ -58,6 +58,6 @@ On November 3, the report function and SMTP path were exercised with a disposabl
 
 On November 5, the personal-visibility migration was deployed with explicit owner approval. RLS/private grants, report/review triggers, one-time backfill, and reviewed-history cleanup were verified; global recipe publication state was unchanged. New UI behavior still requires the merged code and installed updated beta.
 
-Run `npm run verify`, `npm run safety:test`, `python3 scripts/test-community-db.py`, and website checks when admin/site source changes. Local SQL tests cover both recipe types, other-account isolation, Saved/profile filtering, review versus global archive, immutable duplicates, rate limits, concurrent requests, deletion cleanup, and preserving restores across migration reapplication. Handler tests cover forged client identity/recipient, SMTP failures/claims/retries, and catalogue enrichment.
+Run `npm run verify`, `npm run safety:test`, `python3 scripts/test-community-db.py`, and website checks when admin/site source changes. Local SQL tests cover both recipe types, other-account isolation, Saved/profile filtering, review versus global archive, immutable duplicates, rate limits, concurrent requests, deletion cleanup, and rejection of legacy undo/history calls. Handler tests cover forged client identity/recipient, SMTP failures/claims/retries, and catalogue enrichment.
 
-On physical devices, test submission → approval → refresh → exact Saved opening; report each recipe type; verify the confirmation/keyboard behavior, private disappearance, second-account visibility, review without archive, explicit global archive, restore, contributor block/unblock, and account deletion. Check both admin Open reports and actual support inbox delivery. Use disposable accounts for deletion tests and keep reviewer credentials usable.
+On physical devices, test submission → approval → refresh → exact Saved opening; report each recipe type; verify the confirmation/keyboard behavior, private disappearance, second-account visibility, review without archive, explicit global archive, irreversible contributor exclusion, absence of management UI, and account deletion. Check both admin Open reports and actual support inbox delivery. Use disposable accounts for deletion tests and keep reviewer credentials usable.

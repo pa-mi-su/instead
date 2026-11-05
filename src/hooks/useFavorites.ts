@@ -29,7 +29,13 @@ export function useFavorites(userId?: string) {
     [],
   );
   useEffect(
-    () => subscribeRecipeVisibility(() => setRevision(value => value + 1)),
+    () =>
+      subscribeRecipeVisibility(() => {
+        setState(current =>
+          current.userId ? { ...current, status: 'syncing' } : current,
+        );
+        setRevision(value => value + 1);
+      }),
     [],
   );
   useEffect(() => {

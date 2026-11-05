@@ -34,7 +34,7 @@ Use protected moderation/removal RPCs or the console for decisions so authorizat
 
 ## Concerns, private blocking, and deletion
 
-Reports now cover catalogue/admin-created/community recipes through private `recipe_concerns`; legacy `recipe_reports` alone is not the full review queue. Use admin **Open reports** and [the report guide](recipe-publication-and-reports.md). Reporting or blocking one recipe hides it only for that account. Contributor blocking hides the contributor's recipes for that blocker. Review alone does not unpublish content or restore the reporter's personal choice; global removal requires an explicit admin action.
+Reports now cover catalogue/admin-created/community recipes through private `recipe_concerns`; legacy `recipe_reports` alone is not the full review queue. Use admin **Open reports** and [the report guide](recipe-publication-and-reports.md). Reporting/blocking permanently excludes the recipe for that account. For community recipes it also excludes the contributor, their recipes across guides, and their profile. There is no user-facing history, management list, or restore/unblock action. Review alone does not unpublish content or restore the reporter's personal choice; global removal requires an explicit admin action.
 
 Authors can withdraw their own submissions, and the client attempts photo cleanup. Withdrawn records remain subject to moderation/retention until purged or removed by account deletion. Self-service/admin account deletion uses the same Storage-first Edge Function followed by permanent Auth deletion/cascades. Failed cleanup stays pending for retry/operator assistance. Do not manually delete Auth first and leave files behind.
 

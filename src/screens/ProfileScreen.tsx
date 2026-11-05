@@ -1,3 +1,4 @@
+import { useRecipeVisibility } from '../hooks/useRecipeVisibility';
 import { useCommunityRevision } from '../lib/communityUpdates';
 import { useEffect, useState } from 'react';
 import { Image, ScrollView, Text, View } from 'react-native';
@@ -20,6 +21,7 @@ export function ProfileScreen({
   bottomInset: number;
 }) {
   const revision = useCommunityRevision();
+  const visibility = useRecipeVisibility();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -61,11 +63,26 @@ export function ProfileScreen({
       >
         <Text style={styles.chipText}>← Back</Text>
       </Pressable>
-      {loading ? (
+      {visibility && !visibility.ready ? (
+        <View>
+          <Text style={styles.optionDetail}>
+            {visibility.error || 'Loading profile…'}
+          </Text>
+          {!!visibility.error && (
+            <Pressable
+              accessibilityRole="button"
+              style={styles.actionButton}
+              onPress={() => visibility.refresh()}
+            >
+              <Text style={styles.actionButtonText}>Retry</Text>
+            </Pressable>
+          )}
+        </View>
+      ) : loading ? (
         <Text style={styles.optionDetail}>Loading profile…</Text>
       ) : error ? (
         <Text accessibilityRole="alert">{error}</Text>
-      ) : !profile ? (
+      ) : !profile || visibility?.isContributorHidden(username) ? (
         <Text style={styles.optionDetail}>This profile is unavailable.</Text>
       ) : (
         <>

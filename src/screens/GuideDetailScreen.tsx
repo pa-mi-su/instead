@@ -1,6 +1,5 @@
 import { useRecipeVisibility } from '../hooks/useRecipeVisibility';
-import { BlockRecipeButton } from '../components/HiddenRecipes';
-import { useRecipeConcerns } from '../hooks/useRecipeConcerns';
+import { BlockRecipeButton } from '../components/BlockRecipeButton';
 import {
   getCommunityRevision,
   notifyCommunityChanged,
@@ -120,7 +119,6 @@ export function GuideDetailScreen({
     false,
   );
 
-  const reports = useRecipeConcerns(supabase, community.session?.user.id);
   const published = useRecipes(supabase, guide.id, community.session?.user.id);
   useEffect(() => {
     const scope = ratingScope;
@@ -242,10 +240,23 @@ export function GuideDetailScreen({
     scrollRef.current?.scrollTo({ y: communityY.current, animated: true });
   return (
     <View style={styles.detailShell}>
-      {targetHidden && (
+      {!!community.session && visibility && !visibility.ready && (
         <Text style={styles.optionDetail}>
-          This recipe is hidden from your account. You can restore it in My
-          INSTEAD.
+          {visibility.error || 'Loading your recipe list…'}
+        </Text>
+      )}
+      {!!visibility?.error && (
+        <Pressable
+          accessibilityRole="button"
+          style={styles.actionButton}
+          onPress={() => visibility.refresh()}
+        >
+          <Text style={styles.actionButtonText}>Retry recipe list</Text>
+        </Pressable>
+      )}
+      {targetHidden && visibility?.ready && (
+        <Text style={styles.optionDetail}>
+          This recipe is no longer available for your account.
         </Text>
       )}
       <View style={styles.detailTopBar}>
@@ -397,11 +408,6 @@ export function GuideDetailScreen({
                       recipeId={recipe.id}
                       title={recipe.name}
                       signedIn={verified}
-                      reported={reports.concerns.some(
-                        item =>
-                          item.product_id === guide.id &&
-                          item.recipe_id === recipe.id,
-                      )}
                       onSignIn={requestSignIn}
                     />
                     <BlockRecipeButton
@@ -451,13 +457,10 @@ export function GuideDetailScreen({
                   targetRef={destination.targetRef}
                   onRecipeLayout={destination.onLayout}
                   controller={published}
-                  concerns={reports.concerns}
                   mode="published"
                   productId={guide.id}
                   userId={community.session?.user.id}
                   canContribute={community.canContribute}
-                  canManage={community.canManage}
-                  onBlock={id => community.block('recipe', id)}
                   onSignInRequest={requestSignIn}
                   onOpenProfile={onOpenProfile}
                   savedRecipeIds={savedRecipeIds}

@@ -114,10 +114,8 @@ const local = {
 
 export function CommunityAccountManagement({
   community: c,
-  section,
 }: {
   community: ReturnType<typeof useCommunity>;
-  section: 'blocks' | 'deletion';
 }) {
   const [deleting, setDeleting] = useState(false);
   const button = (
@@ -136,37 +134,6 @@ export function CommunityAccountManagement({
       <Text style={[a.buttonText, destructive && a.dangerText]}>{label}</Text>
     </Pressable>
   );
-  if (section === 'blocks')
-    return (
-      <AccountSection
-        title="Blocked contributors"
-        summary="Manage contributors hidden from your recipe lists."
-        count={c.blocks.length}
-        collapsible
-      >
-        <Text style={a.body}>
-          Blocking hides all of a contributor’s recipes for your account only.
-        </Text>
-        {!c.blocks.length && (
-          <Text style={a.body}>You have no blocked contributors.</Text>
-        )}
-        {c.blocks.map(block => (
-          <View key={block.id} style={a.entry}>
-            <Text style={a.entryTitle}>
-              {block.label.replace(/^Recipe:\s*/i, '')}
-            </Text>
-            <Text style={a.metadata}>
-              This contributor’s recipes are hidden from you.
-            </Text>
-            {button(
-              'Unblock contributor',
-              () => c.unblock(block.id),
-              c.busy || !c.canManage,
-            )}
-          </View>
-        ))}
-      </AccountSection>
-    );
   return (
     <AccountSection
       title="Delete your account"
