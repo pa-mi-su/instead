@@ -1,10 +1,9 @@
-import { RecipeConcernHistory } from '../components/RecipeConcernHistory';
+import { HiddenRecipes } from '../components/HiddenRecipes';
 import {
   AccountSection,
   accountStyles as a,
 } from '../components/AccountSection';
 import { CommunityAccountManagement } from '../components/CommunityAccountControls';
-import { useRecipeConcerns } from '../hooks/useRecipeConcerns';
 import {
   notifyCommunityChanged,
   useCommunityRevision,
@@ -43,7 +42,6 @@ export function AccountScreen({
   const [removing, setRemoving] = useState<string | null>(null);
   const userId = community.session?.user.id;
   const revision = useCommunityRevision();
-  const reports = useRecipeConcerns(supabase, userId);
   const requestVersion = useRef(0);
   const refresh = useCallback(async () => {
     const version = ++requestVersion.current;
@@ -130,11 +128,7 @@ export function AccountScreen({
               community={community}
               section="blocks"
             />
-            <RecipeConcernHistory
-              key={`${userId}:concerns`}
-              reports={reports}
-              guides={guides}
-            />
+            <HiddenRecipes />
           </>
         )}
       <View style={styles.optionList}>

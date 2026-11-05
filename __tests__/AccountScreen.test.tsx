@@ -1,3 +1,7 @@
+jest.mock('lucide-react-native', () => ({
+  ChevronDown: 'ChevronDown',
+  ChevronUp: 'ChevronUp',
+}));
 import { act, render, waitFor } from '@testing-library/react-native';
 import { AccountScreen } from '../src/screens/AccountScreen';
 import { supabase } from '../src/lib/supabase';

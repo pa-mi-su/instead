@@ -1,3 +1,7 @@
+jest.mock('lucide-react-native', () => ({
+  ChevronDown: 'ChevronDown',
+  ChevronUp: 'ChevronUp',
+}));
 import { fireEvent, render } from '@testing-library/react-native';
 import {
   CommunityAccountControls,
@@ -30,7 +34,7 @@ test('blocked recipes have their own titled section and unblock the selected con
     <CommunityAccountManagement community={community} section="blocks" />,
   );
   expect(screen.queryByText('Surface cleaner')).toBeNull();
-  await fireEvent.press(screen.getByLabelText('Show blocked recipes'));
+  await fireEvent.press(screen.getByLabelText('Show blocked contributors'));
   expect(screen.getByText('Surface cleaner')).toBeTruthy();
   expect(screen.queryByText('Recipe: Surface cleaner')).toBeNull();
   expect(screen.queryByText('Delete account')).toBeNull();

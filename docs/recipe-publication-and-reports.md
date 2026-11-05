@@ -122,3 +122,16 @@ Backend rollout November 5: the visibility column and clear/restore function wer
 applied, and authenticated-only write permissions were verified. No production
 history entries were cleared during deployment. The layout and controls require
 the merged app release and physical-device verification.
+
+## Personal hiding replaces concern history
+
+Apply `supabase/personal-recipe-visibility.sql` after the existing concern and history migrations. My INSTEAD no longer displays report history. It shows **Hidden recipes**, with a restore action, and a separate **Blocked contributors** section. Both use chevrons for expansion.
+
+- Reporting either a catalogue or community recipe inserts a private hidden preference in the same database transaction as the concern. The confirmation closes before the app removes the card.
+- Blocking a recipe uses the same account-owned preferences and does not submit a report. Community contributor blocking still hides all that contributor’s recipes for the blocker.
+- Other accounts and guests continue seeing published recipes while a concern is pending or reviewed. Only explicit admin archive/remove changes global publication.
+- Reviewing a concern clears its legacy history entry, without restoring the reporter’s recipe or deleting the report receipt. Restoring a hidden recipe does not allow another report or another email.
+- Saved bookmarks remain stored but hidden recipes are filtered out of Saved, published lists, and public profile recipe lists. Restoring makes eligible bookmarks visible again. Catalogue publication data remains global; private preferences are never included in its cache.
+- Old private-history endpoints remain compatible with installed builds. Immutable report receipts, email retry claims, account checks, duplicate locks, and reporting quotas are retained.
+
+Validation: `npm run verify`, `npm run safety:test`, and the disposable database suite `python3 scripts/test-community-db.py`. Physical-device checks should cover each recipe type, a second account, review without archive, archive, restore, Saved, and closing the report sheet with the keyboard open.

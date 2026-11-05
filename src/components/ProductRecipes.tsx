@@ -1,3 +1,5 @@
+import { useRecipeVisibility } from '../hooks/useRecipeVisibility';
+import { BlockRecipeButton } from './HiddenRecipes';
 import type { RecipeConcern } from '../hooks/useRecipeConcerns';
 import { imageContentType } from '../lib/imageUpload';
 import { useState, type RefObject } from 'react';
@@ -49,6 +51,7 @@ export function RecipeContent({
   onSaveRecipe: (recipeId: string, title: string) => void;
 }) {
   const r = controller;
+  const visibility = useRecipeVisibility();
   const [open, setOpen] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [removeId, setRemoveId] = useState<string | null>(null);
@@ -243,10 +246,17 @@ export function RecipeContent({
                     item.product_id === productId,
                 )
               }
-              canBlock={!recipe.mine && canManage}
               onSignIn={onSignInRequest}
             />
           </>
+        )}
+        {recipe.status === 'approved' && (
+          <BlockRecipeButton
+            productId={productId}
+            recipeId={recipe.id}
+            signedIn={Boolean(userId)}
+            title={recipe.title}
+          />
         )}
         {!recipe.mine &&
           recipe.status === 'approved' &&
@@ -269,7 +279,9 @@ export function RecipeContent({
       <View style={styles.optionList}>
         {!r.ready && !r.error && <Text>Loading recipes…</Text>}
         {!!r.error && <Text accessibilityRole="alert">{r.error}</Text>}
-        {r.recipes.map(card)}
+        {r.recipes
+          .filter(recipe => !visibility?.isHidden(productId, recipe.id))
+          .map(card)}
         {r.more && button('Load more recipes', r.loadMore)}
       </View>
     );
@@ -359,7 +371,10 @@ export function RecipeContent({
           No published community recipes yet. Be the first to submit one.
         </Text>
       )}
-      {mode === 'all' && r.recipes.map(card)}
+      {mode === 'all' &&
+        r.recipes
+          .filter(recipe => !visibility?.isHidden(productId, recipe.id))
+          .map(card)}
       {mode === 'all' && r.more && button('Load more recipes', r.loadMore)}
       {!!r.mine.filter(recipe => recipe.status !== 'approved').length && (
         <View>

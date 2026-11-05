@@ -1,3 +1,8 @@
+import { parseSavedRecipeKey } from '../lib/savedRecipes';
+import {
+  RecipeVisibilityContext,
+  usePersonalRecipes,
+} from '../hooks/useRecipeVisibility';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -35,7 +40,7 @@ import type { ViewName } from './types';
 export function AppNavigator() {
   const insets = useSafeAreaInsets();
   const acknowledgement = useSafetyAcknowledgement();
-  const { guides: catalog, isLoading } = useGuideCatalog();
+  const { guides: sourceCatalog, isLoading } = useGuideCatalog();
   const community = useCommunity(
     supabase,
     'natural-toothpaste',
@@ -44,8 +49,8 @@ export function AppNavigator() {
     false,
   );
   const {
-    favorites,
-    savedRecipes,
+    favorites: sourceFavorites,
+    savedRecipes: sourceSavedRecipes,
     toggleFavorite,
     toggleRecipeFavorite,
     syncStatus,
@@ -55,6 +60,38 @@ export function AppNavigator() {
       !community.session.user.is_anonymous
       ? community.session.user.id
       : undefined,
+  );
+  const visibility = usePersonalRecipes(supabase, community.session?.user.id);
+  const hiddenRecipes = visibility.rows;
+  const favorites = sourceFavorites.filter(key => {
+    const recipe = parseSavedRecipeKey(key);
+    return !recipe || !visibility.isHidden(recipe.productId, recipe.recipeId);
+  });
+  const catalog = useMemo(
+    () =>
+      sourceCatalog.map(guide =>
+        guide.recipes?.some(recipe =>
+          hiddenRecipes.some(
+            row => row.product_id === guide.id && row.recipe_id === recipe.id,
+          ),
+        )
+          ? {
+              ...guide,
+              recipes: guide.recipes.filter(
+                recipe =>
+                  !hiddenRecipes.some(
+                    row =>
+                      row.product_id === guide.id &&
+                      row.recipe_id === recipe.id,
+                  ),
+              ),
+            }
+          : guide,
+      ),
+    [sourceCatalog, hiddenRecipes],
+  );
+  const savedRecipes = sourceSavedRecipes.filter(
+    recipe => !visibility.isHidden(recipe.productId, recipe.recipeId),
   );
   const canSave = Boolean(
     community.session?.user.email_confirmed_at &&
@@ -265,130 +302,132 @@ export function AppNavigator() {
   }
 
   return (
-    <View
-      style={[styles.app, { paddingTop: Math.max(insets.top, 12) }]}
-      {...(Platform.OS === 'ios' ? panResponder.panHandlers : {})}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.paper} />
-      {acknowledgement.status === 'loading' ? (
-        <ActivityIndicator accessibilityLabel="Loading safety acknowledgement" />
-      ) : acknowledgement.status === 'required' ? (
-        <InfoScreen
-          firstUse
-          onAccept={acknowledgement.accept}
-          busy={acknowledgement.busy}
-          error={acknowledgement.error}
-          bottomInset={insets.bottom}
-        />
-      ) : view === 'detail' && selected ? (
-        <GuideDetailScreen
-          key={`${selected.id}:${selectedRecipeId ?? 'guide'}`}
-          guide={selected}
-          initialRecipeId={selectedRecipeId ?? undefined}
-          isSaved={favorites.includes(selected.id)}
-          savedRecipeIds={favorites}
-          onBack={goBack}
-          onSave={() =>
-            canSave ? toggleFavorite(selected.id) : navigate('saved')
-          }
-          onSaveRecipe={(recipeId, title) =>
-            canSave
-              ? toggleRecipeFavorite(selected.id, recipeId, title)
-              : navigate('saved')
-          }
-          onOpenProfile={openProfile}
-          bottomInset={insets.bottom}
-        />
-      ) : (
-        <>
-          <TopBar
-            activeView={view}
-            savedCount={favorites.length}
-            onInfo={() => navigate('info')}
-            onHome={goHome}
-            onSaved={() => navigate('saved')}
-            onAccount={() => navigate('account')}
+    <RecipeVisibilityContext.Provider value={visibility}>
+      <View
+        style={[styles.app, { paddingTop: Math.max(insets.top, 12) }]}
+        {...(Platform.OS === 'ios' ? panResponder.panHandlers : {})}
+      >
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.paper} />
+        {acknowledgement.status === 'loading' ? (
+          <ActivityIndicator accessibilityLabel="Loading safety acknowledgement" />
+        ) : acknowledgement.status === 'required' ? (
+          <InfoScreen
+            firstUse
+            onAccept={acknowledgement.accept}
+            busy={acknowledgement.busy}
+            error={acknowledgement.error}
+            bottomInset={insets.bottom}
           />
-          {view === 'info' ? (
-            <InfoScreen onBack={goHome} bottomInset={insets.bottom} />
-          ) : view === 'account' ? (
-            <AccountScreen
-              community={community}
-              guides={catalog}
-              bottomInset={insets.bottom}
+        ) : view === 'detail' && selected ? (
+          <GuideDetailScreen
+            key={`${selected.id}:${selectedRecipeId ?? 'guide'}`}
+            guide={selected}
+            initialRecipeId={selectedRecipeId ?? undefined}
+            isSaved={favorites.includes(selected.id)}
+            savedRecipeIds={favorites}
+            onBack={goBack}
+            onSave={() =>
+              canSave ? toggleFavorite(selected.id) : navigate('saved')
+            }
+            onSaveRecipe={(recipeId, title) =>
+              canSave
+                ? toggleRecipeFavorite(selected.id, recipeId, title)
+                : navigate('saved')
+            }
+            onOpenProfile={openProfile}
+            bottomInset={insets.bottom}
+          />
+        ) : (
+          <>
+            <TopBar
+              activeView={view}
+              savedCount={favorites.length}
+              onInfo={() => navigate('info')}
+              onHome={goHome}
+              onSaved={() => navigate('saved')}
+              onAccount={() => navigate('account')}
             />
-          ) : view === 'profile' ? (
-            <ProfileScreen
-              username={selectedProfile ?? ''}
-              guides={catalog}
-              onBack={goBack}
-              bottomInset={insets.bottom}
-            />
-          ) : view === 'barcode' && barcodeLookup ? (
-            <BarcodeMatchScreen
-              lookup={barcodeLookup}
-              guides={catalog}
-              bottomInset={insets.bottom}
-              onBack={goBack}
-              onScan={scanProduct}
-              onOpen={openGuide}
-              onSearch={value => {
-                setQuery(value);
-                setCategory('All');
-                navigate('home', null);
-              }}
-              onCategory={value => {
-                setQuery('');
-                setCategory(value);
-                navigate('home', null);
-              }}
-            />
-          ) : view === 'saved' ? (
-            <SavedScreen
-              signedIn={canSave}
-              authReady={community.authReady}
-              syncStatus={syncStatus}
-              onRetry={retrySaves}
-              onSignIn={() => {
-                community.setAuthMode('signin');
-                navigate('account');
-              }}
-              onRegister={() => {
-                community.setAuthMode('signup');
-                navigate('account');
-              }}
-              guides={saved}
-              catalog={catalog}
-              savedRecipes={savedRecipes}
-              onOpen={openGuide}
-              onOpenRecipe={openRecipe}
-              onExplore={goHome}
-              bottomInset={insets.bottom}
-              scrollOffset={savedScrollOffset.current}
-              onScrollOffsetChange={offset => {
-                savedScrollOffset.current = offset;
-              }}
-            />
-          ) : (
-            <HomeScreen
-              guides={filtered}
-              query={query}
-              onQuery={setQuery}
-              category={category}
-              onCategory={setCategory}
-              onOpen={openGuide}
-              onScan={scanProduct}
-              isLoadingLive={isLoading}
-              bottomInset={insets.bottom}
-              scrollOffset={homeScrollOffset.current}
-              onScrollOffsetChange={offset => {
-                homeScrollOffset.current = offset;
-              }}
-            />
-          )}
-        </>
-      )}
-      <KeyboardDismissControl />
-    </View>
+            {view === 'info' ? (
+              <InfoScreen onBack={goHome} bottomInset={insets.bottom} />
+            ) : view === 'account' ? (
+              <AccountScreen
+                community={community}
+                guides={catalog}
+                bottomInset={insets.bottom}
+              />
+            ) : view === 'profile' ? (
+              <ProfileScreen
+                username={selectedProfile ?? ''}
+                guides={catalog}
+                onBack={goBack}
+                bottomInset={insets.bottom}
+              />
+            ) : view === 'barcode' && barcodeLookup ? (
+              <BarcodeMatchScreen
+                lookup={barcodeLookup}
+                guides={catalog}
+                bottomInset={insets.bottom}
+                onBack={goBack}
+                onScan={scanProduct}
+                onOpen={openGuide}
+                onSearch={value => {
+                  setQuery(value);
+                  setCategory('All');
+                  navigate('home', null);
+                }}
+                onCategory={value => {
+                  setQuery('');
+                  setCategory(value);
+                  navigate('home', null);
+                }}
+              />
+            ) : view === 'saved' ? (
+              <SavedScreen
+                signedIn={canSave}
+                authReady={community.authReady}
+                syncStatus={syncStatus}
+                onRetry={retrySaves}
+                onSignIn={() => {
+                  community.setAuthMode('signin');
+                  navigate('account');
+                }}
+                onRegister={() => {
+                  community.setAuthMode('signup');
+                  navigate('account');
+                }}
+                guides={saved}
+                catalog={catalog}
+                savedRecipes={savedRecipes}
+                onOpen={openGuide}
+                onOpenRecipe={openRecipe}
+                onExplore={goHome}
+                bottomInset={insets.bottom}
+                scrollOffset={savedScrollOffset.current}
+                onScrollOffsetChange={offset => {
+                  savedScrollOffset.current = offset;
+                }}
+              />
+            ) : (
+              <HomeScreen
+                guides={filtered}
+                query={query}
+                onQuery={setQuery}
+                category={category}
+                onCategory={setCategory}
+                onOpen={openGuide}
+                onScan={scanProduct}
+                isLoadingLive={isLoading}
+                bottomInset={insets.bottom}
+                scrollOffset={homeScrollOffset.current}
+                onScrollOffsetChange={offset => {
+                  homeScrollOffset.current = offset;
+                }}
+              />
+            )}
+          </>
+        )}
+        <KeyboardDismissControl />
+      </View>
+    </RecipeVisibilityContext.Provider>
   );
 }

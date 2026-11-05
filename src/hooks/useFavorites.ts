@@ -1,3 +1,4 @@
+import { subscribeRecipeVisibility } from './useRecipeVisibility';
 import { subscribeCommunityUpdates } from '../lib/communityUpdates';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -27,6 +28,10 @@ export function useFavorites(userId?: string) {
       }),
     [],
   );
+  useEffect(
+    () => subscribeRecipeVisibility(() => setRevision(value => value + 1)),
+    [],
+  );
   useEffect(() => {
     const requests = generation;
     const version = ++requests.current;
@@ -36,7 +41,11 @@ export function useFavorites(userId?: string) {
       return;
     }
     let active = true;
-    setState({ ...empty, userId, status: 'syncing' });
+    setState(current =>
+      current.userId === userId
+        ? { ...current, status: 'syncing' }
+        : { ...empty, userId, status: 'syncing' },
+    );
     Promise.all([
       supabase.rpc('community_saved_guides_list'),
       supabase.rpc('community_saved_recipes_list'),

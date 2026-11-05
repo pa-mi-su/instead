@@ -139,7 +139,7 @@ export function CommunityAccountManagement({
   if (section === 'blocks')
     return (
       <AccountSection
-        title="Blocked recipes"
+        title="Blocked contributors"
         summary="Manage contributors hidden from your recipe lists."
         count={c.blocks.length}
         collapsible
