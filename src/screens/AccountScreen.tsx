@@ -1,3 +1,8 @@
+import { RecipeConcernHistory } from '../components/RecipeConcernHistory';
+import {
+  AccountSection,
+  accountStyles as a,
+} from '../components/AccountSection';
 import { CommunityAccountManagement } from '../components/CommunityAccountControls';
 import { useRecipeConcerns } from '../hooks/useRecipeConcerns';
 import {
@@ -97,12 +102,13 @@ export function AccountScreen({
     <ScrollView
       contentContainerStyle={[
         styles.scrollContent,
+        a.page,
         { paddingBottom: Math.max(bottomInset + 30, 46) },
       ]}
       showsVerticalScrollIndicator={false}
       keyboardDismissMode="on-drag"
     >
-      <View style={styles.savedHero}>
+      <View style={[styles.savedHero, a.hero]}>
         <Text style={styles.pageEyebrow}>YOUR INSTEAD</Text>
         <Text style={styles.pageTitle}>My account.</Text>
         <Text style={styles.pageBody}>
@@ -120,55 +126,14 @@ export function AccountScreen({
         !community.accountLoading && (
           <>
             <CommunityAccountManagement
+              key={`${userId}:blocks`}
               community={community}
               section="blocks"
             />
-            <View style={styles.optionCard}>
-              <Text accessibilityRole="header" style={styles.optionName}>
-                Submitted recipe concerns
-              </Text>
-              <Text style={styles.optionDetail}>
-                Your reports are private. Reporting requests a review; blocking
-                a contributor hides their recipes from your account.
-              </Text>
-              {reports.loading && <Text>Loading your concerns…</Text>}
-              {!!reports.error && (
-                <Text accessibilityRole="alert">
-                  Could not load your concerns. Try refreshing below.
-                </Text>
-              )}
-              {!reports.loading &&
-                !reports.error &&
-                !reports.concerns.length && (
-                  <Text style={styles.optionDetail}>
-                    You haven’t submitted any recipe concerns.
-                  </Text>
-                )}
-              {reports.concerns.map(report => (
-                <View key={report.id} style={styles.optionList}>
-                  <Text style={styles.optionName}>{report.title}</Text>
-                  <Text style={styles.optionDetail}>
-                    {report.reviewed_at ? 'Reviewed' : 'Submitted for review'} ·{' '}
-                    {report.reason}
-                  </Text>
-                  <Text style={styles.optionDetail}>
-                    {guides.find(guide => guide.id === report.product_id)
-                      ?.title ?? report.product_id}
-                  </Text>
-                </View>
-              ))}
-              <Pressable
-                accessibilityRole="button"
-                disabled={reports.loading}
-                onPress={reports.refresh}
-                style={styles.actionButton}
-              >
-                <Text style={styles.actionButtonText}>Refresh concerns</Text>
-              </Pressable>
-            </View>
-            <CommunityAccountManagement
-              community={community}
-              section="deletion"
+            <RecipeConcernHistory
+              key={`${userId}:concerns`}
+              reports={reports}
+              guides={guides}
             />
           </>
         )}
@@ -178,83 +143,91 @@ export function AccountScreen({
           !community.finishingSignup &&
           !community.accountLoading && (
             <>
-              <Text style={styles.optionName}>My recipe submissions</Text>
-              <Text style={styles.optionDetail}>
-                Track review status or remove a recipe you submitted.
-              </Text>
-              {loading && <Text>Loading your recipes…</Text>}
-              {!loading && recipes.length === 0 && (
-                <Text style={styles.optionDetail}>
-                  You have no submissions yet.
-                </Text>
-              )}
-              {recipes.map(recipe => (
-                <View key={recipe.id} style={styles.optionCard}>
-                  <Text style={styles.optionLabel}>
-                    {recipe.status === 'pending'
-                      ? 'AWAITING REVIEW'
-                      : recipe.status === 'approved'
-                      ? 'PUBLISHED'
-                      : 'NOT PUBLISHED'}
-                  </Text>
-                  <Text style={styles.optionName}>{recipe.title}</Text>
-                  <Text style={styles.optionDetail}>
-                    {guides.find(guide => guide.id === recipe.product_id)
-                      ?.title ?? recipe.product_id}
-                  </Text>
-                  {!!recipe.moderation_note && (
-                    <Text style={styles.optionDetail}>
-                      {recipe.moderation_note}
-                    </Text>
-                  )}
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={removing === recipe.id}
-                    onPress={() =>
-                      Alert.alert(
-                        'Remove this recipe?',
-                        'It will disappear from the public recipe list. You can submit it again later.',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Remove recipe',
-                            style: 'destructive',
-                            onPress: () => withdraw(recipe),
-                          },
-                        ],
-                      )
-                    }
-                    style={({ pressed }) => [
-                      styles.actionButton,
-                      removing === recipe.id && { opacity: 0.5 },
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text style={styles.actionButtonText}>
-                      {removing === recipe.id
-                        ? 'Removing…'
-                        : 'Remove my recipe'}
-                    </Text>
-                  </Pressable>
-                </View>
-              ))}
-              <Pressable
-                accessibilityRole="button"
-                disabled={loading}
-                onPress={() => refresh()}
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  pressed && styles.pressed,
-                ]}
+              <AccountSection
+                title="My recipe submissions"
+                summary="Track review status or remove a recipe you submitted."
               >
-                <Text style={styles.actionButtonText}>Refresh submissions</Text>
-              </Pressable>
+                {loading && <Text>Loading your recipes…</Text>}
+                {!loading && recipes.length === 0 && (
+                  <Text style={styles.optionDetail}>
+                    You have no submissions yet.
+                  </Text>
+                )}
+                {recipes.map(recipe => (
+                  <View key={recipe.id} style={a.entry}>
+                    <Text style={styles.optionLabel}>
+                      {recipe.status === 'pending'
+                        ? 'AWAITING REVIEW'
+                        : recipe.status === 'approved'
+                        ? 'PUBLISHED'
+                        : 'NOT PUBLISHED'}
+                    </Text>
+                    <Text style={a.entryTitle}>{recipe.title}</Text>
+                    <Text style={styles.optionDetail}>
+                      {guides.find(guide => guide.id === recipe.product_id)
+                        ?.title ?? recipe.product_id}
+                    </Text>
+                    {!!recipe.moderation_note && (
+                      <Text style={styles.optionDetail}>
+                        {recipe.moderation_note}
+                      </Text>
+                    )}
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={removing === recipe.id}
+                      onPress={() =>
+                        Alert.alert(
+                          'Remove this recipe?',
+                          'It will disappear from the public recipe list. You can submit it again later.',
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Remove recipe',
+                              style: 'destructive',
+                              onPress: () => withdraw(recipe),
+                            },
+                          ],
+                        )
+                      }
+                      style={({ pressed }) => [
+                        a.button,
+                        removing === recipe.id && { opacity: 0.5 },
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Text style={styles.actionButtonText}>
+                        {removing === recipe.id
+                          ? 'Removing…'
+                          : 'Remove my recipe'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={loading}
+                  onPress={() => refresh()}
+                  style={({ pressed }) => [a.button, pressed && styles.pressed]}
+                >
+                  <Text style={a.buttonText}>Refresh submissions</Text>
+                </Pressable>
+              </AccountSection>
             </>
           )}
         {!!error && !community.deletionInProgress && (
           <Text accessibilityRole="alert">{error}</Text>
         )}
       </View>
+      {!!userId &&
+        !community.deletionInProgress &&
+        !community.finishingSignup &&
+        !community.accountLoading && (
+          <CommunityAccountManagement
+            key={`${userId}:deletion`}
+            community={community}
+            section="deletion"
+          />
+        )}
     </ScrollView>
   );
 }
