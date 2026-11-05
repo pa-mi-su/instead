@@ -194,9 +194,17 @@ function appendConcerns(card, item) {
   if (!item.concerns?.length) return;
   const concerns = element('div', undefined, 'reports');
   concerns.append(element('h3', `${item.concerns.length} open concern(s)`));
+  const list = element('details');
+  const entries = element('div', undefined, 'concern-entries');
+  list.append(element('summary', 'View submitted concerns'));
+  list.append(entries);
   for (const concern of item.concerns) {
-    details(concerns, concern.reason, concern.details);
+    const row = element('section', undefined, 'concern-entry');
+    details(row, concern.reason, concern.details);
+    row.append(element('p', new Date(concern.created_at).toLocaleString()));
+    entries.append(row);
   }
+  concerns.append(list);
   concerns.append(
     button('Mark concerns reviewed', async () => {
       const note = await requestReason(
@@ -206,6 +214,7 @@ function appendConcerns(card, item) {
       await concernsRpc('resolve', {
         recipe: item.id,
         cutoff: item.concerns[0].created_at,
+        ids: item.concerns.map(concern => concern.id),
         note,
       });
       await load();

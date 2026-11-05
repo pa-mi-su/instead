@@ -60,10 +60,18 @@ export function ReportRecipeButton({
       const result = await supabase.functions.invoke('report-recipe', {
         body: { productId, recipeId, reason, details: details.trim() },
       });
-      if (result.error)
+      if (result.error) {
+        if (
+          (result.error as { context?: { status?: number } }).context
+            ?.status === 429
+        )
+          throw new Error(
+            'You’ve reached the reporting limit. Please try again later.',
+          );
         throw new Error(
           'Could not send the report email. Your report may be saved; retry to finish sending it.',
         );
+      }
       setSent(true);
       setSubmitted(true);
       notifyRecipeConcernChanged();
@@ -109,6 +117,8 @@ export function ReportRecipeButton({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Report or raise a concern about ${title}`}
+        disabled={signedIn && (reported || submitted)}
+        accessibilityState={{ disabled: signedIn && (reported || submitted) }}
         onPress={() => {
           setOpen(true);
           setSent(false);
@@ -116,7 +126,11 @@ export function ReportRecipeButton({
         }}
         style={styles.actionButton}
       >
-        <Text style={styles.actionButtonText}>Report or raise a concern</Text>
+        <Text style={styles.actionButtonText}>
+          {signedIn && (reported || submitted)
+            ? 'Concern already submitted'
+            : 'Report or raise a concern'}
+        </Text>
       </Pressable>
       <Modal
         visible={open}

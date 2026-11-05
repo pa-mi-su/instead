@@ -214,11 +214,18 @@ export function createReportHandler(
           }),
         },
       );
-      if (!submitted.ok)
+      if (!submitted.ok) {
+        const issue = await submitted.json().catch(() => ({}));
+        if (
+          typeof issue.message === 'string' &&
+          issue.message.startsWith('Too many actions.')
+        )
+          return reply(429, 'Reporting limit reached. Please try again later.');
         return reply(
           400,
           'Could not save this concern. Check the recipe and your account, then retry.',
         );
+      }
       const id = await submitted.json();
       if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id))
         throw new Error('Invalid report receipt');

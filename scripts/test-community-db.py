@@ -80,6 +80,24 @@ insert into public.community_comments(id,product_id,user_id,body,moderation_stat
  run(psql+['-f',str(root/'supabase/recipe-concern-history.sql')])
  print(run(psql+['-f',str(root/'supabase/tests/recipe-concern-history.test.sql')])[-800:])
  print(run(psql+['-f',str(root/'supabase/tests/recipe-concerns.test.sql')])[-800:])
+ print(run(psql+['-f',str(root/'supabase/tests/recipe-concern-abuse.test.sql')])[-800:])
+ # Separate sessions verify that simultaneous submissions cannot create duplicates.
+ run(psql+['-c',"""insert into auth.users(id,email,email_confirmed_at) values('98000000-0000-0000-0000-000000000001','report-race@example.invalid',now());
+insert into public.community_builtin_recipes(id,product_id,title,is_active) values('builtin:reportRace','natural-glass-cleaner','Report race fixture',true);"""])
+ race_sql="""begin; select set_config('request.jwt.claim.sub','98000000-0000-0000-0000-000000000001',true);
+select public.recipe_concern_submit('natural-glass-cleaner','builtin:reportRace','Other','Concurrent report fixture'); select pg_sleep(1); commit;"""
+ racers=[subprocess.Popen(psql+['-c',race_sql],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True) for _ in range(2)]
+ for racer in racers:
+  output,errors=racer.communicate(timeout=15)
+  if racer.returncode: raise RuntimeError(output+'\n'+errors)
+ run(psql+['-c',"""do $$ begin
+if (select count(*) from public.recipe_concerns where user_id='98000000-0000-0000-0000-000000000001')<>1 then raise exception 'Concurrent duplicate concerns created'; end if;
+if (select count(*) from public.community_actions where user_id='98000000-0000-0000-0000-000000000001' and kind='recipe_concern')<>1 then raise exception 'Concurrent creation quota was not idempotent'; end if;
+end $$;
+delete from auth.users where id='98000000-0000-0000-0000-000000000001';
+delete from public.community_builtin_recipes where id='builtin:reportRace';"""])
+ print('Concurrent report submissions produced exactly one concern.')
+
  run(psql+['-c',"""do $$ begin
 if exists(select 1 from information_schema.columns where table_schema='public' and table_name='community_moderation_audit' and column_name in ('qualifications','sources')) then raise exception 'Obsolete moderation audit columns remain'; end if;
 if not exists(select 1 from public.community_recipes where id='99000000-0000-0000-0000-000000000002' and admin_removed_at is not null and not review_record ? 'qualifications' and not review_record ? 'sources') then raise exception 'Legacy rejected recipe was not cleaned into Trash'; end if;
