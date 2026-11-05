@@ -1,3 +1,4 @@
+import { AccountSection, accountStyles as a } from './AccountSection';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Text, View } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
@@ -119,77 +120,79 @@ export function CommunityAccountManagement({
   section: 'blocks' | 'deletion';
 }) {
   const [deleting, setDeleting] = useState(false);
-  const button = (label: string, action: () => unknown, disabled = c.busy) => (
+  const button = (
+    label: string,
+    action: () => unknown,
+    disabled = c.busy,
+    destructive = false,
+  ) => (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={action}
-      style={styles.actionButton}
+      style={[a.button, destructive && a.dangerButton, disabled && a.disabled]}
     >
-      <Text style={styles.actionButtonText}>{label}</Text>
+      <Text style={[a.buttonText, destructive && a.dangerText]}>{label}</Text>
     </Pressable>
   );
-  return (
-    <View style={styles.optionList}>
-      {section === 'blocks' && (
-        <View style={styles.optionCard}>
-          <Text accessibilityRole="header" style={styles.optionName}>
-            Blocked recipes
-          </Text>
-          <Text style={styles.optionDetail}>
-            Blocking a contributor hides all of their recipes for your account
-            only. Other people can still see them.
-          </Text>
-          {!c.blocks.length && (
-            <Text style={styles.optionDetail}>
-              You have no blocked contributors.
+  if (section === 'blocks')
+    return (
+      <AccountSection
+        title="Blocked recipes"
+        summary="Manage contributors hidden from your recipe lists."
+        count={c.blocks.length}
+        collapsible
+      >
+        <Text style={a.body}>
+          Blocking hides all of a contributor’s recipes for your account only.
+        </Text>
+        {!c.blocks.length && (
+          <Text style={a.body}>You have no blocked contributors.</Text>
+        )}
+        {c.blocks.map(block => (
+          <View key={block.id} style={a.entry}>
+            <Text style={a.entryTitle}>
+              {block.label.replace(/^Recipe:\s*/i, '')}
             </Text>
+            <Text style={a.metadata}>
+              This contributor’s recipes are hidden from you.
+            </Text>
+            {button(
+              'Unblock contributor',
+              () => c.unblock(block.id),
+              c.busy || !c.canManage,
+            )}
+          </View>
+        ))}
+      </AccountSection>
+    );
+  return (
+    <AccountSection
+      title="Delete your account"
+      summary="Permanently delete your account and its data. This cannot be undone."
+      danger
+    >
+      {c.account?.deletion_requested_at ? (
+        button('Retry account deletion', c.requestDeletion, c.busy, true)
+      ) : !deleting ? (
+        button('Delete account', () => setDeleting(true), c.busy, true)
+      ) : (
+        <View style={a.content}>
+          <Text style={a.body}>
+            Delete your account, saved items, recipes, votes, reports, and
+            uploaded photos? Your public contributions will be hidden
+            immediately.
+          </Text>
+          {button(
+            'Confirm account deletion request',
+            c.requestDeletion,
+            c.busy,
+            true,
           )}
-          {c.blocks.map(block => (
-            <View key={block.id} style={styles.optionList}>
-              <Text style={styles.optionName}>
-                {block.label.replace(/^Recipe:\s*/i, '')}
-              </Text>
-              <Text style={styles.optionDetail}>
-                This contributor’s recipes are hidden from you.
-              </Text>
-              {button(
-                'Unblock contributor',
-                () => c.unblock(block.id),
-                c.busy || !c.canManage,
-              )}
-            </View>
-          ))}
+          {button('Cancel', () => setDeleting(false))}
         </View>
       )}
-      {section === 'deletion' && (
-        <View style={styles.optionCard}>
-          <Text accessibilityRole="header" style={styles.optionName}>
-            Delete your account
-          </Text>
-          <Text style={styles.optionDetail}>
-            Permanently delete your account and its data. This is separate from
-            blocking a contributor or reporting a recipe.
-          </Text>
-          {!!c.account?.deletion_requested_at &&
-            button('Retry account deletion', c.requestDeletion)}
-          {!c.account?.deletion_requested_at &&
-            button('Delete account', () => setDeleting(true))}
-          {deleting && !c.account?.deletion_requested_at && (
-            <View>
-              <Text>
-                Request permanent deletion of your account, saved guides,
-                recipes, votes, reports, agreements, and uploaded photos? Your
-                public contributions will be hidden immediately. Deletion cannot
-                be undone once processed.
-              </Text>
-              {button('Confirm account deletion request', c.requestDeletion)}
-              {button('Cancel', () => setDeleting(false))}
-            </View>
-          )}
-        </View>
-      )}
-    </View>
+    </AccountSection>
   );
 }

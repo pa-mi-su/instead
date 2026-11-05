@@ -1,6 +1,6 @@
 begin;
 do $$
-declare owner_id uuid:=gen_random_uuid(); other_id uuid:=gen_random_uuid(); result jsonb;
+declare owner_id uuid:=gen_random_uuid(); other_id uuid:=gen_random_uuid(); result jsonb; own_report uuid; denied boolean:=false;
 begin
  insert into auth.users(id,email,email_confirmed_at) values(owner_id,'history-owner@example.invalid',now()),(other_id,'history-other@example.invalid',now());
  insert into public.recipe_concerns(user_id,product_id,recipe_id,reason,details,recipe_snapshot) values
@@ -11,6 +11,22 @@ begin
  if jsonb_array_length(result)<>1 or result->0->>'title'<>'My reported recipe' then raise exception 'Concern history leaked another account or lost title'; end if;
  if (result->0) ? 'details' or (result->0) ? 'user_id' or (result->0) ? 'recipe_snapshot' then raise exception 'Concern history exposed unnecessary private data'; end if;
  if has_function_privilege('anon','public.community_my_recipe_concerns()','execute') then raise exception 'Anonymous history access granted'; end if;
+ select id into own_report from public.recipe_concerns where user_id=owner_id;
+ perform public.community_concern_history_visibility(array['owner-recipe','other-recipe'],true,owner_id);
+ if not exists(select 1 from public.recipe_concerns where id=own_report and hidden_at is not null and reviewed_at is null) then raise exception 'Clearing changed report status or lost the report'; end if;
+ if exists(select 1 from public.recipe_concerns where user_id=other_id and hidden_at is not null) then raise exception 'Clearing changed another account'; end if;
+ if public.recipe_concern_submit('topic','owner-recipe','Other','Changed details after clearing')<>own_report then raise exception 'Clearing allowed duplicate reporting'; end if;
+ if (select count(*) from public.recipe_concerns where user_id=owner_id)<>1 then raise exception 'Clearing removed the duplicate guard'; end if;
+ perform public.community_concern_history_visibility(array['owner-recipe'],false,owner_id);
+ if exists(select 1 from public.recipe_concerns where id=own_report and hidden_at is not null) then raise exception 'Restore failed'; end if;
+ perform public.community_concern_history_visibility(array['owner-recipe'],true,owner_id,true);
+ if exists(select 1 from public.recipe_concerns where id=own_report and hidden_at is not null) then raise exception 'Clear reviewed hid a pending report'; end if;
+ update public.recipe_concerns set reviewed_at=now() where id=own_report;
+ perform public.community_concern_history_visibility(array['owner-recipe'],true,owner_id,true);
+ if not exists(select 1 from public.recipe_concerns where id=own_report and hidden_at is not null and reviewed_at is not null) then raise exception 'Clear reviewed failed'; end if;
+ begin perform public.community_concern_history_visibility(array['owner-recipe'],false,other_id); exception when insufficient_privilege then denied:=true; end;
+ if not denied then raise exception 'Account identity precondition bypassed'; end if;
+ if has_function_privilege('anon','public.community_concern_history_visibility(text[],boolean,uuid,boolean)','execute') then raise exception 'Anonymous history mutation granted'; end if;
  perform set_config('request.jwt.claim.sub',other_id::text,true);
  if (select count(*) from public.community_my_recipe_concerns())<>1 then raise exception 'Account-scoped history failed'; end if;
  delete from auth.users where id=owner_id;

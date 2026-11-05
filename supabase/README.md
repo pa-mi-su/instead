@@ -18,7 +18,7 @@ For a new community database, use this dependency order:
 
 11. Run `recipe-concerns.sql` and deploy the `report-recipe` Edge Function before publishing report-email controls. Configure its server-only SMTP secrets as described in [recipe publication and reports](../docs/recipe-publication-and-reports.md).
 
-12. Run `recipe-concern-history.sql` after `recipe-concerns.sql` before releasing the My INSTEAD private concern-history UI. This adds an authenticated, caller-scoped read function; it does not change reports or email delivery.
+12. Run `recipe-concern-history.sql` after `recipe-concerns.sql` before releasing the My INSTEAD private concern-history UI. This adds authenticated, caller-scoped history reads and reversible clear/restore controls. Reapply the current file to add `hidden_at` and the visibility RPC before releasing those controls; submitted reports and email delivery remain intact.
 
 Repeatable scripts can be applied again when their contents change. The two initial community migrations are one-time additions; never replay them on an existing project. Existing databases may have already applied some or all of these changes, so check the exact migration headers and [community setup](../docs/community-setup.md), [admin panel](../docs/admin-panel.md), and [release safety](../docs/release-safety.md) before using the Supabase SQL Editor. After adding or changing built-in recipes, rerun `recipe-voting.sql` to register the catalog for voting. None of these scripts grants admin membership.
 

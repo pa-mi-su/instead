@@ -446,7 +446,12 @@ export function ProductCommunityAccess({
         !c.passwordSetupReady &&
         !c.finishingSignup &&
         (purpose === 'account' || !c.canContribute) && (
-          <View style={styles.optionCard}>
+          <View
+            style={[
+              styles.optionCard,
+              purpose === 'account' && local.accountCard,
+            ]}
+          >
             <Text>
               Signed in
               {c.session.user.email ? ` as ${c.session.user.email}` : ''}.
@@ -520,6 +525,7 @@ export function ProductCommunityAccess({
 }
 
 const local = StyleSheet.create({
+  accountCard: { gap: 16 },
   fieldHeader: {
     flexDirection: 'row',
     alignItems: 'center',

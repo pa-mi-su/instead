@@ -89,3 +89,36 @@ November 5 rollout: repeatable report SQL and the report Edge Function were
 redeployed; JWT verification stayed enabled. No production concern was marked
 reviewed during verification. Admin presentation requires the PR website deploy;
 mobile button changes require the next beta. All changes remain in PR #61.
+
+## Account layout and personal history controls
+
+My INSTEAD uses spaced sections with compact headings, distinct recipe entries,
+and separate primary/secondary/destructive actions. Blocked recipes and concern
+history start collapsed with counts. Concern history renders ten entries at a
+time with Show more, groups historical duplicate reports only when their actual
+recipe IDs match, and retains separate recipes that happen to share a title.
+Account deletion stays at the bottom in its own warning section; its confirmation
+and permanent-deletion behavior are unchanged.
+
+Clear from history and Clear reviewed archive personal history entries after
+confirmation. Cleared entries can be shown and restored. They do not cancel a
+report, change moderation/email state, or remove the permanent duplicate guard.
+`recipe-concern-history.sql` now adds nullable `hidden_at`, returns it alongside
+existing summary fields, and adds the authenticated
+`community_concern_history_visibility` function. Apply this repeatable migration
+before releasing the updated app. The extra response field is compatible with
+older clients, which do not expose these controls.
+
+Writes derive the owner from Auth, check the expected signed-in account, limit
+batch sizes, and enforce an independent 60-updates/hour quota. Only the caller's
+history can change; clearing reviewed entries cannot hide a pending report that
+shares the same recipe. Existing report data and all one-report/hourly/daily
+protections remain. The mobile mutation state rejects stale account responses
+and retains history when an update fails. Clearing is a reversible visibility
+change, not erasure of the underlying submitted report; account deletion still
+removes the user's records through the existing cascade.
+
+Backend rollout November 5: the visibility column and clear/restore function were
+applied, and authenticated-only write permissions were verified. No production
+history entries were cleared during deployment. The layout and controls require
+the merged app release and physical-device verification.

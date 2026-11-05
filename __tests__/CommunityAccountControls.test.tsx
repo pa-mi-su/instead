@@ -29,6 +29,8 @@ test('blocked recipes have their own titled section and unblock the selected con
   const screen = await render(
     <CommunityAccountManagement community={community} section="blocks" />,
   );
+  expect(screen.queryByText('Surface cleaner')).toBeNull();
+  await fireEvent.press(screen.getByLabelText('Show blocked recipes'));
   expect(screen.getByText('Surface cleaner')).toBeTruthy();
   expect(screen.queryByText('Recipe: Surface cleaner')).toBeNull();
   expect(screen.queryByText('Delete account')).toBeNull();
