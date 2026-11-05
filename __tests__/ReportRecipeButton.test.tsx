@@ -60,7 +60,7 @@ test('signed-in reports send IDs and concern text, never client-supplied identit
   });
   expect(
     await screen.findByText(
-      'Your report was sent to INSTEAD. This recipe is now hidden from your account. It remains available to others unless an admin removes it.',
+      'Your report was sent to INSTEAD. This recipe is permanently removed from your account. It remains available to others unless an admin removes it.',
     ),
   ).toBeTruthy();
 });
@@ -112,7 +112,7 @@ test('a successful report closes its confirmation before hiding the card', async
   expect(acceptReport).toHaveBeenCalledWith(
     'topic',
     'builtin:recipe',
-    'A recipe',
+    undefined,
   );
   expect(refresh).toHaveBeenCalledTimes(1);
   platform.restore();

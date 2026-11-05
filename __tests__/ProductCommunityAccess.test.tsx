@@ -168,7 +168,6 @@ function DeletionHarness({ deleting }: { deleting: boolean }) {
           suspended: false,
           deletion_requested_at: 'today',
         },
-        blocks: [],
       }}
       purpose="account"
       onSignInRequest={() => undefined}

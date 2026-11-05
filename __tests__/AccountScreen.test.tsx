@@ -12,14 +12,6 @@ jest.mock('../src/lib/supabase', () => ({ supabase: { rpc: jest.fn() } }));
 jest.mock('../src/components/ProductCommunityAccess', () => ({
   ProductCommunityAccess: () => null,
 }));
-jest.mock('../src/hooks/useRecipeConcerns', () => ({
-  useRecipeConcerns: () => ({
-    concerns: [],
-    error: '',
-    loading: false,
-    refresh: jest.fn(),
-  }),
-}));
 jest.mock('../src/components/GuideCard', () => ({ GuideCard: () => null }));
 jest.mock('../src/components/AnimatedPressable', () => ({
   AnimatedPressable: require('react-native').Pressable,
@@ -124,4 +116,24 @@ test('deletion hides submissions and ignores a read that fails after records are
   expect(screen.queryByRole('alert')).toBeNull();
   await screen.unmount();
   rpc.mockReset();
+});
+
+test('My INSTEAD never offers report history, hidden-content lists, or restore/unblock controls', async () => {
+  const rpc = supabase!.rpc as jest.Mock;
+  rpc.mockResolvedValue({ data: [], error: null });
+  const screen = await render(
+    <AccountScreen community={account('owner')} {...props} />,
+  );
+  await waitFor(() =>
+    expect(screen.getByText('My recipe submissions')).toBeTruthy(),
+  );
+  for (const label of [
+    /Hidden recipes/i,
+    /Blocked contributors/i,
+    /Recipe concerns/i,
+    /Show recipe again/i,
+    /Unblock contributor/i,
+    /Clear.*history/i,
+  ])
+    expect(screen.queryByText(label)).toBeNull();
 });

@@ -19,7 +19,8 @@ For a new community database, apply the following as project owner:
 11. `account-deletion-privacy.sql` — common Auth-deletion audit cleanup and anonymous completion receipts.
 12. `recipe-concerns.sql` — private reports, immutable receipts, quotas, SMTP claims, and admin review.
 13. `recipe-concern-history.sql` — caller-scoped legacy history and compatible clear/restore endpoints.
-14. `personal-recipe-visibility.sql` — account-only recipe hiding, automatic reviewed-history clearing, and published/Saved/profile filters.
+14. `personal-recipe-visibility.sql` — initial private visibility/filter schema.
+15. `permanent-recipe-exclusions.sql` — **final override**: reporting/blocking permanently excludes a community contributor (or an individual catalogue recipe), removes affected account bookmarks, disables history/management reads and every restore/unblock write.
 
 Read each file's header before applying it. The initial community/recipe scripts are one-time additions; the later upgrades are designed for repeat application. Several later scripts replace earlier RPC definitions, so reapplying an earlier file may require reapplying its dependent overrides. Avoid replaying old definitions over current behavior.
 
@@ -38,8 +39,8 @@ The mobile/static clients receive only the project URL and publishable key. Neve
 - `recipe-photos` is private, with account-owned opaque folders and constrained uploads. Readers obtain short-lived signed URLs when permitted.
 - `profile-avatars.sql` creates optional **public** avatar storage and owner-scoped writes. Run `node --env-file=.env scripts/check-profile-avatars.mjs` with public configuration to check readiness without uploading a photo. Both signed mobile release jobs run the same check.
 - The deletion function removes recipe photos/avatars before Auth deletion. Cascades remove dependent data; `account-deletion-privacy.sql` cleans linked audit data/redacts matching snapshots and retains an anonymous completion receipt. A pending request is not proof of completed cleanup. Provider backups/logs, support mail, and other devices have separate retention; see [admin deletion](../docs/admin-panel.md).
-- A concern insert creates a private hidden-recipe preference in the same transaction. Review clears legacy history but does not restore that preference or unpublish the recipe. Blocking/restoring uses the same account-owned visibility table for catalogue and community IDs.
-- The personal-visibility migration backfills existing concerns **once**. Its private migration marker prevents later reapplication from re-hiding recipes deliberately restored by their owners. Do not delete that marker or the permanent report receipts to reset the UI.
+- A concern insert creates a private hidden-recipe preference in the same transaction. Review clears legacy history but does not restore that preference or unpublish the recipe. Reporting/blocking uses account-owned exclusions. Current clients expose no history, management, restore, or unblock controls.
+- The permanent migration must run last. It supersedes the earlier reversible visibility APIs and reconciles existing reports/blocks, including earlier restores. Do not replay earlier RPC definitions over it without reapplying this override. It creates no global archive/removal decisions.
 - Public catalogue responses remain global. The app applies private preferences separately; server published/Saved/profile reads also filter them. This is a visibility preference, not a change to public publication.
 
 ## Disposable local database tests
@@ -52,4 +53,4 @@ INSTEAD_PG_BIN=/path/to/postgresql/bin python3 scripts/test-community-db.py
 
 Python 3 and PostgreSQL are required. Run as a normal user: `initdb` does not run as root. The harness creates its own temporary cluster/Unix socket, applies migrations in historical upgrade order, runs synthetic SQL fixtures and concurrent-report checks, and removes the cluster afterward. It does not accept a hosted database URL.
 
-The suite verifies authorization/RLS/grants, migration repetition, moderation, votes, private saves/profiles, membership, Storage policy behavior, deletion/audit privacy, report quotas/duplicates/concurrency, and personal hiding across both recipe types. Tests also restore a reported recipe, reapply the visibility migration, and confirm the restore survives. Storage/Auth tables are local fixtures; real provider integration still needs authorized end-to-end testing.
+The suite verifies authorization/RLS/grants, migration repetition, moderation, votes, private saves/profiles, membership, Storage policy behavior, deletion/audit privacy, report quotas/duplicates/concurrency, and personal hiding across both recipe types. Historical upgrade tests cover the old reversible schema, then final-contract tests verify permanent exclusions, no legacy restore/unblock/history access, same-contributor cross-guide/profile scope, and private bookmark cleanup. Storage/Auth tables are local fixtures; real provider integration still needs authorized end-to-end testing.

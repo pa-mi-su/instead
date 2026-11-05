@@ -27,14 +27,10 @@ export function ProductCommunity({
         <RecipeContent
           controller={recipeController}
           mode="submissions"
-          key={`${productId}:${c.session?.user.id ?? 'guest'}:${c.blocks
-            .map(b => b.id)
-            .join(',')}`}
+          key={`${productId}:${c.session?.user.id ?? 'guest'}`}
           productId={productId}
           userId={c.session?.user.id}
           canContribute={c.canContribute}
-          canManage={c.canManage}
-          onBlock={id => c.block('recipe', id)}
           onSignInRequest={signIn}
           onOpenProfile={onOpenProfile}
           savedRecipeIds={savedRecipeIds}

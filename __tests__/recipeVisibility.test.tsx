@@ -6,45 +6,65 @@ import {
 import type { CommunityClient } from '../src/lib/community';
 const row = {
   product_id: 'guide',
-  recipe_id: 'builtin:recipe',
-  reason: 'reported',
-  title: 'Private recipe',
+  recipe_id: 'recipe',
+  author_username: 'Contributor',
 };
-test('hiding and restoring use a server-checked account and refresh shared visibility', async () => {
-  let rows: (typeof row)[] = [];
-  const rpc = jest.fn(async (name: string, args?: { p_hidden: boolean }) => {
+test('blocking sends only the permanent hide state and offers no restore/list interface', async () => {
+  let excluded = false;
+  const rpc = jest.fn(async (name: string) => {
     if (name === 'community_recipe_hide') {
-      rows = args?.p_hidden ? [row] : [];
+      excluded = true;
       return { data: null, error: null };
     }
-    return { data: rows, error: null };
+    return { data: excluded ? [row] : [], error: null };
   });
   const client = { rpc } as unknown as CommunityClient;
-  const screen = await renderHook(() => usePersonalRecipes(client, 'owner'));
-  await waitFor(() => expect(screen.result.current.loading).toBe(false));
+  const hook = await renderHook(() => usePersonalRecipes(client, 'owner'));
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
   await act(() =>
-    screen.result.current.setHidden('guide', 'builtin:recipe', true),
-  );
-  await waitFor(() =>
-    expect(screen.result.current.isHidden('guide', 'builtin:recipe')).toBe(
-      true,
-    ),
+    hook.result.current.blockRecipe('guide', 'recipe', 'Contributor'),
   );
   expect(rpc).toHaveBeenCalledWith('community_recipe_hide', {
     p_product: 'guide',
-    p_recipe: 'builtin:recipe',
+    p_recipe: 'recipe',
     p_hidden: true,
     p_expected_user: 'owner',
   });
-  await act(() =>
-    screen.result.current.setHidden('guide', 'builtin:recipe', false),
+  expect(hook.result.current.isHidden('guide', 'recipe')).toBe(true);
+  expect(
+    hook.result.current.isHidden('other-guide', 'other-recipe', 'Contributor'),
+  ).toBe(true);
+  expect(hook.result.current.isContributorHidden('contributor')).toBe(true);
+  expect(hook.result.current).not.toHaveProperty('setHidden');
+  expect(hook.result.current).not.toHaveProperty('rows');
+  await hook.unmount();
+  const remount = await renderHook(() => usePersonalRecipes(client, 'owner'));
+  await waitFor(() =>
+    expect(remount.result.current.isContributorHidden('Contributor')).toBe(
+      true,
+    ),
   );
-  await waitFor(() => expect(screen.result.current.rows).toEqual([]));
-  rows = [row];
-  await act(() => refreshRecipeVisibility());
-  await waitFor(() => expect(screen.result.current.rows).toEqual([row]));
 });
-test('late responses cannot expose another account preferences and sign-out clears them', async () => {
+test('successful report suppression immediately excludes cached cards by the same contributor', async () => {
+  const rpc = jest.fn().mockResolvedValue({ data: [], error: null });
+  const client = { rpc } as unknown as CommunityClient;
+  const hook = await renderHook(() => usePersonalRecipes(client, 'owner'));
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
+  await act(() =>
+    hook.result.current.acceptReport('guide', 'recipe', 'Contributor'),
+  );
+  expect(
+    hook.result.current.isHidden(
+      'other-guide',
+      'different-recipe',
+      'Contributor',
+    ),
+  ).toBe(true);
+  expect(
+    hook.result.current.isHidden('other-guide', 'unrelated', 'SomeoneElse'),
+  ).toBe(false);
+});
+test('stale reads cannot cross accounts; sign-out restores the public browsing view', async () => {
   let finish!: (value: unknown) => void;
   const rpc = jest
     .fn()
@@ -56,28 +76,35 @@ test('late responses cannot expose another account preferences and sign-out clea
     )
     .mockResolvedValue({ data: [], error: null });
   const client = { rpc } as unknown as CommunityClient;
-  const screen = await renderHook(
+  const hook = await renderHook(
     ({ user }: { user?: string }) => usePersonalRecipes(client, user),
     { initialProps: { user: 'first' } },
   );
-  await screen.rerender({ user: 'second' });
+  expect(hook.result.current.isHidden('guide', 'recipe')).toBe(true);
+  await hook.rerender({ user: 'second' });
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
   await act(() => finish({ data: [row], error: null }));
-  expect(screen.result.current.rows).toEqual([]);
-  await screen.rerender({ user: undefined });
-  expect(screen.result.current.rows).toEqual([]);
+  expect(hook.result.current.isHidden('guide', 'recipe')).toBe(false);
+  await hook.rerender({ user: undefined });
+  expect(hook.result.current.isHidden('guide', 'recipe')).toBe(false);
 });
-test('a rejected hide does not remove a recipe locally', async () => {
+test('failed block does not suppress a recipe; failed initial filtering does not show excluded content', async () => {
   const rpc = jest.fn(async (name: string) =>
     name === 'community_recipe_hide'
-      ? { data: null, error: { message: 'Not allowed' } }
+      ? { data: null, error: { message: 'Denied' } }
       : { data: [], error: null },
   );
   const client = { rpc } as unknown as CommunityClient;
-  const screen = await renderHook(() => usePersonalRecipes(client, 'owner'));
-  await waitFor(() => expect(screen.result.current.loading).toBe(false));
-  await act(() =>
-    screen.result.current.setHidden('guide', 'builtin:recipe', true),
-  );
-  expect(screen.result.current.rows).toEqual([]);
-  expect(screen.result.current.error).toBeTruthy();
+  const hook = await renderHook(() => usePersonalRecipes(client, 'owner'));
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
+  await act(() => hook.result.current.blockRecipe('guide', 'recipe'));
+  expect(hook.result.current.isHidden('guide', 'recipe')).toBe(false);
+  rpc.mockResolvedValue({ data: null, error: { message: 'Offline' } });
+  const next = await renderHook(() => usePersonalRecipes(client, 'new-owner'));
+  await waitFor(() => expect(next.result.current.error).toBeTruthy());
+  expect(next.result.current.ready).toBe(false);
+  expect(next.result.current.isHidden('guide', 'recipe')).toBe(true);
+  rpc.mockResolvedValue({ data: [], error: null });
+  await act(() => refreshRecipeVisibility());
+  await waitFor(() => expect(next.result.current.ready).toBe(true));
 });

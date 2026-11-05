@@ -1,3 +1,12 @@
+jest.mock('../src/hooks/useRecipeVisibility', () => ({
+  ...jest.requireActual('../src/hooks/useRecipeVisibility'),
+  usePersonalRecipes: () => ({
+    ready: true,
+    loading: false,
+    error: '',
+    isHidden: () => false,
+  }),
+}));
 import { act, render } from '@testing-library/react-native';
 import { AppNavigator } from '../src/navigation/AppNavigator';
 import { productCatalog } from '../src/catalog';

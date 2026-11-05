@@ -61,38 +61,43 @@ export function AppNavigator() {
       ? community.session.user.id
       : undefined,
   );
-  const visibility = usePersonalRecipes(supabase, community.session?.user.id);
-  const hiddenRecipes = visibility.rows;
+  const visibility = usePersonalRecipes(
+    supabase,
+    community.session?.user.email_confirmed_at &&
+      !community.session.user.is_anonymous
+      ? community.session.user.id
+      : undefined,
+  );
+
   const favorites = sourceFavorites.filter(key => {
     const recipe = parseSavedRecipeKey(key);
-    return !recipe || !visibility.isHidden(recipe.productId, recipe.recipeId);
+    return (
+      !recipe ||
+      (syncStatus !== 'syncing' &&
+        !visibility.isHidden(recipe.productId, recipe.recipeId))
+    );
   });
+  const { isHidden } = visibility;
   const catalog = useMemo(
     () =>
       sourceCatalog.map(guide =>
-        guide.recipes?.some(recipe =>
-          hiddenRecipes.some(
-            row => row.product_id === guide.id && row.recipe_id === recipe.id,
-          ),
-        )
+        guide.recipes?.some(recipe => isHidden(guide.id, recipe.id))
           ? {
               ...guide,
               recipes: guide.recipes.filter(
-                recipe =>
-                  !hiddenRecipes.some(
-                    row =>
-                      row.product_id === guide.id &&
-                      row.recipe_id === recipe.id,
-                  ),
+                recipe => !isHidden(guide.id, recipe.id),
               ),
             }
           : guide,
       ),
-    [sourceCatalog, hiddenRecipes],
+    [sourceCatalog, isHidden],
   );
-  const savedRecipes = sourceSavedRecipes.filter(
-    recipe => !visibility.isHidden(recipe.productId, recipe.recipeId),
-  );
+  const savedRecipes =
+    syncStatus === 'syncing'
+      ? []
+      : sourceSavedRecipes.filter(
+          recipe => !visibility.isHidden(recipe.productId, recipe.recipeId),
+        );
   const canSave = Boolean(
     community.session?.user.email_confirmed_at &&
       !community.session.user.is_anonymous,

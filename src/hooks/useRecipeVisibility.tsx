@@ -13,12 +13,12 @@ import {
 } from '../lib/community';
 import { subscribeCommunityUpdates } from '../lib/communityUpdates';
 
-type HiddenRecipe = {
+type Exclusion = {
   product_id: string;
   recipe_id: string;
-  reason: string;
-  title: string;
+  author_username?: string | null;
 };
+const noExclusions: Exclusion[] = [];
 const listeners = new Set<() => void>();
 export function subscribeRecipeVisibility(listener: () => void) {
   listeners.add(listener);
@@ -30,23 +30,24 @@ export function refreshRecipeVisibility() {
   for (const listener of listeners) listener();
 }
 export function usePersonalRecipes(
-  supabase: CommunityClient | null,
+  client: CommunityClient | null,
   userId?: string,
 ) {
-  const [state, setState] = useState<{ owner?: string; rows: HiddenRecipe[] }>({
+  const [state, setState] = useState<{ owner?: string; rows: Exclusion[] }>({
     rows: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const generation = useRef(0);
+  const [pendingScope, setPendingScope] = useState<string>();
   const identity = useRef(userId);
   identity.current = userId;
-  const locked = useRef(false);
+  const generation = useRef(0);
   const mutation = useRef(0);
+  const locked = useRef(false);
   const refresh = useCallback(async () => {
     const version = ++generation.current;
-    if (!userId || !supabase) {
+    if (!userId || !client) {
       setState({ rows: [] });
       setLoading(false);
       setError('');
@@ -55,19 +56,22 @@ export function usePersonalRecipes(
     setLoading(true);
     setError('');
     try {
-      const rows = await accountRpc<HiddenRecipe[]>(
-        supabase,
-        'community_hidden_recipes',
+      const rows = await accountRpc<Exclusion[]>(
+        client,
+        'community_recipe_exclusions',
       );
       if (!Array.isArray(rows))
-        throw new Error('Could not load hidden recipes.');
-      if (generation.current === version) setState({ owner: userId, rows });
+        throw new Error('Could not load your recipe list.');
+      if (version === generation.current) {
+        setState({ owner: userId, rows });
+        setPendingScope(undefined);
+      }
     } catch (issue) {
-      if (generation.current === version) setError(communityError(issue));
+      if (version === generation.current) setError(communityError(issue));
     } finally {
-      if (generation.current === version) setLoading(false);
+      if (version === generation.current) setLoading(false);
     }
-  }, [supabase, userId]);
+  }, [client, userId]);
   useEffect(() => {
     const requests = generation;
     mutation.current++;
@@ -93,62 +97,17 @@ export function usePersonalRecipes(
       unsubscribe();
     };
   }, [refresh, userId]);
-  const rows = state.owner === userId ? state.rows : [];
-  async function setHidden(
+  const rows = state.owner === userId ? state.rows : noExclusions;
+  const ready = !userId || (state.owner === userId && pendingScope !== userId);
+  function excludeLocally(
     productId: string,
     recipeId: string,
-    hidden: boolean,
-    title = 'Recipe',
+    authorUsername?: string,
   ) {
-    if (!userId || !supabase || locked.current) return;
-    const owner = userId;
-    const version = ++mutation.current;
-    locked.current = true;
-    setBusy(true);
-    setError('');
-    try {
-      await accountRpc(supabase, 'community_recipe_hide', {
-        p_product: productId,
-        p_recipe: recipeId,
-        p_hidden: hidden,
-        p_expected_user: owner,
-      });
-      if (identity.current !== owner) return;
-      generation.current++;
-      setState(current => ({
-        owner,
-        rows: [
-          ...(current.owner === owner
-            ? current.rows.filter(
-                row =>
-                  row.product_id !== productId || row.recipe_id !== recipeId,
-              )
-            : []),
-          ...(hidden
-            ? [
-                {
-                  product_id: productId,
-                  recipe_id: recipeId,
-                  reason: 'blocked',
-                  title,
-                },
-              ]
-            : []),
-        ],
-      }));
-      refreshRecipeVisibility();
-    } catch (issue) {
-      if (identity.current === owner) setError(communityError(issue));
-    } finally {
-      if (mutation.current === version) {
-        locked.current = false;
-        setBusy(false);
-      }
-    }
-  }
-  function acceptReport(productId: string, recipeId: string, title: string) {
     if (!userId || identity.current !== userId) return;
     generation.current++;
+    if (!authorUsername && /^[a-f0-9-]{36}$/i.test(recipeId))
+      setPendingScope(userId);
     setState(current => ({
       owner: userId,
       rows: [
@@ -160,25 +119,72 @@ export function usePersonalRecipes(
         {
           product_id: productId,
           recipe_id: recipeId,
-          title,
-          reason: 'reported',
+          author_username: authorUsername,
         },
       ],
     }));
   }
+  async function blockRecipe(
+    productId: string,
+    recipeId: string,
+    authorUsername?: string,
+  ) {
+    if (!client || !userId || locked.current) return;
+    const owner = userId;
+    const version = ++mutation.current;
+    locked.current = true;
+    setBusy(true);
+    setError('');
+    try {
+      await accountRpc(client, 'community_recipe_hide', {
+        p_product: productId,
+        p_recipe: recipeId,
+        p_hidden: true,
+        p_expected_user: owner,
+      });
+      if (identity.current !== owner) return;
+      excludeLocally(productId, recipeId, authorUsername);
+      refreshRecipeVisibility();
+    } catch (issue) {
+      if (identity.current === owner) setError(communityError(issue));
+    } finally {
+      if (mutation.current === version) {
+        locked.current = false;
+        setBusy(false);
+      }
+    }
+  }
+  const isContributorHidden = useCallback(
+    (username?: string) =>
+      Boolean(
+        username &&
+          rows.some(
+            row =>
+              row.author_username?.toLowerCase() === username.toLowerCase(),
+          ),
+      ),
+    [rows],
+  );
+  const isHidden = useCallback(
+    (productId: string, recipeId: string, authorUsername?: string) =>
+      !ready ||
+      isContributorHidden(authorUsername) ||
+      rows.some(
+        row => row.product_id === productId && row.recipe_id === recipeId,
+      ),
+    [ready, rows, isContributorHidden],
+  );
   return {
     userId,
-    acceptReport,
-    rows,
+    ready,
     loading,
     error,
     busy,
     refresh,
-    setHidden,
-    isHidden: (productId: string, recipeId: string) =>
-      rows.some(
-        row => row.product_id === productId && row.recipe_id === recipeId,
-      ),
+    blockRecipe,
+    acceptReport: excludeLocally,
+    isContributorHidden,
+    isHidden,
   };
 }
 type Visibility = ReturnType<typeof usePersonalRecipes>;
