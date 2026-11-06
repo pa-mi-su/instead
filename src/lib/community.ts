@@ -40,6 +40,10 @@ export type CommunityClient = {
       email: string;
       options?: { shouldCreateUser?: boolean };
     }) => Promise<{ error: unknown }>;
+    resend: (args: {
+      type: 'signup';
+      email: string;
+    }) => Promise<{ error: unknown }>;
     resetPasswordForEmail: (email: string) => Promise<{ error: unknown }>;
     signInWithPassword: (args: {
       email: string;

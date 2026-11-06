@@ -19,7 +19,7 @@ Verified active contributors must explicitly accept the current account-linked c
 5. Configure custom SMTP in Supabase Auth using dedicated server-side sender credentials. Report-email SMTP is a separate Edge Function configuration. Never use a service-role or SMTP credential as client config.
 6. Supply `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` to native/static builds. Leaving both blank provides offline native browsing only. Follow the root README for environment generation.
 
-The October 16 SES setup established the insteadtry.com sender in us-east-1 and custom Auth email delivery. That is dated deployment evidence, not a permanent deliverability guarantee. Keep inbound support verification separate from outbound sender verification. See [SES history](ses-audit.md).
+The October 16 SES setup established the insteadtry.com sender in us-east-1 and custom Auth email delivery. That is dated deployment evidence, not a permanent deliverability guarantee. Keep inbound support verification separate from outbound sender verification. See [SES history](ses-audit.md) and the current [email delivery diagnostics](email-delivery-diagnostics.md). Signup confirmation has a dedicated resend action with a 60-second local cooldown; Supabase remains authoritative for send limits and expiry.
 
 ## Confirmation and recovery
 
