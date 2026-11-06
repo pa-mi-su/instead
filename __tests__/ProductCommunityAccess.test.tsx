@@ -37,7 +37,12 @@ const client = {
     signOut: async () => ({ error: null }),
   },
   rpc: async (name: string) => ({
-    data: name === 'community_list' ? [] : null,
+    data:
+      name === 'community_username_available'
+        ? true
+        : name === 'community_list'
+        ? []
+        : null,
     error: null,
   }),
 } as unknown as CommunityClient;
@@ -207,4 +212,51 @@ test('pending signup exposes confirmation resend with cooldown and expiry guidan
   expect(screen.getByText(/Codes expire after five minutes/)).toBeTruthy();
   expect(screen.getByText('Resend in 32s')).toBeTruthy();
   expect(screen.queryByText('Resend recovery code')).toBeNull();
+});
+
+test('password clear control empties the field and hides subsequent text', async () => {
+  const screen = await render(<Harness />);
+  await fireEvent.changeText(
+    await screen.findByLabelText('Password'),
+    'temporary-secret',
+  );
+  await fireEvent.press(screen.getByLabelText('Show password'));
+  await fireEvent.press(screen.getByLabelText('Clear password'));
+  expect(screen.getByLabelText('Password').props.value).toBe('');
+  expect(screen.queryByLabelText('Clear password')).toBeNull();
+  await fireEvent.changeText(screen.getByLabelText('Password'), 'new-secret');
+  expect(screen.getByLabelText('Password').props.secureTextEntry).toBe(true);
+});
+
+test('verified identity without a profile gets a dedicated recoverable setup form', async () => {
+  function Incomplete() {
+    const c = useCommunity(client, 'topic');
+    return (
+      <ProductCommunityAccess
+        community={{
+          ...c,
+          session: {
+            user: {
+              id: 'verified',
+              email: 'verified@example.com',
+              email_confirmed_at: '2026-11-06',
+            },
+          },
+          profile: null,
+          profileLoading: false,
+          profileLoadError: '',
+          authReady: true,
+        }}
+        purpose="account"
+        onSignInRequest={() => undefined}
+      />
+    );
+  }
+  const screen = await render(<Incomplete />);
+  expect(screen.getByText('Finish your account setup')).toBeTruthy();
+  expect(
+    screen.getByLabelText('Public username (3–20 characters)'),
+  ).toBeTruthy();
+  expect(screen.queryByText('Set your username')).toBeNull();
+  expect(screen.queryByText('Community rules')).toBeNull();
 });

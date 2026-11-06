@@ -40,7 +40,17 @@ export function ProductCommunityAccess({
   useEffect(() => {
     if (!c.password && !c.passwordConfirmation) setVisiblePasswords({});
   }, [c.password, c.passwordConfirmation]);
-  const signupCode = c.pendingAuth === 'signup' && c.sentEmail;
+  const signupCode = !c.session && c.pendingAuth === 'signup' && c.sentEmail;
+  const needsProfileSetup = Boolean(
+    c.session?.user.email_confirmed_at &&
+      !c.session.user.is_anonymous &&
+      !c.profile &&
+      !c.profileLoading &&
+      !c.profileLoadError &&
+      !c.passwordSetupReady &&
+      !c.finishingSignup &&
+      !c.account?.deletion_requested_at,
+  );
   const recoveryCode = c.pendingAuth === 'recovery' && c.sentEmail;
   const button = (
     label: string,
@@ -148,25 +158,48 @@ export function ProductCommunityAccess({
           </Pressable>
         )}
       </View>
-      <TextInput
-        accessibilityLabel={label}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={label}
-        placeholderTextColor={COLORS.muted}
-        selectionColor={COLORS.sage}
-        autoCapitalize={options.email ? 'none' : 'sentences'}
-        autoCorrect={!options.email && !options.password}
-        autoComplete={options.autocomplete}
-        keyboardType={options.keyboard ?? 'default'}
-        secureTextEntry={
-          options.password && !visiblePasswords[options.passwordKey ?? label]
-        }
-        multiline={options.multiline}
-        maxLength={options.maxLength}
-        editable={!c.busy}
-        style={[local.authInput, options.multiline && local.bioInput]}
-      />
+      <View style={local.inputContainer}>
+        <TextInput
+          accessibilityLabel={label}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={label}
+          placeholderTextColor={COLORS.muted}
+          selectionColor={COLORS.sage}
+          autoCapitalize={options.email ? 'none' : 'sentences'}
+          autoCorrect={!options.email && !options.password}
+          autoComplete={options.autocomplete}
+          keyboardType={options.keyboard ?? 'default'}
+          secureTextEntry={
+            options.password && !visiblePasswords[options.passwordKey ?? label]
+          }
+          multiline={options.multiline}
+          maxLength={options.maxLength}
+          editable={!c.busy}
+          style={[
+            local.authInput,
+            options.multiline && local.bioInput,
+            options.password && local.passwordInput,
+          ]}
+        />
+        {options.password && value.length > 0 && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Clear ${label.toLowerCase()}`}
+            disabled={c.busy}
+            style={local.clearPassword}
+            onPress={() => {
+              onChangeText('');
+              setVisiblePasswords(current => ({
+                ...current,
+                [options.passwordKey ?? label]: false,
+              }));
+            }}
+          >
+            <Text style={local.clearPasswordText}>×</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 
@@ -453,7 +486,34 @@ export function ProductCommunityAccess({
           </View>
         </View>
       )}
+      {needsProfileSetup && (
+        <View style={[styles.optionCard, local.accountCard]}>
+          <Text style={styles.optionName}>Finish your account setup</Text>
+          <Text style={styles.optionDetail}>
+            Your email is verified. Choose an available public username to
+            finish creating your profile.
+          </Text>
+          {field(
+            'Public username (3–20 characters)',
+            c.username,
+            c.setUsername,
+            { maxLength: 20, autocomplete: 'username' },
+          )}
+          {field('Short bio (optional)', c.bio, c.setBio, {
+            maxLength: 280,
+            multiline: true,
+          })}
+          {button(
+            'Finish account setup',
+            c.finishProfileSetup,
+            c.busy || !c.username.trim(),
+            true,
+          )}
+          {button('Sign out', c.signOut)}
+        </View>
+      )}
       {!!c.session &&
+        !needsProfileSetup &&
         !c.passwordSetupReady &&
         !c.finishingSignup &&
         (purpose === 'account' || !c.canContribute) && (
@@ -537,6 +597,18 @@ export function ProductCommunityAccess({
 
 const local = StyleSheet.create({
   accountCard: { gap: 16 },
+  inputContainer: { position: 'relative' },
+  passwordInput: { paddingRight: 52 },
+  clearPassword: {
+    position: 'absolute',
+    right: 4,
+    top: 10,
+    bottom: 0,
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearPasswordText: { color: COLORS.muted, fontSize: 25, fontWeight: '600' },
   fieldHeader: {
     flexDirection: 'row',
     alignItems: 'center',

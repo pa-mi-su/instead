@@ -33,6 +33,7 @@ select u.id,
        'member_'||substr(replace(u.id::text,'-',''),1,8),
        ''
 from auth.users u
+where u.email_confirmed_at is not null and u.email is not null and not coalesce(u.is_anonymous,false)
 on conflict(user_id) do update set
  username=coalesce(public.community_profiles.username,
                    'member_'||substr(replace(excluded.user_id::text,'-',''),1,8)),

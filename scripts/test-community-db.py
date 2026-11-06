@@ -141,6 +141,10 @@ delete from auth.users where id='96000000-0000-0000-0000-000000000001';
 delete from public.community_builtin_recipes where id='builtin:permanentBackfill';"""])
  print(run(psql+['-f',str(root/'supabase/tests/permanent-recipe-exclusions.test.sql')])[-800:])
  print('Permanent exclusions: no restore/history APIs; reporter-only contributor filtering and explicit global removal verified.')
+ run(psql+['-f',str(root/'supabase/signup-integrity.sql')])
+ run(psql+['-f',str(root/'supabase/signup-integrity.sql')])
+ print(run(psql+['-f',str(root/'supabase/tests/signup-integrity.test.sql')])[-800:])
+ print('Signup integrity: public availability, final uniqueness, verified-only profiles, and deletion release verified.')
 finally:
  if started: run([str(bin/'pg_ctl'),'-D',str(base/'data'),'-m','immediate','stop'])
  shutil.rmtree(base)

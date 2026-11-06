@@ -23,8 +23,11 @@ function mockClient(session: CommunitySession | null = null) {
       data: { session: null, user: { identities: [{ id: 'new-user' }] } },
       error: null as unknown,
     })),
-    verifyOtp: jest.fn(async () => {
-      session = session ?? member;
+    verifyOtp: jest.fn(async (args: { email: string }) => {
+      session = session ?? {
+        ...member,
+        user: { ...member.user, email: args.email },
+      };
       listener('SIGNED_IN', session);
       return { error: null as unknown };
     }),
@@ -35,21 +38,24 @@ function mockClient(session: CommunitySession | null = null) {
     }),
   };
   const rpc = jest.fn(async (name: string, _args: Record<string, unknown>) => ({
-    data: (name === 'community_list' || name === 'recipe_comments_list'
-      ? []
-      : name === 'community_account_state'
-      ? [
-          {
-            policy_accepted: true,
-            suspended: false,
-            deletion_requested_at: null,
-          },
-        ]
-      : name === 'community_blocks_list'
-      ? []
-      : name === 'community_profile_me'
-      ? []
-      : null) as unknown,
+    data:
+      name === 'community_username_available'
+        ? true
+        : ((name === 'community_list' || name === 'recipe_comments_list'
+            ? []
+            : name === 'community_account_state'
+            ? [
+                {
+                  policy_accepted: true,
+                  suspended: false,
+                  deletion_requested_at: null,
+                },
+              ]
+            : name === 'community_blocks_list'
+            ? []
+            : name === 'community_profile_me'
+            ? []
+            : null) as unknown),
     error: null as unknown,
   }));
   const storage = {
@@ -935,4 +941,107 @@ test('signup resend uses pending address, throttles repeats and preserves the si
   expect(hook.result.current.pendingAuth).toBe('signup');
   hook.unmount();
   clock.mockRestore();
+});
+
+test('taken username stops signup before any Auth identity or email is requested', async () => {
+  const m = mockClient();
+  const original = m.rpc.getMockImplementation()!;
+  m.rpc.mockImplementation((name, args) =>
+    name === 'community_username_available'
+      ? Promise.resolve({ data: false, error: null })
+      : original(name, args),
+  );
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await act(() => {
+    hook.result.current.setEmail('new@example.com');
+    hook.result.current.setUsername('Taken');
+    hook.result.current.setPassword('long-enough-password');
+    hook.result.current.setPasswordConfirmation('long-enough-password');
+  });
+  await act(() => hook.result.current.signUp());
+  expect(m.auth.signUp).not.toHaveBeenCalled();
+  expect(hook.result.current.error).toMatch(/username is already taken/i);
+  expect(hook.result.current.pendingAuth).toBeNull();
+  hook.unmount();
+});
+
+test('a final username race can be corrected after verification without another signup or code', async () => {
+  const m = mockClient();
+  const original = m.rpc.getMockImplementation()!;
+  let conflict = true;
+  m.rpc.mockImplementation((name, args) =>
+    name === 'community_profile_set' && conflict
+      ? Promise.resolve({
+          data: null,
+          error: { code: '23505', message: 'duplicate username' },
+        })
+      : original(name, args),
+  );
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await act(() => {
+    hook.result.current.setEmail('new@example.com');
+    hook.result.current.setUsername('TakenLater');
+    hook.result.current.setBio('My bio');
+    hook.result.current.setPassword('long-enough-password');
+    hook.result.current.setPasswordConfirmation('long-enough-password');
+  });
+  await act(() => hook.result.current.signUp());
+  await act(() => hook.result.current.setCode('12345678'));
+  await act(() => hook.result.current.verifyCode());
+  expect(hook.result.current.session).toBeTruthy();
+  expect(hook.result.current.profile).toBeNull();
+  expect(hook.result.current.username).toBe('TakenLater');
+  expect(hook.result.current.bio).toBe('My bio');
+  expect(hook.result.current.notice).toMatch(
+    /Email verified.*available username/,
+  );
+  conflict = false;
+  await act(() => hook.result.current.setUsername('AvailableNow'));
+  await act(() => hook.result.current.finishProfileSetup());
+  expect(hook.result.current.profile?.username).toBe('AvailableNow');
+  expect(m.auth.signUp).toHaveBeenCalledTimes(1);
+  expect(m.auth.verifyOtp).toHaveBeenCalledTimes(1);
+  expect(hook.result.current.error).toBe('');
+  hook.unmount();
+});
+
+test('invalid confirmation cannot create a public profile', async () => {
+  const m = mockClient();
+  m.auth.verifyOtp.mockResolvedValue({ error: { message: 'expired' } });
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await act(() => {
+    hook.result.current.setEmail('new@example.com');
+    hook.result.current.setUsername('NoProfile');
+    hook.result.current.setPassword('long-enough-password');
+    hook.result.current.setPasswordConfirmation('long-enough-password');
+  });
+  await act(() => hook.result.current.signUp());
+  await act(() => hook.result.current.setCode('12345678'));
+  await act(() => hook.result.current.verifyCode());
+  expect(
+    m.rpc.mock.calls.some(([name]) => name === 'community_profile_set'),
+  ).toBe(false);
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.pendingAuth).toBe('signup');
+  hook.unmount();
+});
+
+test('verification transport failure does not claim verified email or discard the challenge', async () => {
+  const m = mockClient();
+  m.auth.verifyOtp.mockRejectedValueOnce(new Error('Network request failed'));
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await act(() => {
+    hook.result.current.setEmail('new@example.com');
+    hook.result.current.setUsername('NoProfile');
+    hook.result.current.setPassword('long-enough-password');
+    hook.result.current.setPasswordConfirmation('long-enough-password');
+  });
+  await act(() => hook.result.current.signUp());
+  await act(() => hook.result.current.setCode('12345678'));
+  await act(() => hook.result.current.verifyCode());
+  expect(hook.result.current.pendingAuth).toBe('signup');
+  expect(hook.result.current.sentEmail).toBe('new@example.com');
+  expect(hook.result.current.notice).not.toMatch(/email verified/i);
+  expect(hook.result.current.session).toBeNull();
+  hook.unmount();
 });
