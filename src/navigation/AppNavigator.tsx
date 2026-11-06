@@ -3,7 +3,7 @@ import {
   RecipeVisibilityContext,
   usePersonalRecipes,
 } from '../hooks/useRecipeVisibility';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -77,7 +77,24 @@ export function AppNavigator() {
         !visibility.isHidden(recipe.productId, recipe.recipeId))
     );
   });
-  const { isHidden } = visibility;
+  const sessionUncertain = Boolean(
+    community.authChecking || community.authCheckError,
+  );
+  const { isHidden: personalIsHidden } = visibility;
+  const isHidden = useCallback(
+    (productId: string, recipeId: string) =>
+      sessionUncertain || personalIsHidden(productId, recipeId),
+    [sessionUncertain, personalIsHidden],
+  );
+  const guardedVisibility = {
+    ...visibility,
+    isHidden,
+    ready: visibility.ready && !sessionUncertain,
+    error: community.authCheckError || visibility.error,
+    refresh: sessionUncertain
+      ? async () => community.retrySession()
+      : visibility.refresh,
+  };
   const catalog = useMemo(
     () =>
       sourceCatalog.map(guide =>
@@ -96,7 +113,7 @@ export function AppNavigator() {
     syncStatus === 'syncing'
       ? []
       : sourceSavedRecipes.filter(
-          recipe => !visibility.isHidden(recipe.productId, recipe.recipeId),
+          recipe => !isHidden(recipe.productId, recipe.recipeId),
         );
   const canSave = Boolean(
     community.session?.user.email_confirmed_at &&
@@ -307,7 +324,7 @@ export function AppNavigator() {
   }
 
   return (
-    <RecipeVisibilityContext.Provider value={visibility}>
+    <RecipeVisibilityContext.Provider value={guardedVisibility}>
       <View
         style={[styles.app, { paddingTop: Math.max(insets.top, 12) }]}
         {...(Platform.OS === 'ios' ? panResponder.panHandlers : {})}

@@ -19,6 +19,7 @@ const mockProfile = jest.fn((_props: Record<string, unknown>) => null);
 const mockBarcode = jest.fn((_props: Record<string, unknown>) => null);
 const mockInfo = jest.fn((_props: Record<string, unknown>) => null);
 const mockAuthMode = jest.fn();
+let mockAuthChecking = false;
 jest.mock('../src/lib/supabase', () => ({ supabase: null }));
 jest.mock('react-native-data-scanner', () => ({
   DataScanner: {
@@ -43,6 +44,7 @@ jest.mock('../src/hooks/useGuideCatalog', () => ({
 jest.mock('../src/hooks/useCommunity', () => ({
   useCommunity: () => ({
     authReady: true,
+    authChecking: mockAuthChecking,
     session: { user: { id: 'member', email_confirmed_at: 'today' } },
     setAuthMode: mockAuthMode,
   }),
@@ -139,4 +141,15 @@ test('Saved registration and sign-in actions select the right account flow', asy
   await follow(mockTopBar, 'onSaved');
   await follow(mockSaved, 'onSignIn');
   expect(mockAuthMode).toHaveBeenLastCalledWith('signin');
+});
+
+test('session revalidation does not temporarily expose unfiltered recipes as guest content', async () => {
+  mockAuthChecking = true;
+  const screen = await render(<AppNavigator />);
+  const guides = latestProps(mockHome).guides as typeof productCatalog;
+  expect(guides.every(guide => !guide.recipes?.length)).toBe(true);
+  mockAuthChecking = false;
+  await screen.rerender(<AppNavigator />);
+  const restored = latestProps(mockHome).guides as typeof productCatalog;
+  expect(restored.some(guide => Boolean(guide.recipes?.length))).toBe(true);
 });

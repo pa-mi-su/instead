@@ -56,3 +56,5 @@ Python 3 and PostgreSQL are required. Run as a normal user: `initdb` does not ru
 The suite verifies authorization/RLS/grants, migration repetition, moderation, votes, private saves/profiles, membership, Storage policy behavior, deletion/audit privacy, report quotas/duplicates/concurrency, and personal hiding across both recipe types. Historical upgrade tests cover the old reversible schema, then final-contract tests verify permanent exclusions, no legacy restore/unblock/history access, same-contributor cross-guide/profile scope, and private bookmark cleanup. Storage/Auth tables are local fixtures; real provider integration still needs authorized end-to-end testing.
 
 Apply `signup-integrity.sql` after `permanent-recipe-exclusions.sql`. It adds boolean public-username availability and guards profile writes against unverified Auth identities. See [signup integrity](../docs/community-setup.md#signup-integrity).
+
+Apply `session-account-state.sql` after `signup-integrity.sql` for live-identity account status and private media ownership guards. See the [session restoration audit](../docs/session-restoration-audit.md).

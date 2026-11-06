@@ -10,6 +10,10 @@ function mockClient(session: CommunitySession | null = null) {
     next: CommunitySession | null,
   ) => void = () => {};
   const auth = {
+    getUser: jest.fn(async (_jwt?: string) => ({
+      data: { user: session?.user ?? null },
+      error: null as unknown,
+    })),
     getSession: jest.fn(async () => ({ data: { session }, error: null })),
     onAuthStateChange: jest.fn((callback: typeof listener) => {
       listener = callback;
@@ -33,6 +37,7 @@ function mockClient(session: CommunitySession | null = null) {
     }),
     updateUser: jest.fn(async () => ({ error: null })),
     signOut: jest.fn(async () => {
+      session = null;
       listener('SIGNED_OUT', null);
       return { error: null };
     }),
@@ -77,7 +82,10 @@ function mockClient(session: CommunitySession | null = null) {
     auth,
     rpc,
     storage,
-    emit: (next: CommunitySession | null) => listener('SIGNED_IN', next),
+    emit: (next: CommunitySession | null) => {
+      session = next;
+      listener(next ? 'SIGNED_IN' : 'SIGNED_OUT', next);
+    },
   };
 }
 const member: CommunitySession = {
@@ -1043,5 +1051,150 @@ test('verification transport failure does not claim verified email or discard th
   expect(hook.result.current.sentEmail).toBe('new@example.com');
   expect(hook.result.current.notice).not.toMatch(/email verified/i);
   expect(hook.result.current.session).toBeNull();
+  hook.unmount();
+});
+
+test('stored identity is hidden until the server validates the account', async () => {
+  const m = mockClient(member);
+  let resolve!: (value: {
+    data: { user: CommunitySession['user'] | null };
+    error: unknown;
+  }) => void;
+  m.auth.getUser.mockImplementation(
+    () =>
+      new Promise(done => {
+        resolve = done;
+      }),
+  );
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.authChecking).toBe(true);
+  expect(hook.result.current.canEditProfile).toBe(false);
+  await act(async () => {
+    resolve({ data: { user: member.user }, error: null });
+  });
+  expect(hook.result.current.session?.user.id).toBe('member');
+  hook.unmount();
+});
+
+test('a deleted account in local storage is signed out and clears private form state', async () => {
+  const m = mockClient(member);
+  m.auth.getUser.mockResolvedValue({
+    data: { user: null },
+    error: { status: 403, code: 'user_not_found' },
+  });
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() =>
+    expect(m.auth.signOut).toHaveBeenCalledWith({ scope: 'local' }),
+  );
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.profile).toBeNull();
+  expect(hook.result.current.account).toBeNull();
+  expect(hook.result.current.password).toBe('');
+  expect(hook.result.current.canContribute).toBe(false);
+  expect((await m.auth.getSession()).data.session).toBeNull();
+  hook.unmount();
+});
+
+test('network validation failure gates private UI without deleting a genuine session and can retry', async () => {
+  const m = mockClient(member);
+  m.auth.getUser.mockResolvedValue({
+    data: { user: null },
+    error: { status: 503 },
+  });
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() =>
+    expect(hook.result.current.authCheckError).toMatch(/could not verify/i),
+  );
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.canContribute).toBe(false);
+  expect(m.auth.signOut).not.toHaveBeenCalled();
+  expect((await m.auth.getSession()).data.session).toEqual(member);
+  m.auth.getUser.mockResolvedValue({
+    data: { user: member.user },
+    error: null,
+  });
+  await act(() => hook.result.current.retrySession());
+  await waitFor(() => expect(hook.result.current.session).toEqual(member));
+  hook.unmount();
+});
+
+test('foreground return revalidates and a late success cannot resurrect a signed-out account', async () => {
+  const m = mockClient(member);
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() => expect(hook.result.current.session).toEqual(member));
+  let resolve!: (value: {
+    data: { user: CommunitySession['user'] | null };
+    error: unknown;
+  }) => void;
+  m.auth.getUser.mockImplementation(
+    () =>
+      new Promise(done => {
+        resolve = done;
+      }),
+  );
+  await act(() => notifyCommunityChanged({ type: 'foreground' }));
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.authChecking).toBe(true);
+  await act(() => hook.result.current.signOut());
+  await act(async () => resolve({ data: { user: member.user }, error: null }));
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.authChecking).toBe(false);
+  hook.unmount();
+});
+
+test('an account deleted while the app was backgrounded is cleared on foreground', async () => {
+  const m = mockClient(member);
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() => expect(hook.result.current.session).toEqual(member));
+  await act(() => {
+    hook.result.current.setDraft('Private unfinished comment');
+    hook.result.current.setPassword('private-draft');
+  });
+  m.auth.getUser.mockResolvedValue({
+    data: { user: null },
+    error: { code: 'user_not_found', status: 403 },
+  });
+  await act(() => notifyCommunityChanged({ type: 'foreground' }));
+  await waitFor(() => expect(m.auth.signOut).toHaveBeenCalled());
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.profile).toBeNull();
+  expect(hook.result.current.draft).toBe('');
+  expect(hook.result.current.password).toBe('');
+  expect(hook.result.current.accountReady).toBe(false);
+  hook.unmount();
+});
+
+test('late rejection of an older session cannot sign out a newer account', async () => {
+  const older = { ...member, access_token: 'older' };
+  const newer = {
+    access_token: 'newer',
+    user: { id: 'newer-user', email_confirmed_at: '2026-11-06' },
+  };
+  const m = mockClient(older);
+  let rejectOld!: (value: {
+    data: { user: CommunitySession['user'] | null };
+    error: unknown;
+  }) => void;
+  m.auth.getUser.mockImplementation(jwt =>
+    jwt === 'older'
+      ? new Promise(resolve => {
+          rejectOld = resolve;
+        })
+      : Promise.resolve({ data: { user: newer.user }, error: null }),
+  );
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await act(() => m.emit(newer));
+  await waitFor(() =>
+    expect(hook.result.current.session?.user.id).toBe('newer-user'),
+  );
+  await act(async () =>
+    rejectOld({
+      data: { user: null },
+      error: { status: 403, code: 'user_not_found' },
+    }),
+  );
+  expect(hook.result.current.session?.user.id).toBe('newer-user');
+  expect(m.auth.signOut).not.toHaveBeenCalled();
   hook.unmount();
 });

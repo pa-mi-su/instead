@@ -1,4 +1,5 @@
 export type CommunitySession = {
+  access_token?: string;
   user: {
     id: string;
     email?: string;
@@ -29,6 +30,10 @@ export type CommunityClient = {
     ) => Promise<{ data: unknown; error: unknown }>;
   };
   auth: {
+    getUser: (jwt?: string) => Promise<{
+      data: { user: CommunitySession['user'] | null };
+      error: unknown;
+    }>;
     getSession: () => Promise<{
       data: { session: CommunitySession | null };
       error: unknown;
