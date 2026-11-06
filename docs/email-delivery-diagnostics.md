@@ -4,7 +4,7 @@
 
 Signup and resend for the affected Outlook test address completed successfully at the Auth layer, but SES bounce notifications established that Outlook rejected the message with SMTP 550 5.7.1: “Message lacks SPF/DKIM/DMARC Auth Records (AS9031519).” Auth HTTP 200 and `confirmation_sent_at` indicate submission, not inbox delivery.
 
-At investigation time all three SES DKIM CNAMEs resolved publicly and SES reported signing enabled/SUCCESS. No public `_dmarc.insteadtry.com` TXT record was found. The root SPF record covered Namecheap forwarding, and SES used its default MAIL FROM domain. Do not replace existing forwarding or inbound-mail records when fixing SES authentication. DNS remediation and a subsequent successful delivery must be verified separately; this document does not claim they are complete.
+At investigation time all three SES DKIM CNAMEs resolved publicly and SES reported signing enabled/SUCCESS. No public `_dmarc.insteadtry.com` TXT record was found. The root SPF record covered Namecheap forwarding, and SES used its default MAIL FROM domain. Do not replace existing forwarding or inbound-mail records when fixing SES authentication. The missing TXT record was added in Namecheap on November 6 as `_dmarc` → `v=DMARC1; p=none; adkim=r; aspf=r`, then verified at the authoritative server and a public resolver. Existing DKIM, SPF, forwarding, MX and website records were preserved. A new verification send was accepted after DNS publication; receiving-server acceptance and actual inbox arrival still require confirmation.
 
 The confirmation email template was corrected to say five minutes, matching the existing 300-second Auth expiry. No expiry, password, confirmation, or SMTP credential policy was weakened.
 
