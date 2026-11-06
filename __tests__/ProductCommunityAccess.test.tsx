@@ -24,6 +24,7 @@ const client = {
     }),
   },
   auth: {
+    getUser: async () => ({ data: { user: null }, error: null }),
     getSession: async () => ({ data: { session: null }, error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     signInWithOtp: async () => ({ error: null }),
@@ -144,7 +145,7 @@ test('signup completion stays in a dedicated progress state until setup finishes
 test('clearing a password resets its visibility before another is entered', async () => {
   const screen = await render(<Harness />);
   await fireEvent.changeText(
-    screen.getByLabelText('Password'),
+    await screen.findByLabelText('Password'),
     'test-only-secret',
   );
   await fireEvent.press(screen.getByLabelText('Show password'));
@@ -258,5 +259,33 @@ test('verified identity without a profile gets a dedicated recoverable setup for
     screen.getByLabelText('Public username (3–20 characters)'),
   ).toBeTruthy();
   expect(screen.queryByText('Set your username')).toBeNull();
+  expect(screen.queryByText('Community rules')).toBeNull();
+});
+
+test('checking a restored session shows no stale identity, profile editor or community terms', async () => {
+  function Checking() {
+    const c = useCommunity(client, 'topic');
+    return (
+      <ProductCommunityAccess
+        community={{
+          ...c,
+          authChecking: true,
+          session: {
+            user: {
+              id: 'old',
+              email: 'old@example.com',
+              email_confirmed_at: '2026-11-06',
+            },
+          },
+        }}
+        purpose="account"
+        onSignInRequest={() => undefined}
+      />
+    );
+  }
+  const screen = await render(<Checking />);
+  expect(screen.getByLabelText('Checking your session')).toBeTruthy();
+  expect(screen.queryByText(/Signed in as/)).toBeNull();
+  expect(screen.queryByText('Update profile')).toBeNull();
   expect(screen.queryByText('Community rules')).toBeNull();
 });

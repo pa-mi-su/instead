@@ -1,4 +1,10 @@
 import {
+  clearInvalidSession,
+  sameSession,
+  readStoredSession,
+  validateSession,
+} from '../lib/sessionValidation';
+import {
   notifyCommunityChanged,
   subscribeCommunityUpdates,
 } from '../lib/communityUpdates';
@@ -29,6 +35,10 @@ export function useCommunity(
 ) {
   const [session, setSession] = useState<CommunitySession | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [sessionValidated, setSessionValidated] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authCheckError, setAuthCheckError] = useState('');
+  const checkSessionRef = useRef<() => void>(() => undefined);
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [account, setAccount] = useState<CommunityAccountState | null>(null);
   const [accountUserId, setAccountUserId] = useState<string>();
@@ -154,6 +164,8 @@ export function useCommunity(
         setAccountUserId(targetUserId);
         setAccountLoadStatus('error');
         setAccountLoadError(communityError(issue));
+        if (stateResult.status === 'fulfilled' && !stateResult.value[0])
+          checkSessionRef.current();
       }
 
       return (
@@ -198,49 +210,139 @@ export function useCommunity(
   useEffect(() => {
     if (!client) {
       setAuthReady(true);
+      setAuthChecking(false);
       setLoading(false);
       return;
     }
     let active = true;
+    let version = 0;
     let receivedAuthEvent = false;
-    const { data } = client.auth.onAuthStateChange((_event, next) => {
-      if (active) {
-        if (
-          _event === 'SIGNED_OUT' ||
-          _event === 'SIGNED_IN' ||
-          _event === 'PASSWORD_RECOVERY'
-        ) {
-          passwordVerifiedAt.current = 0;
-          setPasswordSetupReady(false);
-        }
-        if (_event === 'SIGNED_OUT') resetAuthForm();
-        receivedAuthEvent = true;
-        setSession(next);
+    let latest: CommunitySession | null = null;
+    function endSession(showNotice: boolean) {
+      generation.current++;
+      accountGeneration.current++;
+      setSessionValidated(false);
+      setSession(null);
+      setAccount(null);
+      setProfile(null);
+      setComments([]);
+      setDraft('');
+      resetAuthForm();
+      setError('');
+      setProfileLoadError('');
+      setAuthCheckError('');
+      setAuthChecking(false);
+      setAuthReady(true);
+      if (showNotice)
+        setNotice('Your session has ended. Please sign in again.');
+    }
+    async function inspect(
+      candidate: CommunitySession | null,
+      current: number,
+    ) {
+      if (!active || current !== version) return;
+      if (!candidate) {
+        setSession(null);
+        setSessionValidated(false);
+        setAuthChecking(false);
         setAuthReady(true);
+        return;
       }
+      const result = await validateSession(client!, candidate);
+      if (!active || current !== version || !sameSession(latest, candidate))
+        return;
+      if (result.status === 'valid') {
+        setSession(result.session);
+        setSessionValidated(true);
+        setAuthChecking(false);
+        setAuthCheckError('');
+        setAuthReady(true);
+      } else if (result.status === 'invalid') {
+        endSession(true);
+        // getSession/signOut run outside the Auth callback lock. A fresh login
+        // is compared before any local stored credential is removed.
+        await clearInvalidSession(client!, candidate).catch(() => undefined);
+      } else {
+        setSessionValidated(false);
+        setAuthChecking(false);
+        setAuthReady(true);
+        setAuthCheckError(
+          'Could not verify your session. Check your connection and try again.',
+        );
+      }
+    }
+    function schedule(candidate: CommunitySession | null) {
+      latest = candidate;
+      const current = ++version;
+      setSessionValidated(false);
+      setAuthChecking(Boolean(candidate));
+      setAuthCheckError('');
+      // Supabase Auth callbacks must not await other Auth methods.
+      void Promise.resolve().then(() => inspect(candidate, current));
+    }
+    const { data } = client.auth.onAuthStateChange((event, next) => {
+      if (!active) return;
+      receivedAuthEvent = true;
+      if (
+        event === 'SIGNED_OUT' ||
+        event === 'SIGNED_IN' ||
+        event === 'PASSWORD_RECOVERY'
+      ) {
+        passwordVerifiedAt.current = 0;
+        setPasswordSetupReady(false);
+      }
+      if (event === 'SIGNED_OUT') {
+        latest = null;
+        version++;
+        endSession(false);
+      } else schedule(next);
     });
-    client.auth
-      .getSession()
+    function restore() {
+      const requested = ++version;
+      setSessionValidated(false);
+      setAuthChecking(true);
+      setAuthCheckError('');
+      readStoredSession(client!)
+        .then(({ data: auth, error: issue }) => {
+          if (!active || requested !== version) return;
+          if (issue) throw issue;
+          schedule(auth.session);
+        })
+        .catch(() => {
+          if (!active || requested !== version) return;
+          setAuthChecking(false);
+          setAuthReady(true);
+          setAuthCheckError(
+            'Could not verify your session. Check your connection and try again.',
+          );
+        });
+    }
+    checkSessionRef.current = restore;
+    // Subscribe first so an auth event wins over an older stored-session read.
+    const initial = version;
+    readStoredSession(client)
       .then(({ data: auth, error: issue }) => {
-        if (active) {
-          if (issue) {
-            setError(communityError(issue));
-            setErrorSource('auth');
-          }
-          if (!receivedAuthEvent) setSession(auth.session);
-          setAuthReady(true);
-        }
+        if (!active || receivedAuthEvent || initial !== version) return;
+        if (issue) throw issue;
+        schedule(auth.session);
       })
-      .catch(issue => {
-        if (active) {
-          setError(communityError(issue));
-          setErrorSource('auth');
-          setAuthReady(true);
-        }
+      .catch(() => {
+        if (!active || receivedAuthEvent || initial !== version) return;
+        setAuthChecking(false);
+        setAuthReady(true);
+        setAuthCheckError(
+          'Could not verify your session. Check your connection and try again.',
+        );
       });
+    const unsubscribe = subscribeCommunityUpdates(update => {
+      if (update.type === 'foreground') restore();
+    });
     return () => {
       active = false;
+      version++;
+      unsubscribe();
       data.subscription.unsubscribe();
+      checkSessionRef.current = () => undefined;
     };
   }, [client, resetAuthForm]);
   useEffect(() => {
@@ -339,7 +441,10 @@ export function useCommunity(
     setNotice('');
   }
   const verified = Boolean(
-    userId && session?.user.email_confirmed_at && !session.user.is_anonymous,
+    sessionValidated &&
+      userId &&
+      session?.user.email_confirmed_at &&
+      !session.user.is_anonymous,
   );
   const canManage = Boolean(
     verified &&
@@ -636,7 +741,7 @@ export function useCommunity(
         setSentEmail('');
         if (pendingAuth === 'signup') {
           const { data: verifiedAuth, error: sessionError } =
-            await client.auth.getSession();
+            await readStoredSession(client);
           if (sessionError) throw sessionError;
           if (
             !verifiedAuth.session ||
@@ -846,15 +951,23 @@ export function useCommunity(
     : null;
   return {
     configured: Boolean(client),
-    session,
-    authReady,
-    comments,
+    session: sessionValidated ? session : null,
+    authReady: authReady && !authChecking && !authCheckError,
+    authChecking,
+    authCheckError,
+    retrySession: () => checkSessionRef.current(),
+    comments: sessionValidated
+      ? comments
+      : comments.filter(comment => comment.moderation_status === 'approved'),
     publicCount: comments[0]?.public_count ?? 0,
-    account: accountUserId === userId ? account : null,
+    account: sessionValidated && accountUserId === userId ? account : null,
     finishingSignup,
     profileLoading,
     accountReady:
-      accountUserId === userId && accountLoadStatus === 'ready' && !!account,
+      sessionValidated &&
+      accountUserId === userId &&
+      accountLoadStatus === 'ready' &&
+      !!account,
     accountLoading: accountUserId !== userId || accountLoadStatus === 'loading',
     accountLoadError,
     retryAccount: () => loadAccount(),
@@ -875,8 +988,8 @@ export function useCommunity(
     setUsername,
     bio,
     setBio,
-    profile,
-    avatarUrl,
+    profile: sessionValidated ? profile : null,
+    avatarUrl: sessionValidated ? avatarUrl : undefined,
     profileLoadError,
     canEditProfile,
     authMode,

@@ -71,3 +71,7 @@ If a handle becomes unavailable between preflight and verification, the verified
 Password clear buttons apply to sign-in, signup, confirmation-password, and recovery-password fields. Clearing does not submit anything and resets that field to hidden entry.
 
 The signup preflight and verified-profile guard were deployed and checked on November 6, 2026; existing public profile records were unchanged. Mobile preflight, recovery UI, and password-clear controls require the updated binary. The production audit found no orphan profiles and no profiles belonging to unverified Auth identities.
+
+## Restored sessions
+
+Apply `supabase/session-account-state.sql` after `signup-integrity.sql`. Mobile cached sessions are validated with the live Auth server at startup, Auth changes and foreground return. Validation failures gate private data; network failures preserve credentials for retry, while deleted/invalid identities trigger local sign-out. See the [session restoration audit](session-restoration-audit.md) for the backend ownership checks, regression tests and device QA.

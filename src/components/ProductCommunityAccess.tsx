@@ -203,6 +203,29 @@ export function ProductCommunityAccess({
     </View>
   );
 
+  if (!c.deletionInProgress && !c.finishingSignup && c.authChecking) {
+    return (
+      <View
+        style={styles.optionCard}
+        accessibilityRole="progressbar"
+        accessibilityLabel="Checking your session"
+      >
+        <ActivityIndicator color={COLORS.ink} />
+        <Text style={styles.optionName}>Checking your session…</Text>
+      </View>
+    );
+  }
+  if (!c.deletionInProgress && !c.finishingSignup && c.authCheckError) {
+    return (
+      <View style={styles.optionCard}>
+        <Text accessibilityRole="alert" style={styles.optionDetail}>
+          {c.authCheckError}
+        </Text>
+        {button('Retry session check', c.retrySession, false)}
+        {button('Sign out', c.signOut, c.busy)}
+      </View>
+    );
+  }
   if (c.deletionInProgress) {
     return (
       <View

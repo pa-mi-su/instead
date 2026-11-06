@@ -239,9 +239,12 @@ export function GuideDetailScreen({
     scrollRef.current?.scrollTo({ y: communityY.current, animated: true });
   return (
     <View style={styles.detailShell}>
-      {!!community.session && visibility && !visibility.ready && (
+      {visibility && !visibility.ready && (
         <Text style={styles.optionDetail}>
-          {visibility.error || 'Loading your recipe list…'}
+          {visibility.error ||
+            (community.authChecking
+              ? 'Checking your session…'
+              : 'Loading your recipe list…')}
         </Text>
       )}
       {!!visibility?.error && (
@@ -250,7 +253,11 @@ export function GuideDetailScreen({
           style={styles.actionButton}
           onPress={() => visibility.refresh()}
         >
-          <Text style={styles.actionButtonText}>Retry recipe list</Text>
+          <Text style={styles.actionButtonText}>
+            {community.authCheckError
+              ? 'Retry session check'
+              : 'Retry recipe list'}
+          </Text>
         </Pressable>
       )}
       {targetHidden && visibility?.ready && (
