@@ -36,6 +36,12 @@ test('every recipe can offer reporting while guests are directed to sign in', as
   await fireEvent.press(
     screen.getByLabelText('Report or raise a concern about A recipe'),
   );
+  expect(
+    screen.getByText(
+      'Sign in to report this recipe. We will review your concern and take appropriate action if necessary.',
+    ),
+  ).toBeTruthy();
+  expect(screen.queryByText(/follow up/i)).toBeNull();
   await fireEvent.press(screen.getByText('Sign in to report'));
   expect(props.onSignIn).toHaveBeenCalled();
   expect(supabase!.functions!.invoke).not.toHaveBeenCalled();
@@ -60,7 +66,7 @@ test('signed-in reports send IDs and concern text, never client-supplied identit
   });
   expect(
     await screen.findByText(
-      'Your report was sent to INSTEAD. This recipe is permanently removed from your account. It remains available to others unless an admin removes it.',
+      'Thank you for reporting this recipe. We will evaluate it and take action if necessary.',
     ),
   ).toBeTruthy();
 });

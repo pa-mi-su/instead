@@ -14,7 +14,7 @@ Every published recipe type offers **Report or raise a concern**. A verified, ac
 
 The concern transaction also creates a private hidden-recipe preference. The mobile report confirmation remains visible until it closes, then the recipe disappears for that account. Other accounts and guests continue seeing published content while review is pending and after an admin deems it acceptable. **Only explicit admin archive/removal changes global publication.** Report counts do not automatically remove recipes.
 
-**Block recipe** permanently excludes a catalogue recipe. For community content, both reporting and **Block contributor** also exclude that contributor and their recipes across all guides and public profiles. There is no undo path and no report, hidden-content, or contributor-management section in My INSTEAD.
+**Report or raise a concern** is the only recipe moderation action in the app; there is no separate Block recipe or Block contributor button. Reporting permanently excludes a catalogue recipe for the reporter. For community content, reporting also excludes that contributor and their recipes across all guides and public profiles. There is no undo path and no report, hidden-content, or contributor-management section in My INSTEAD.
 
 Published community reads apply exclusions before pagination. Saved and profiles also filter them; affected recipe bookmarks are removed only from the acting account. Future recipes by an excluded contributor stay unavailable to that account. The global catalogue cache remains public and unmodified; private filter data contains IDs/public usernames only, not displayable history. Own submissions are filtered too if the account excluded one of its own published recipes.
 
