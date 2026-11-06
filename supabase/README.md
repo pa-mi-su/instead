@@ -20,7 +20,7 @@ For a new community database, apply the following as project owner:
 12. `recipe-concerns.sql` — private reports, immutable receipts, quotas, SMTP claims, and admin review.
 13. `recipe-concern-history.sql` — caller-scoped legacy history and compatible clear/restore endpoints.
 14. `personal-recipe-visibility.sql` — initial private visibility/filter schema.
-15. `permanent-recipe-exclusions.sql` — **final override**: reporting/blocking permanently excludes a community contributor (or an individual catalogue recipe), removes affected account bookmarks, disables history/management reads and every restore/unblock write.
+15. `permanent-recipe-exclusions.sql` — **final override**: reporting/blocking permanently excludes a community contributor (or an individual catalogue recipe), removes affected account bookmarks, disables mobile history/management reads and end-user restore/unblock writes.
 
 Read each file's header before applying it. The initial community/recipe scripts are one-time additions; the later upgrades are designed for repeat application. Several later scripts replace earlier RPC definitions, so reapplying an earlier file may require reapplying its dependent overrides. Avoid replaying old definitions over current behavior.
 
@@ -40,7 +40,7 @@ The mobile/static clients receive only the project URL and publishable key. Neve
 - `profile-avatars.sql` creates optional **public** avatar storage and owner-scoped writes. Run `node --env-file=.env scripts/check-profile-avatars.mjs` with public configuration to check readiness without uploading a photo. Both signed mobile release jobs run the same check.
 - The deletion function removes recipe photos/avatars before Auth deletion. Cascades remove dependent data; `account-deletion-privacy.sql` cleans linked audit data/redacts matching snapshots and retains an anonymous completion receipt. A pending request is not proof of completed cleanup. Provider backups/logs, support mail, and other devices have separate retention; see [admin deletion](../docs/admin-panel.md).
 - A concern insert creates a private hidden-recipe preference in the same transaction. Review clears legacy history but does not restore that preference or unpublish the recipe. Reporting/blocking uses account-owned exclusions. Current clients expose no history, management, restore, or unblock controls.
-- The permanent migration must run last. It supersedes the earlier reversible visibility APIs and reconciles existing reports/blocks, including earlier restores. Do not replay earlier RPC definitions over it without reapplying this override. It creates no global archive/removal decisions.
+- The permanent migration must follow earlier visibility definitions, followed by the signup, session and admin-activity upgrades below. It supersedes the earlier reversible visibility APIs and reconciles existing reports/blocks, including earlier restores. Do not replay earlier RPC definitions over it without reapplying this override. It creates no global archive/removal decisions.
 - Public catalogue responses remain global. The app applies private preferences separately; server published/Saved/profile reads also filter them. This is a visibility preference, not a change to public publication.
 
 ## Disposable local database tests
@@ -58,3 +58,5 @@ The suite verifies authorization/RLS/grants, migration repetition, moderation, v
 Apply `signup-integrity.sql` after `permanent-recipe-exclusions.sql`. It adds boolean public-username availability and guards profile writes against unverified Auth identities. See [signup integrity](../docs/community-setup.md#signup-integrity).
 
 Apply `session-account-state.sql` after `signup-integrity.sql` for live-identity account status and private media ownership guards. See the [session restoration audit](../docs/session-restoration-audit.md).
+
+Apply `admin-user-activity.sql` last. It adds protected user directory/activity RPCs and an MFA-only, reason-required personal visibility override. Deployment creates functions/indexes only; it does not restore any existing account. See [admin user activity](../docs/admin-panel.md#users--activity-and-personal-restoration). End-user undo stays denied. The disposable suite covers anonymous/ordinary/AAL1/revoked-session denial, contributor-wide and single-recipe restoration, idempotency, immutable reports, deletion privacy and global publication isolation.

@@ -1,3 +1,4 @@
+import { mountUserActivity } from './user-activity.mjs';
 import {
   dialog,
   confirmAction,
@@ -232,10 +233,11 @@ async function builtinRpc(action, payload = {}) {
 }
 async function usersRpc(search, pageOffset) {
   return request(
-    '/rest/v1/rpc/community_admin_users',
+    '/rest/v1/rpc/community_admin_user_directory',
     {
       p_search: search,
       p_offset: pageOffset,
+      p_filter: $('user-scope').value,
     },
     await token(),
   );
@@ -719,7 +721,11 @@ function renderUser(item) {
     element(
       'p',
       `${item.username ? `@${item.username} · ` : ''}${
-        item.suspended ? 'RESTRICTED' : 'Active'
+        !item.verified
+          ? 'EMAIL NOT VERIFIED'
+          : item.suspended
+          ? 'RESTRICTED'
+          : 'Active'
       }`,
       'meta',
     ),
@@ -752,6 +758,27 @@ function renderUser(item) {
     ),
   );
   details(card, 'Submitted community recipes', `${item.recipes} recipe(s)`);
+  const exclusionSummary = element(
+    'p',
+    `${item.direct_exclusions} direct recipe exclusion(s) · ${item.contributor_exclusions} excluded contributor(s)`,
+    'meta',
+  );
+  card.append(exclusionSummary);
+  const activity = element('section', undefined, 'user-activity');
+  card.append(activity);
+  const activityEpoch = epoch;
+  mountUserActivity(activity, item, {
+    element,
+    button,
+    request,
+    token,
+    dialog,
+    onUpdated: data => {
+      exclusionSummary.textContent = `${data.stats.direct_exclusions} direct recipe exclusion(s) · ${data.stats.contributor_exclusions} excluded contributor(s)`;
+    },
+    isCurrent: () =>
+      activityEpoch === epoch && activity.isConnected && view === 'users',
+  });
   if (item.is_admin === true || item.has_admin_membership) {
     card.append(
       element(
@@ -764,12 +791,15 @@ function renderUser(item) {
     );
     return card;
   }
+  const management = element('details', undefined, 'user-management');
+  management.append(element('summary', 'Account administration'));
+  card.append(management);
   const reason = field(
-    card,
+    management,
     'Reason for account action (at least 3 characters)',
     true,
   );
-  if (item.is_admin === false && !item.suspended) {
+  if (item.is_admin === false && item.verified && !item.suspended) {
     const adminSetup = element('details', undefined, 'admin-role-setup');
     adminSetup.append(element('summary', 'Grant administrator access'));
     adminSetup.append(
@@ -817,23 +847,23 @@ function renderUser(item) {
         );
       }),
     );
-    card.append(adminSetup);
+    management.append(adminSetup);
   }
   if (item.is_admin === true || item.has_admin_membership) return card;
-  card.append(restrictButton(item.user_id, item.suspended, reason));
+  management.append(restrictButton(item.user_id, item.suspended, reason));
   const confirmation = field(
-    card,
+    management,
     'Type this account email to permanently delete it',
   );
   confirmation.autocomplete = 'off';
-  card.append(
+  management.append(
     element(
       'p',
       'Permanent deletion removes the login, profile, recipes, comments, votes, cloud saves, avatar, and uploaded photos. Identifying audit details are cleaned up when deletion completes. An anonymous completion receipt and provider backups may remain; copies on other devices cannot be erased.',
       'meta',
     ),
   );
-  card.append(
+  management.append(
     button(
       'Permanently delete user',
       async () => {

@@ -149,6 +149,10 @@ delete from public.community_builtin_recipes where id='builtin:permanentBackfill
  run(psql+['-f',str(root/'supabase/session-account-state.sql')])
  print(run(psql+['-f',str(root/'supabase/tests/session-account-state.test.sql')])[-800:])
  print('Deleted JWT: account state, private media ownership, profile writes, saves, terms and votes rejected.')
+ run(psql+['-f',str(root/'supabase/admin-user-activity.sql')])
+ run(psql+['-f',str(root/'supabase/admin-user-activity.sql')])
+ print(run(psql+['-f',str(root/'supabase/tests/admin-user-activity.test.sql')])[-1200:])
+ print('Admin activity: MFA boundaries, bounded inventory, scoped restoration, audit, deduplication and privacy verified.')
 finally:
  if started: run([str(bin/'pg_ctl'),'-D',str(base/'data'),'-m','immediate','stop'])
  shutil.rmtree(base)
