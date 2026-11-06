@@ -1,5 +1,4 @@
 import { useRecipeVisibility } from '../hooks/useRecipeVisibility';
-import { BlockRecipeButton } from '../components/BlockRecipeButton';
 import {
   getCommunityRevision,
   notifyCommunityChanged,
@@ -409,12 +408,6 @@ export function GuideDetailScreen({
                       title={recipe.name}
                       signedIn={verified}
                       onSignIn={requestSignIn}
-                    />
-                    <BlockRecipeButton
-                      productId={guide.id}
-                      recipeId={recipe.id}
-                      signedIn={verified}
-                      title={recipe.name}
                     />
                     {recipeRatings[recipe.id] ? (
                       <RecipeVoteButtons

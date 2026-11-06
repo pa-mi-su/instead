@@ -87,7 +87,7 @@ export function ReportRecipeButton({
         setSubmitted(true);
         setDeliveryDelayed(true);
         setMessage(
-          'Your report is saved and the recipe is permanently removed from your account. Email delivery is delayed; your report is available to the review team.',
+          'Thank you for reporting this recipe. We will evaluate it and take action if necessary.',
         );
         return;
       }
@@ -108,7 +108,7 @@ export function ReportRecipeButton({
       setDeliveryDelayed(false);
       setDetails('');
       setMessage(
-        'Your report was sent to INSTEAD. This recipe is permanently removed from your account. It remains available to others unless an admin removes it.',
+        'Thank you for reporting this recipe. We will evaluate it and take action if necessary.',
       );
     } catch (error) {
       setMessage(
@@ -186,7 +186,8 @@ export function ReportRecipeButton({
             {!signedIn ? (
               <View>
                 <Text style={styles.optionDetail}>
-                  Sign in to send your concern so we can follow up with you.
+                  Sign in to report this recipe. We will review your concern and
+                  take appropriate action if necessary.
                 </Text>
                 {button('Sign in to report', () => {
                   setOpen(false);

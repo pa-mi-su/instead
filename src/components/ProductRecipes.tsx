@@ -1,5 +1,4 @@
 import { useRecipeVisibility } from '../hooks/useRecipeVisibility';
-import { BlockRecipeButton } from './BlockRecipeButton';
 import { imageContentType } from '../lib/imageUpload';
 import { useState, type RefObject } from 'react';
 import { Bookmark } from 'lucide-react-native';
@@ -236,16 +235,6 @@ export function RecipeContent({
               onSignIn={onSignInRequest}
             />
           </>
-        )}
-        {recipe.status === 'approved' && (
-          <BlockRecipeButton
-            productId={productId}
-            recipeId={recipe.id}
-            signedIn={Boolean(userId)}
-            title={recipe.title}
-            communityRecipe={!recipe.mine}
-            authorUsername={recipe.mine ? undefined : recipe.author_username}
-          />
         )}
         {recipe.mine &&
           button('Remove my recipe', () => setRemoveId(recipe.id))}

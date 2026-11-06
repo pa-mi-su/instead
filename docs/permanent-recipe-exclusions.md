@@ -2,13 +2,14 @@
 
 This is the current product contract, superseding the reversible controls originally added in PR #63.
 
-| User action                                      | Acting account                                                                                            | Other accounts                                                             |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Report or block a catalogue/admin-created recipe | Recipe permanently disappears from every guide/Saved route.                                               | Published recipe remains available.                                        |
-| Report a community recipe                        | Recipe, contributor's published recipes across all guides, and contributor profile permanently disappear. | Published content remains available while review is pending or accepts it. |
-| Block a community contributor through a recipe   | Same permanent contributor-wide exclusion.                                                                | No change.                                                                 |
-| Admin reviews and keeps content                  | No personal restoration.                                                                                  | Content remains published.                                                 |
-| Admin explicitly archives/removes content        | Still excluded.                                                                                           | Removed through normal publication filters.                                |
+| User action                               | Acting account                                                                                            | Other accounts                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Report a catalogue/admin-created recipe   | Recipe permanently disappears from every guide/Saved route.                                               | Published recipe remains available.                                        |
+| Report a community recipe                 | Recipe, contributor's published recipes across all guides, and contributor profile permanently disappear. | Published content remains available while review is pending or accepts it. |
+| Admin reviews and keeps content           | No personal restoration.                                                                                  | Content remains published.                                                 |
+| Admin explicitly archives/removes content | Still excluded.                                                                                           | Removed through normal publication filters.                                |
+
+The recipe action is **Report or raise a concern**, with no separate block button. Guests sign in to report; confirmation thanks the reporter and says the report will be evaluated with action if necessary. No follow-up is promised.
 
 My INSTEAD exposes **no concern history, hidden recipes, blocked contributors, review list, restore, or unblock control**. Reporting is a completed action for the user; only the admin has review work. Catalogue recipes without a community contributor are excluded individually, not as a block of all INSTEAD catalogue content.
 
