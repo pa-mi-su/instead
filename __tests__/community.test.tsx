@@ -16,6 +16,7 @@ function mockClient(session: CommunitySession | null = null) {
       return { data: { subscription: { unsubscribe: jest.fn() } } };
     }),
     signInWithOtp: jest.fn(async () => ({ error: null })),
+    resend: jest.fn(async () => ({ error: null as unknown })),
     resetPasswordForEmail: jest.fn(async () => ({ error: null as unknown })),
     signInWithPassword: jest.fn(async () => ({ error: null as unknown })),
     signUp: jest.fn(async () => ({
@@ -888,4 +889,50 @@ test('a thrown deletion transport failure ends progress and leaves a genuine pen
   expect(hook.result.current.notice).toMatch(/could not finish/);
   expect(m.auth.signOut).not.toHaveBeenCalled();
   hook.unmount();
+});
+
+test('signup resend uses pending address, throttles repeats and preserves the signup draft', async () => {
+  const clock = jest.spyOn(Date, 'now');
+  const started = Date.now();
+  clock.mockReturnValue(started);
+  const m = mockClient();
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await act(() => {
+    hook.result.current.setAuthMode('signup');
+    hook.result.current.setEmail('person@example.com');
+    hook.result.current.setUsername('RecipeMaker');
+    hook.result.current.setPassword('long-enough-password');
+    hook.result.current.setPasswordConfirmation('long-enough-password');
+  });
+  await act(() => hook.result.current.signUp());
+  await act(() => hook.result.current.resendSignupCode());
+  expect(m.auth.resend).not.toHaveBeenCalled();
+  clock.mockReturnValue(started + 61000);
+  await act(() => hook.result.current.setEmail('changed@example.com'));
+  await act(() => hook.result.current.setCode('123456'));
+  await act(() => hook.result.current.resendSignupCode());
+  expect(m.auth.resend).toHaveBeenCalledWith({
+    type: 'signup',
+    email: 'person@example.com',
+  });
+  expect(hook.result.current.code).toBe('');
+  expect(hook.result.current.username).toBe('RecipeMaker');
+  expect(hook.result.current.pendingAuth).toBe('signup');
+  await act(() => hook.result.current.resendSignupCode());
+  expect(m.auth.resend).toHaveBeenCalledTimes(1);
+  clock.mockReturnValue(started + 122000);
+  m.auth.resend.mockResolvedValue({
+    error: {
+      code: 'over_email_send_rate_limit',
+      message: 'Email rate limit exceeded',
+    },
+  });
+  await act(() => hook.result.current.setCode('654321'));
+  await act(() => hook.result.current.resendSignupCode());
+  expect(hook.result.current.error).toMatch(/too many attempts/i);
+  expect(hook.result.current.notice).toBe('');
+  expect(hook.result.current.code).toBe('654321');
+  expect(hook.result.current.pendingAuth).toBe('signup');
+  hook.unmount();
+  clock.mockRestore();
 });

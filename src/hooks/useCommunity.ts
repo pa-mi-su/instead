@@ -439,6 +439,28 @@ export function useCommunity(
       setNotice('Check your email for a password setup code.');
     }, 'auth');
   }
+  function resendSignupCode() {
+    return run(async () => {
+      if (
+        !client ||
+        pendingAuth !== 'signup' ||
+        !sentEmail ||
+        Date.now() < resendAt
+      )
+        return;
+      const { error: issue } = await client.auth.resend({
+        type: 'signup',
+        email: sentEmail,
+      });
+      if (issue) throw issue;
+      setCode('');
+      setResendAt(Date.now() + 60000);
+      setNow(Date.now());
+      setNotice(
+        'A new confirmation code was requested. Check your inbox and junk folder. Codes expire after five minutes.',
+      );
+    }, 'auth');
+  }
   function signIn() {
     return run(async () => {
       const address = email.trim().toLowerCase();
@@ -508,6 +530,8 @@ export function useCommunity(
         setPassword('');
         setPasswordConfirmation('');
       } else {
+        setResendAt(Date.now() + 60000);
+        setNow(Date.now());
         setPendingAuth('signup');
         setSentEmail(address);
         setCode('');
@@ -805,6 +829,7 @@ export function useCommunity(
     resendSeconds: Math.max(0, Math.ceil((resendAt - now) / 1000)),
     hasMore,
     sendCode,
+    resendSignupCode,
     verifyCode,
     signIn,
     signUp,

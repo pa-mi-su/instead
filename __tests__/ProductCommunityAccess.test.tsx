@@ -186,3 +186,25 @@ test('deletion shows dedicated progress without profile errors, retry buttons, o
   // Deletion retry is now a separate section on AccountScreen.
   expect(screen.queryByText(/Could not load your profile/)).toBeNull();
 });
+
+test('pending signup exposes confirmation resend with cooldown and expiry guidance', async () => {
+  function PendingSignup() {
+    const community = useCommunity(client, 'topic');
+    return (
+      <ProductCommunityAccess
+        community={{
+          ...community,
+          pendingAuth: 'signup',
+          sentEmail: 'person@example.com',
+          resendSeconds: 32,
+        }}
+        onSignInRequest={() => undefined}
+      />
+    );
+  }
+  const screen = await render(<PendingSignup />);
+  expect(screen.getByText('Confirm your email')).toBeTruthy();
+  expect(screen.getByText(/Codes expire after five minutes/)).toBeTruthy();
+  expect(screen.getByText('Resend in 32s')).toBeTruthy();
+  expect(screen.queryByText('Resend recovery code')).toBeNull();
+});

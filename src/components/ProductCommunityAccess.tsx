@@ -378,7 +378,10 @@ export function ProductCommunityAccess({
             <Text style={styles.optionName}>
               {signupCode ? 'Confirm your email' : 'Verify your email'}
             </Text>
-            <Text>Enter the code sent to {c.sentEmail}.</Text>
+            <Text>
+              Enter the code sent to {c.sentEmail}. Codes expire after five
+              minutes. Check your junk folder if it has not arrived.
+            </Text>
             {field(
               signupCode ? 'Confirmation code' : 'Recovery code',
               c.code,
@@ -396,6 +399,14 @@ export function ProductCommunityAccess({
                 c.busy || !c.code.trim(),
                 true,
               )}
+              {signupCode &&
+                button(
+                  c.resendSeconds
+                    ? `Resend in ${c.resendSeconds}s`
+                    : 'Resend confirmation code',
+                  c.resendSignupCode,
+                  c.busy || c.resendSeconds > 0,
+                )}
               {recoveryCode &&
                 button(
                   c.resendSeconds
