@@ -69,6 +69,7 @@ export function useCommunity(
   const [now, setNow] = useState(Date.now());
   const [finishingSignup, setFinishingSignup] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+  const signupDraft = useRef<{ username: string; bio: string } | null>(null);
   const passwordVerifiedAt = useRef(0);
   const lock = useRef(false);
   const generation = useRef(0);
@@ -85,6 +86,7 @@ export function useCommunity(
     setCode('');
     setSentEmail('');
     setPendingAuth(null);
+    signupDraft.current = null;
     setPasswordSetupReady(false);
     passwordVerifiedAt.current = 0;
     setResendAt(0);
@@ -260,8 +262,8 @@ export function useCommunity(
     setAccountLoadError('');
     setProfile(null);
     profileRef.current = null;
-    setUsername('');
-    setBio('');
+    setUsername(userId ? signupDraft.current?.username ?? '' : '');
+    setBio(userId ? signupDraft.current?.bio ?? '' : '');
     setProfileLoadError('');
     if (userId)
       loadAccount().catch(issue => {
@@ -498,6 +500,15 @@ export function useCommunity(
     }
     return run(async () => {
       if (!client) throw new Error('Account service is not available.');
+      const handle = username.trim();
+      const about = bio.trim();
+      const available = await accountRpc<boolean>(
+        client,
+        'community_username_available',
+        { p_username: handle },
+      );
+      if (!available) throw { code: '23505' };
+      signupDraft.current = { username: handle, bio: about };
       const { data, error: issue } = await client.auth.signUp({
         email: address,
         password,
@@ -511,6 +522,7 @@ export function useCommunity(
         data.user.identities.length === 0
       ) {
         setAuthModeState('signin');
+        signupDraft.current = null;
         setPendingAuth(null);
         setSentEmail('');
         setPassword('');
@@ -522,11 +534,12 @@ export function useCommunity(
       }
       if (data?.session) {
         await communityRpc(client, 'community_profile_set', {
-          p_username: username.trim(),
-          p_bio: bio.trim(),
+          p_username: handle,
+          p_bio: about,
         });
+        signupDraft.current = null;
         setNotice('Account created.');
-        setProfile({ username: username.trim(), bio: bio.trim() });
+        setProfile({ username: handle, bio: about });
         setPassword('');
         setPasswordConfirmation('');
       } else {
@@ -600,6 +613,11 @@ export function useCommunity(
         return;
       }
       const isSignup = pendingAuth === 'signup';
+      const draftProfile = signupDraft.current ?? {
+        username: username.trim(),
+        bio: bio.trim(),
+      };
+      let signupVerified = false;
       if (isSignup) setFinishingSignup(true);
       try {
         const { error: issue } = await client.auth.verifyOtp({
@@ -620,14 +638,23 @@ export function useCommunity(
           const { data: verifiedAuth, error: sessionError } =
             await client.auth.getSession();
           if (sessionError) throw sessionError;
-          if (!verifiedAuth.session)
+          if (
+            !verifiedAuth.session ||
+            !verifiedAuth.session.user.email_confirmed_at ||
+            verifiedAuth.session.user.is_anonymous ||
+            verifiedAuth.session.user.email?.toLowerCase() !==
+              sentEmail.toLowerCase()
+          )
             throw new Error('Verify your email before updating your profile.');
+          signupVerified = true;
           setSession(verifiedAuth.session);
           await accountRpc(client, 'community_profile_set', {
-            p_username: username.trim(),
-            p_bio: bio.trim(),
+            p_username: draftProfile.username,
+            p_bio: draftProfile.bio,
           });
           const ready = await loadAccount(verifiedAuth.session.user.id);
+          signupDraft.current = null;
+          setProfile(draftProfile);
           setPendingAuth(null);
           setEmail('');
           setNotice(
@@ -640,8 +667,50 @@ export function useCommunity(
           setPasswordSetupReady(true);
           setNotice('Email verified. Choose a new password.');
         }
+      } catch (issue) {
+        if (isSignup && signupVerified) {
+          setPendingAuth(null);
+          setUsername(draftProfile.username);
+          setBio(draftProfile.bio);
+          setNotice(
+            (issue as { code?: string })?.code === '23505'
+              ? 'Email verified. Choose an available username to finish your profile.'
+              : 'Email verified. Retry profile setup to finish your account.',
+          );
+        }
+        throw issue;
       } finally {
         if (isSignup) setFinishingSignup(false);
+      }
+    }, 'auth');
+  }
+  function finishProfileSetup() {
+    return run(async () => {
+      if (!client || !verified || !userId)
+        throw new Error('Verify your email before updating your profile.');
+      const handle = username.trim();
+      const about = bio.trim();
+      if (!/^[A-Za-z0-9_]{3,20}$/.test(handle))
+        throw new Error(
+          'Choose a username with 3–20 letters, numbers, or underscores.',
+        );
+      if (about.length > 280)
+        throw new Error('Bio must be 280 characters or fewer.');
+      setFinishingSignup(true);
+      try {
+        await accountRpc(client, 'community_profile_set', {
+          p_username: handle,
+          p_bio: about,
+        });
+        await loadAccount(userId);
+        setProfile({ username: handle, bio: about });
+        signupDraft.current = null;
+        setPendingAuth(null);
+        setNotice(
+          'Profile created. Review the community terms to finish setup.',
+        );
+      } finally {
+        setFinishingSignup(false);
       }
     }, 'auth');
   }
@@ -833,6 +902,7 @@ export function useCommunity(
     verifyCode,
     signIn,
     signUp,
+    finishProfileSetup,
     saveProfile,
     clearProfileError: () => {
       if (errorSource === 'profile') setError('');
@@ -845,6 +915,7 @@ export function useCommunity(
     signOut,
     loadMore,
     changeEmail: () => {
+      signupDraft.current = null;
       passwordVerifiedAt.current = 0;
       setSentEmail('');
       setCode('');

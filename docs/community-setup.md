@@ -59,3 +59,15 @@ Use consenting/disposable test accounts; never accept terms or delete a real acc
 - Deletion shows progress, success clears credentials/account data, and failed cleanup remains retryable.
 
 Run `npm run verify`, `npm run safety:test`, and `python3 scripts/test-community-db.py`. The database suite uses a disposable local cluster; fixtures must never be run in a hosted project. Real-device/provider integration remains a separate QA step.
+
+## Signup integrity
+
+Apply `supabase/signup-integrity.sql` after the permanent-exclusion override. Public username availability is checked before `auth.signUp`; the final case-insensitive unique index still resolves races. A profile insert/update trigger requires confirmed, non-anonymous Auth identity, including privileged or legacy profile writes. The legacy profile backfill now selects confirmed identities only. No unverified profile or pending username reservation is created by signup.
+
+Supabase's native signup intentionally stores a pending Auth identity and password hash before email verification so it can issue and verify its challenge. That is not an authenticated session or public profile. Removing even the pending Auth row would require a different challenge/registration backend; this change retains Supabase Auth's security controls rather than introducing a custom OTP system.
+
+If a handle becomes unavailable between preflight and verification, the verified identity stays in **Finish your account setup** with its draft, can choose another username, and can finish without another email code. Signing in after interruption also exposes the setup form for an identity with no profile. A deleted Auth account releases its public username through the existing cascading FK. Do not delete another live account merely to free a handle; identify and confirm the intended cleanup target.
+
+Password clear buttons apply to sign-in, signup, confirmation-password, and recovery-password fields. Clearing does not submit anything and resets that field to hidden entry.
+
+The signup preflight and verified-profile guard were deployed and checked on November 6, 2026; existing public profile records were unchanged. Mobile preflight, recovery UI, and password-clear controls require the updated binary. The production audit found no orphan profiles and no profiles belonging to unverified Auth identities.
