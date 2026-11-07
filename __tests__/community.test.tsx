@@ -1257,3 +1257,55 @@ test('account deletion clears even a guest form with stale credentials before re
   expect(hook.result.current.session).toBeNull();
   hook.unmount();
 });
+
+test('same-session resume keeps the read-only recipe owner while private actions await validation', async () => {
+  const m = mockClient(member);
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() => expect(hook.result.current.canContribute).toBe(true));
+  let finish!: (value: {
+    data: { user: CommunitySession['user'] | null };
+    error: unknown;
+  }) => void;
+  m.auth.getUser.mockImplementationOnce(
+    () =>
+      new Promise(resolve => {
+        finish = resolve;
+      }),
+  );
+  await act(() => notifyCommunityChanged({ type: 'foreground' }));
+  expect(hook.result.current.authRechecking).toBe(true);
+  expect(hook.result.current.recipeUserId).toBe(member.user.id);
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.canContribute).toBe(false);
+  await act(async () =>
+    finish({ data: { user: null }, error: { code: 'user_not_found' } }),
+  );
+  await waitFor(() => expect(hook.result.current.authChecking).toBe(false));
+  expect(hook.result.current.recipeUserId).toBeUndefined();
+  expect(hook.result.current.authRechecking).toBe(false);
+  hook.unmount();
+});
+
+test('a returning guest keeps public recipes visible while stored session is checked', async () => {
+  const m = mockClient();
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() => expect(hook.result.current.authReady).toBe(true));
+  let finish!: (value: {
+    data: { session: CommunitySession | null };
+    error: null;
+  }) => void;
+  m.auth.getSession.mockImplementationOnce(
+    () =>
+      new Promise(resolve => {
+        finish = resolve;
+      }),
+  );
+  await act(() => notifyCommunityChanged({ type: 'foreground' }));
+  expect(hook.result.current.authChecking).toBe(true);
+  expect(hook.result.current.authRechecking).toBe(true);
+  expect(hook.result.current.recipeUserId).toBeUndefined();
+  await act(async () => finish({ data: { session: null }, error: null }));
+  expect(hook.result.current.authChecking).toBe(false);
+  expect(hook.result.current.authRechecking).toBe(false);
+  hook.unmount();
+});

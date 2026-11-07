@@ -17,7 +17,8 @@ export function subscribeCommunityUpdates(
 export function notifyCommunityChanged(
   update: CommunityUpdate = { type: 'changed' },
 ) {
-  revision++;
+  // Resume refreshes existing screens; it is not a content invalidation.
+  if (update.type !== 'foreground') revision++;
   for (const listener of [...listeners]) listener(update);
 }
 export const getCommunityRevision = () => revision;

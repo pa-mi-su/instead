@@ -20,6 +20,7 @@ const mockBarcode = jest.fn((_props: Record<string, unknown>) => null);
 const mockInfo = jest.fn((_props: Record<string, unknown>) => null);
 const mockAuthMode = jest.fn();
 let mockAuthChecking = false;
+let mockAuthRechecking = false;
 jest.mock('../src/lib/supabase', () => ({ supabase: null }));
 jest.mock('react-native-data-scanner', () => ({
   DataScanner: {
@@ -45,6 +46,8 @@ jest.mock('../src/hooks/useCommunity', () => ({
   useCommunity: () => ({
     authReady: true,
     authChecking: mockAuthChecking,
+    authRechecking: mockAuthRechecking,
+    recipeUserId: 'member',
     session: { user: { id: 'member', email_confirmed_at: 'today' } },
     setAuthMode: mockAuthMode,
   }),
@@ -152,4 +155,18 @@ test('session revalidation does not temporarily expose unfiltered recipes as gue
   await screen.rerender(<AppNavigator />);
   const restored = latestProps(mockHome).guides as typeof productCatalog;
   expect(restored.some(guide => Boolean(guide.recipes?.length))).toBe(true);
+});
+
+test('same-session resume keeps the open recipe visible while validation runs', async () => {
+  const screen = await render(<AppNavigator />);
+  const guide = productCatalog.find(item => item.recipes?.length)!;
+  await follow(mockHome, 'onOpen', guide.id);
+  expect(latestProps(mockDetail).guide).toBe(guide);
+  mockAuthChecking = true;
+  mockAuthRechecking = true;
+  await screen.rerender(<AppNavigator />);
+  expect(latestProps(mockDetail).guide).toBe(guide);
+  mockAuthChecking = false;
+  mockAuthRechecking = false;
+  await screen.unmount();
 });

@@ -1,5 +1,6 @@
 import {
   notifyCommunityChanged,
+  subscribeCommunityUpdates,
   useCommunityRevision,
 } from '../lib/communityUpdates';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -38,6 +39,7 @@ export function useRecipes(
   const lock = useRef(false);
   const voteLocks = useRef(new Set<string>());
   const epoch = useRef(0);
+  const publicPageCount = useRef(1);
   const store = client?.storage.from('recipe-photos');
   const decorate = useCallback(
     async (rows: Recipe[]) => {
@@ -78,37 +80,48 @@ export function useRecipes(
     },
     [client],
   );
-  const refresh = useCallback(async () => {
-    const version = ++epoch.current;
-    const [published, own] = await Promise.all([
-      communityRpc<Recipe[]>(client, 'recipe_list', {
-        p_product: productId,
-        p_mine: false,
-        p_offset: 0,
-      }),
-      userId
-        ? communityRpc<Recipe[]>(client, 'recipe_list', {
-            p_product: productId,
-            p_mine: true,
-            p_offset: 0,
-          })
-        : Promise.resolve([]),
-    ]);
-    const [publicRows, privateRows] = await Promise.all([
-      decorate(published),
-      decorate(own),
-    ]);
-    if (version === epoch.current) {
-      setRecipes(publicRows);
-      setMine(privateRows);
-      setMore(published.length === 20);
-      setMineMore(own.length === 20);
-      setReady(true);
-    }
-  }, [client, productId, userId, decorate]);
+  const refresh = useCallback(
+    async (preservePages = false) => {
+      const version = ++epoch.current;
+      const pages = preservePages ? publicPageCount.current : 1;
+      const [publishedPages, own] = await Promise.all([
+        Promise.all(
+          Array.from({ length: pages }, (_, page) =>
+            communityRpc<Recipe[]>(client, 'recipe_list', {
+              p_product: productId,
+              p_mine: false,
+              p_offset: page * 20,
+            }),
+          ),
+        ),
+        userId
+          ? communityRpc<Recipe[]>(client, 'recipe_list', {
+              p_product: productId,
+              p_mine: true,
+              p_offset: 0,
+            })
+          : Promise.resolve([]),
+      ]);
+      const published = publishedPages.flat();
+      const [publicRows, privateRows] = await Promise.all([
+        decorate(published),
+        decorate(own),
+      ]);
+      if (version === epoch.current) {
+        setRecipes(publicRows);
+        setMine(privateRows);
+        publicPageCount.current = pages;
+        setMore(publishedPages.at(-1)?.length === 20);
+        setMineMore(own.length === 20);
+        setReady(true);
+      }
+    },
+    [client, productId, userId, decorate],
+  );
   useEffect(() => {
     let active = true;
     const pending = epoch;
+    publicPageCount.current = 1;
     setRecipes([]);
     setMine([]);
     setReady(false);
@@ -118,10 +131,17 @@ export function useRecipes(
       });
     load();
     const timer = setInterval(load, 240000);
+    const unsubscribe = subscribeCommunityUpdates(update => {
+      if (update.type === 'foreground')
+        refresh(true).catch(issue => {
+          if (active) setError(communityError(issue));
+        });
+    });
     return () => {
       active = false;
       pending.current++;
       clearInterval(timer);
+      unsubscribe();
     };
   }, [refresh, revision]);
   async function run(task: () => Promise<void>) {
@@ -225,6 +245,10 @@ export function useRecipes(
           ...current,
           ...next.filter(row => !current.some(item => item.id === row.id)),
         ]);
+        publicPageCount.current = Math.max(
+          1,
+          Math.ceil((recipes.length + rows.length) / 20),
+        );
         setMore(rows.length === 20);
       }),
     loadMoreMine: () =>

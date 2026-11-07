@@ -118,7 +118,7 @@ export function GuideDetailScreen({
     false,
   );
 
-  const published = useRecipes(supabase, guide.id, community.session?.user.id);
+  const published = useRecipes(supabase, guide.id, community.recipeUserId);
   useEffect(() => {
     const scope = ratingScope;
     scope.current++;
@@ -127,7 +127,7 @@ export function GuideDetailScreen({
     return () => {
       scope.current++;
     };
-  }, [guide.id, community.session?.user.id]);
+  }, [guide.id, community.recipeUserId]);
   useEffect(() => {
     let active = true;
     setRatingsError(false);
@@ -177,7 +177,7 @@ export function GuideDetailScreen({
     return () => {
       active = false;
     };
-  }, [guide.id, recipes, community.session?.user.id, revision]);
+  }, [guide.id, recipes, community.recipeUserId, revision]);
   const rankedRecipes = useMemo(
     () => rankRecipes(recipes, rankingRatings),
     [recipes, rankingRatings],

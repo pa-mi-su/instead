@@ -1,3 +1,4 @@
+import { notifyCommunityChanged } from '../src/lib/communityUpdates';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -312,5 +313,50 @@ test('a pending or failed vote leaves content and submission state unchanged', a
   });
   expect(hook.result.current.recipes[0]?.my_vote).toBe(0);
   expect(hook.result.current.error).toBeTruthy();
+  await hook.unmount();
+});
+
+test('foreground refresh preserves loaded recipes and later pages while the network is pending', async () => {
+  const m = mock();
+  const rows = Array.from({ length: 21 }, (_, index) => ({
+    id: `recipe-${index}`,
+    title: `Recipe ${index}`,
+    photo_paths: [],
+    mine: false,
+    status: 'approved',
+    score: 0,
+    upvotes: 0,
+    downvotes: 0,
+    my_vote: 0,
+  }));
+  let pending = false;
+  const finishes: (() => void)[] = [];
+  m.rpc.mockImplementation(async (name, args) => {
+    const data =
+      name === 'recipe_list' && !args.p_mine
+        ? rows.slice(Number(args.p_offset), Number(args.p_offset) + 20)
+        : [];
+    if (pending && name === 'recipe_list')
+      await new Promise<void>(resolve => {
+        finishes.push(resolve);
+      });
+    return { data, error: null };
+  });
+  const hook = await renderHook(() => useRecipes(m.client, 'guide', 'member'));
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
+  await act(() => hook.result.current.loadMore());
+  expect(hook.result.current.recipes).toHaveLength(21);
+  const displayed = hook.result.current.recipes;
+  pending = true;
+  await act(() => notifyCommunityChanged({ type: 'foreground' }));
+  expect(hook.result.current.ready).toBe(true);
+  expect(hook.result.current.recipes).toBe(displayed);
+  await act(async () => {
+    finishes.forEach(finish => finish());
+  });
+  await waitFor(() => expect(hook.result.current.recipes).not.toBe(displayed));
+  expect(hook.result.current.recipes).toHaveLength(21);
+  expect(hook.result.current.recipes[20]?.id).toBe('recipe-20');
+  expect(hook.result.current.more).toBe(false);
   await hook.unmount();
 });

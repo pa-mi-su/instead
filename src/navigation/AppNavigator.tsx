@@ -61,13 +61,7 @@ export function AppNavigator() {
       ? community.session.user.id
       : undefined,
   );
-  const visibility = usePersonalRecipes(
-    supabase,
-    community.session?.user.email_confirmed_at &&
-      !community.session.user.is_anonymous
-      ? community.session.user.id
-      : undefined,
-  );
+  const visibility = usePersonalRecipes(supabase, community.recipeUserId);
 
   const favorites = sourceFavorites.filter(key => {
     const recipe = parseSavedRecipeKey(key);
@@ -78,7 +72,8 @@ export function AppNavigator() {
     );
   });
   const sessionUncertain = Boolean(
-    community.authChecking || community.authCheckError,
+    (community.authChecking && !community.authRechecking) ||
+      community.authCheckError,
   );
   const { isHidden: personalIsHidden } = visibility;
   const isHidden = useCallback(
