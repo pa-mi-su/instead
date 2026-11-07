@@ -386,7 +386,10 @@ export function useCommunity(
       if (userId) loadAccount().catch(() => undefined);
     };
     const unsubscribe = subscribeCommunityUpdates(update => {
-      if (update.type === 'account-deleted' && update.userId === userId) {
+      if (update.type === 'account-deleted') {
+        // Clear drafts even in guest forms that never observed the deleted session.
+        if (userId && update.userId !== userId) return;
+        resetAuthForm();
         generation.current++;
         accountGeneration.current++;
         setSession(null);
@@ -394,9 +397,7 @@ export function useCommunity(
         setProfile(null);
         setComments([]);
         setDraft('');
-        setEmail('');
-        setPassword('');
-        setPasswordConfirmation('');
+        setSessionValidated(false);
         return;
       }
       reload();
@@ -404,7 +405,7 @@ export function useCommunity(
     return () => {
       unsubscribe();
     };
-  }, [refresh, loadAccount, userId]);
+  }, [refresh, loadAccount, userId, resetAuthForm]);
   useEffect(() => {
     if (!sentEmail) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -434,8 +435,9 @@ export function useCommunity(
     }
   }
   function changeAuthMode(mode: 'signin' | 'signup' | 'recovery') {
-    passwordVerifiedAt.current = 0;
-    setPasswordSetupReady(false);
+    if (mode === authMode) return;
+    // A new auth flow must never inherit credentials or verification drafts.
+    resetAuthForm();
     setAuthModeState(mode);
     setError('');
     setNotice('');

@@ -1,6 +1,7 @@
+import { ClearableTextInput } from './ClearableTextInput';
 import { imageContentType } from '../lib/imageUpload';
 import { useState } from 'react';
-import { Image, Modal, ScrollView, Text, TextInput, View } from 'react-native';
+import { Image, Modal, ScrollView, Text, View } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { decode } from 'base64-arraybuffer';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
@@ -153,12 +154,13 @@ export function ProfileEditor({
 
             <View>
               <Text style={local.fieldLabel}>Public username</Text>
-              <TextInput
+              <ClearableTextInput
                 accessibilityLabel="Public username"
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete="username"
                 maxLength={20}
+                editable={!saving && !c.busy}
                 value={c.username}
                 onChangeText={c.setUsername}
                 style={local.input}
@@ -172,10 +174,11 @@ export function ProfileEditor({
 
             <View>
               <Text style={local.fieldLabel}>Short bio (optional)</Text>
-              <TextInput
+              <ClearableTextInput
                 accessibilityLabel="Short bio (optional)"
                 maxLength={280}
                 multiline
+                editable={!saving && !c.busy}
                 value={c.bio}
                 onChangeText={c.setBio}
                 style={[local.input, local.bioInput]}
