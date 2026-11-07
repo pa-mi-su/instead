@@ -289,3 +289,45 @@ test('checking a restored session shows no stale identity, profile editor or com
   expect(screen.queryByText('Update profile')).toBeNull();
   expect(screen.queryByText('Community rules')).toBeNull();
 });
+
+test('every populated signup field has an in-field clear button', async () => {
+  const screen = await render(<Harness />);
+  await fireEvent.press(screen.getByText('Create account', { exact: true }));
+  for (const [label, value] of [
+    ['Email address', 'new@example.com'],
+    ['Password (10+ characters)', 'temporary-secret'],
+    ['Confirm password', 'temporary-secret'],
+    ['Public username (3–20 characters)', 'new_user'],
+    ['Short bio (optional)', 'Test bio'],
+  ]) {
+    await fireEvent.changeText(screen.getByLabelText(label!), value!);
+    const clear = screen.getByLabelText(`Clear ${label!.toLowerCase()}`);
+    expect(clear.props.style).toMatchObject({
+      position: 'absolute',
+      right: 4,
+      width: 44,
+      height: 44,
+    });
+    await fireEvent.press(clear);
+    expect(screen.getByLabelText(label!).props.value).toBe('');
+    expect(screen.queryByLabelText(`Clear ${label!.toLowerCase()}`)).toBeNull();
+  }
+});
+
+test('switching from sign in to registration clears credentials and password visibility', async () => {
+  const screen = await render(<Harness />);
+  await fireEvent.changeText(
+    await screen.findByLabelText('Email address'),
+    'old@example.com',
+  );
+  await fireEvent.changeText(screen.getByLabelText('Password'), 'old-secret');
+  await fireEvent.press(screen.getByLabelText('Show password'));
+  await fireEvent.press(screen.getByText('Create account', { exact: true }));
+  expect(screen.getByLabelText('Email address').props.value).toBe('');
+  expect(screen.getByLabelText('Password (10+ characters)').props.value).toBe(
+    '',
+  );
+  expect(
+    screen.getByLabelText('Password (10+ characters)').props.secureTextEntry,
+  ).toBe(true);
+});

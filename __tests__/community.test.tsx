@@ -553,9 +553,18 @@ test('confirmed deletion clears every mounted account view even if local sign-ou
   await waitFor(() =>
     expect(hook.result.current.other.canContribute).toBe(true),
   );
-  await act(() =>
-    hook.result.current.other.setPassword('temporary credential'),
-  );
+  await act(() => {
+    for (const form of [
+      hook.result.current.source,
+      hook.result.current.other,
+    ]) {
+      form.setEmail('deleted@example.com');
+      form.setPassword('temporary credential');
+      form.setPasswordConfirmation('temporary credential');
+      form.setUsername('deleted_user');
+      form.setBio('Deleted bio');
+    }
+  });
   await act(() => hook.result.current.source.requestDeletion());
   await waitFor(() =>
     expect(hook.result.current.source.deletionComplete).toBe(true),
@@ -567,6 +576,18 @@ test('confirmed deletion clears every mounted account view even if local sign-ou
   expect(hook.result.current.source.notice).toBe('');
   await act(() => hook.result.current.source.dismissDeletionConfirmation());
   expect(hook.result.current.source.deletionComplete).toBe(false);
+  await act(() => hook.result.current.source.setAuthMode('signup'));
+  for (const form of [hook.result.current.source, hook.result.current.other]) {
+    for (const key of [
+      'email',
+      'password',
+      'passwordConfirmation',
+      'username',
+      'bio',
+    ] as const) {
+      expect(form[key]).toBe('');
+    }
+  }
   hook.unmount();
 });
 
@@ -640,6 +661,12 @@ test('password reset requires a verified recovery code and saves through the aut
     type: 'recovery',
   });
   expect(hook.result.current.passwordSetupReady).toBe(true);
+  // The user enters the new password on the verified recovery screen.
+  expect(hook.result.current.password).toBe('');
+  await act(() => {
+    hook.result.current.setPassword('a-new-long-password');
+    hook.result.current.setPasswordConfirmation('a-new-long-password');
+  });
   await act(() => hook.result.current.setNewPassword());
   expect(m.auth.updateUser).toHaveBeenCalledWith({
     password: 'a-new-long-password',
@@ -1196,5 +1223,89 @@ test('late rejection of an older session cannot sign out a newer account', async
   );
   expect(hook.result.current.session?.user.id).toBe('newer-user');
   expect(m.auth.signOut).not.toHaveBeenCalled();
+  hook.unmount();
+});
+
+test('account deletion clears even a guest form with stale credentials before registration reopens', async () => {
+  const m = mockClient();
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() => expect(hook.result.current.authReady).toBe(true));
+  await act(() => {
+    hook.result.current.setEmail('deleted@example.com');
+    hook.result.current.setPassword('deleted-secret');
+    hook.result.current.setPasswordConfirmation('deleted-secret');
+    hook.result.current.setUsername('deleted_user');
+    hook.result.current.setBio('Old bio');
+    hook.result.current.setCode('123456');
+  });
+  await act(() =>
+    notifyCommunityChanged({ type: 'account-deleted', userId: member.user.id }),
+  );
+  await act(() => hook.result.current.setAuthMode('signup'));
+  for (const key of [
+    'email',
+    'password',
+    'passwordConfirmation',
+    'username',
+    'bio',
+    'code',
+    'sentEmail',
+  ] as const) {
+    expect(hook.result.current[key]).toBe('');
+  }
+  expect(hook.result.current.pendingAuth).toBeNull();
+  expect(hook.result.current.session).toBeNull();
+  hook.unmount();
+});
+
+test('same-session resume keeps the read-only recipe owner while private actions await validation', async () => {
+  const m = mockClient(member);
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() => expect(hook.result.current.canContribute).toBe(true));
+  let finish!: (value: {
+    data: { user: CommunitySession['user'] | null };
+    error: unknown;
+  }) => void;
+  m.auth.getUser.mockImplementationOnce(
+    () =>
+      new Promise(resolve => {
+        finish = resolve;
+      }),
+  );
+  await act(() => notifyCommunityChanged({ type: 'foreground' }));
+  expect(hook.result.current.authRechecking).toBe(true);
+  expect(hook.result.current.recipeUserId).toBe(member.user.id);
+  expect(hook.result.current.session).toBeNull();
+  expect(hook.result.current.canContribute).toBe(false);
+  await act(async () =>
+    finish({ data: { user: null }, error: { code: 'user_not_found' } }),
+  );
+  await waitFor(() => expect(hook.result.current.authChecking).toBe(false));
+  expect(hook.result.current.recipeUserId).toBeUndefined();
+  expect(hook.result.current.authRechecking).toBe(false);
+  hook.unmount();
+});
+
+test('a returning guest keeps public recipes visible while stored session is checked', async () => {
+  const m = mockClient();
+  const hook = await renderHook(() => useCommunity(m.client, 'topic'));
+  await waitFor(() => expect(hook.result.current.authReady).toBe(true));
+  let finish!: (value: {
+    data: { session: CommunitySession | null };
+    error: null;
+  }) => void;
+  m.auth.getSession.mockImplementationOnce(
+    () =>
+      new Promise(resolve => {
+        finish = resolve;
+      }),
+  );
+  await act(() => notifyCommunityChanged({ type: 'foreground' }));
+  expect(hook.result.current.authChecking).toBe(true);
+  expect(hook.result.current.authRechecking).toBe(true);
+  expect(hook.result.current.recipeUserId).toBeUndefined();
+  await act(async () => finish({ data: { session: null }, error: null }));
+  expect(hook.result.current.authChecking).toBe(false);
+  expect(hook.result.current.authRechecking).toBe(false);
   hook.unmount();
 });

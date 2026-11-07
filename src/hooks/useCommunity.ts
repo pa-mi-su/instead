@@ -37,6 +37,7 @@ export function useCommunity(
   const [authReady, setAuthReady] = useState(false);
   const [sessionValidated, setSessionValidated] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
+  const [authRechecking, setAuthRechecking] = useState(false);
   const [authCheckError, setAuthCheckError] = useState('');
   const checkSessionRef = useRef<() => void>(() => undefined);
   const [comments, setComments] = useState<CommunityComment[]>([]);
@@ -218,7 +219,12 @@ export function useCommunity(
     let version = 0;
     let receivedAuthEvent = false;
     let latest: CommunitySession | null = null;
+    let validated: CommunitySession | null = null;
+    let checkedGuest = false;
     function endSession(showNotice: boolean) {
+      checkedGuest = true;
+      validated = null;
+      setAuthRechecking(false);
       generation.current++;
       accountGeneration.current++;
       setSessionValidated(false);
@@ -242,6 +248,9 @@ export function useCommunity(
     ) {
       if (!active || current !== version) return;
       if (!candidate) {
+        checkedGuest = true;
+        validated = null;
+        setAuthRechecking(false);
         setSession(null);
         setSessionValidated(false);
         setAuthChecking(false);
@@ -252,6 +261,8 @@ export function useCommunity(
       if (!active || current !== version || !sameSession(latest, candidate))
         return;
       if (result.status === 'valid') {
+        validated = candidate;
+        setAuthRechecking(false);
         setSession(result.session);
         setSessionValidated(true);
         setAuthChecking(false);
@@ -263,6 +274,8 @@ export function useCommunity(
         // is compared before any local stored credential is removed.
         await clearInvalidSession(client!, candidate).catch(() => undefined);
       } else {
+        validated = null;
+        setAuthRechecking(false);
         setSessionValidated(false);
         setAuthChecking(false);
         setAuthReady(true);
@@ -272,6 +285,9 @@ export function useCommunity(
       }
     }
     function schedule(candidate: CommunitySession | null) {
+      if (candidate) checkedGuest = false;
+      if (!sameSession(validated, candidate)) validated = null;
+      setAuthRechecking(Boolean(validated && candidate));
       latest = candidate;
       const current = ++version;
       setSessionValidated(false);
@@ -298,6 +314,7 @@ export function useCommunity(
       } else schedule(next);
     });
     function restore() {
+      setAuthRechecking(Boolean(validated) || checkedGuest);
       const requested = ++version;
       setSessionValidated(false);
       setAuthChecking(true);
@@ -310,6 +327,8 @@ export function useCommunity(
         })
         .catch(() => {
           if (!active || requested !== version) return;
+          validated = null;
+          setAuthRechecking(false);
           setAuthChecking(false);
           setAuthReady(true);
           setAuthCheckError(
@@ -386,7 +405,10 @@ export function useCommunity(
       if (userId) loadAccount().catch(() => undefined);
     };
     const unsubscribe = subscribeCommunityUpdates(update => {
-      if (update.type === 'account-deleted' && update.userId === userId) {
+      if (update.type === 'account-deleted') {
+        // Clear drafts even in guest forms that never observed the deleted session.
+        if (userId && update.userId !== userId) return;
+        resetAuthForm();
         generation.current++;
         accountGeneration.current++;
         setSession(null);
@@ -394,9 +416,7 @@ export function useCommunity(
         setProfile(null);
         setComments([]);
         setDraft('');
-        setEmail('');
-        setPassword('');
-        setPasswordConfirmation('');
+        setSessionValidated(false);
         return;
       }
       reload();
@@ -404,7 +424,7 @@ export function useCommunity(
     return () => {
       unsubscribe();
     };
-  }, [refresh, loadAccount, userId]);
+  }, [refresh, loadAccount, userId, resetAuthForm]);
   useEffect(() => {
     if (!sentEmail) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -434,8 +454,9 @@ export function useCommunity(
     }
   }
   function changeAuthMode(mode: 'signin' | 'signup' | 'recovery') {
-    passwordVerifiedAt.current = 0;
-    setPasswordSetupReady(false);
+    if (mode === authMode) return;
+    // A new auth flow must never inherit credentials or verification drafts.
+    resetAuthForm();
     setAuthModeState(mode);
     setError('');
     setNotice('');
@@ -954,6 +975,9 @@ export function useCommunity(
     session: sessionValidated ? session : null,
     authReady: authReady && !authChecking && !authCheckError,
     authChecking,
+    authRechecking,
+    // Read-only recipe caches keep their owner during same-session validation.
+    recipeUserId: sessionValidated || authRechecking ? userId : undefined,
     authCheckError,
     retrySession: () => checkSessionRef.current(),
     comments: sessionValidated

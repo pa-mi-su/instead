@@ -38,7 +38,11 @@ jest.mock('../src/hooks/useRecipes', () => ({
   }),
 }));
 jest.mock('../src/hooks/useCommunity', () => ({
-  useCommunity: () => ({ session: mockSession, canContribute: false }),
+  useCommunity: () => ({
+    session: mockSession,
+    recipeUserId: mockSession?.user.id,
+    canContribute: false,
+  }),
 }));
 jest.mock('../src/components/ProductCommunity', () => ({
   ProductCommunity: () => null,

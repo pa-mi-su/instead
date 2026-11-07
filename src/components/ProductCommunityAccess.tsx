@@ -1,3 +1,4 @@
+import { ClearableTextInput } from './ClearableTextInput';
 import { AccountDeletionConfirmation } from './AccountDeletionConfirmation';
 import { CommunityAccountControls } from './CommunityAccountControls';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -8,7 +9,6 @@ import {
   Linking,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { AnimatedPressable as Pressable } from './AnimatedPressable';
@@ -158,48 +158,32 @@ export function ProductCommunityAccess({
           </Pressable>
         )}
       </View>
-      <View style={local.inputContainer}>
-        <TextInput
-          accessibilityLabel={label}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={label}
-          placeholderTextColor={COLORS.muted}
-          selectionColor={COLORS.sage}
-          autoCapitalize={options.email ? 'none' : 'sentences'}
-          autoCorrect={!options.email && !options.password}
-          autoComplete={options.autocomplete}
-          keyboardType={options.keyboard ?? 'default'}
-          secureTextEntry={
-            options.password && !visiblePasswords[options.passwordKey ?? label]
-          }
-          multiline={options.multiline}
-          maxLength={options.maxLength}
-          editable={!c.busy}
-          style={[
-            local.authInput,
-            options.multiline && local.bioInput,
-            options.password && local.passwordInput,
-          ]}
-        />
-        {options.password && value.length > 0 && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Clear ${label.toLowerCase()}`}
-            disabled={c.busy}
-            style={local.clearPassword}
-            onPress={() => {
-              onChangeText('');
-              setVisiblePasswords(current => ({
-                ...current,
-                [options.passwordKey ?? label]: false,
-              }));
-            }}
-          >
-            <Text style={local.clearPasswordText}>×</Text>
-          </Pressable>
-        )}
-      </View>
+      <ClearableTextInput
+        accessibilityLabel={label}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={label}
+        placeholderTextColor={COLORS.muted}
+        selectionColor={COLORS.sage}
+        autoCapitalize={options.email ? 'none' : 'sentences'}
+        autoCorrect={!options.email && !options.password}
+        autoComplete={options.autocomplete}
+        keyboardType={options.keyboard ?? 'default'}
+        secureTextEntry={
+          options.password && !visiblePasswords[options.passwordKey ?? label]
+        }
+        multiline={options.multiline}
+        maxLength={options.maxLength}
+        editable={!c.busy}
+        onClear={() => {
+          if (options.password)
+            setVisiblePasswords(current => ({
+              ...current,
+              [options.passwordKey ?? label]: false,
+            }));
+        }}
+        style={[local.authInput, options.multiline && local.bioInput]}
+      />
     </View>
   );
 
@@ -620,18 +604,6 @@ export function ProductCommunityAccess({
 
 const local = StyleSheet.create({
   accountCard: { gap: 16 },
-  inputContainer: { position: 'relative' },
-  passwordInput: { paddingRight: 52 },
-  clearPassword: {
-    position: 'absolute',
-    right: 4,
-    top: 10,
-    bottom: 0,
-    width: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clearPasswordText: { color: COLORS.muted, fontSize: 25, fontWeight: '600' },
   fieldHeader: {
     flexDirection: 'row',
     alignItems: 'center',
