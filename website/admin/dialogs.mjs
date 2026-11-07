@@ -10,6 +10,7 @@ export function dialog({
   cancel = false,
   danger = false,
   reason = false,
+  reasonMaxLength = 2000,
 }) {
   closeNotice();
   return new Promise(resolve => {
@@ -35,7 +36,7 @@ export function dialog({
       label.htmlFor = input.id;
       input.required = true;
       input.minLength = 3;
-      input.maxLength = 2000;
+      input.maxLength = reasonMaxLength;
       markRequired(label, input);
       validation = document.createElement('p');
       validation.className = 'error';

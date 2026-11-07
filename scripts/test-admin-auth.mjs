@@ -288,3 +288,170 @@ test('late email verification cannot recreate a session after reset', async () =
   assert.equal(saved, false);
   assert.equal(revoked, true);
 });
+
+test('admin restore confirmation distinguishes single recipe from contributor scope', async () => {
+  const { restorationPlan } = await import(
+    '../website/admin/user-activity.mjs'
+  );
+  const user = { user_id: 'reporter', email: 'reporter@example.invalid' };
+  const row = {
+    scope: 'recipe',
+    product_id: 'guide',
+    recipe_id: 'builtin:one',
+    title: '<unsafe title>',
+  };
+  const recipe = restorationPlan(user, row);
+  assert.equal(recipe.payload.p_scope, 'recipe');
+  assert.equal(recipe.payload.p_contributor, null);
+  assert.equal(recipe.payload.p_recipe, 'builtin:one');
+  assert.match(recipe.message, /only\?/);
+  assert.match(recipe.message, /report stays on file/);
+  const contributor = restorationPlan(user, {
+    ...row,
+    scope: 'contributor',
+    contributor_id: 'author',
+    contributor: 'Example',
+    affected_recipes: 2,
+  });
+  assert.deepEqual(contributor.payload, {
+    p_user: 'reporter',
+    p_email: 'reporter@example.invalid',
+    p_scope: 'contributor',
+    p_product: null,
+    p_recipe: null,
+    p_contributor: 'author',
+  });
+  assert.match(contributor.message, /all their recipes/);
+  assert.match(contributor.message, /including other guides/);
+  assert.match(contributor.message, /Other accounts are unchanged/);
+});
+
+// Minimal DOM adapter exercises asynchronous UI behavior without a browser dependency.
+function activityHarness() {
+  const node = (tag, text, className) => ({
+    tag,
+    text,
+    className,
+    children: [],
+    attributes: {},
+    append(...entries) {
+      this.children.push(...entries);
+    },
+    replaceChildren(...entries) {
+      this.children = entries;
+    },
+    setAttribute(key, value) {
+      this.attributes[key] = value;
+    },
+    remove() {},
+  });
+  const root = node('section');
+  const find = (entry, label) =>
+    entry.text === label
+      ? entry
+      : entry.children.map(child => find(child, label)).find(Boolean);
+  const button = (label, callback) =>
+    Object.assign(node('button', label), { click: callback });
+  return { root, element: node, button, find: label => find(root, label) };
+}
+test('admin activity ignores late private responses after session changes', async () => {
+  const { mountUserActivity } = await import(
+    '../website/admin/user-activity.mjs'
+  );
+  const h = activityHarness();
+  let current = true,
+    resolve;
+  const pending = new Promise(done => {
+    resolve = done;
+  });
+  mountUserActivity(
+    h.root,
+    { user_id: 'example' },
+    {
+      ...h,
+      request: () => pending,
+      token: async () => 'fixture',
+      isCurrent: () => current,
+      dialog: async () => null,
+    },
+  );
+  const load = h.find('View account details & activity').click();
+  await Promise.resolve();
+  current = false;
+  h.root.replaceChildren();
+  resolve({ user: { email: 'private@example.invalid' }, stats: {} });
+  await load;
+  assert.equal(h.root.children.length, 0);
+});
+test('admin restore cancellation makes no mutation; confirmation sends exact scope and reason', async () => {
+  const { mountUserActivity } = await import(
+    '../website/admin/user-activity.mjs'
+  );
+  const h = activityHarness(),
+    calls = [],
+    dialogs = [];
+  const user = { user_id: 'reporter', email: 'reporter@example.invalid' };
+  let note = null;
+  const row = {
+    id: 'guide:recipe',
+    title: '<img onerror=bad>',
+    scope: 'contributor',
+    product_id: 'guide',
+    recipe_id: 'recipe',
+    contributor_id: 'author',
+    contributor: 'Fixture',
+    affected_recipes: 2,
+    published: true,
+  };
+  mountUserActivity(h.root, user, {
+    ...h,
+    token: async () => 'fixture',
+    isCurrent: () => true,
+    dialog: async options => {
+      dialogs.push(options);
+      return options.reason ? note : true;
+    },
+    request: async (path, payload) => {
+      calls.push({ path, payload });
+      if (path.endsWith('restore_exclusion'))
+        return { restored: true, affected_recipes: 2 };
+      return {
+        user,
+        stats: {},
+        items: payload.p_section === 'exclusions' ? [row] : [],
+        total: payload.p_section === 'exclusions' ? 1 : 0,
+      };
+    },
+  });
+  await h.find('View account details & activity').click();
+  await h.find('Hidden recipes').click();
+  assert.ok(
+    h.find('<img onerror=bad>'),
+    'untrusted title remains a text argument',
+  );
+  await h.find('Restore contributor & their recipes').click();
+  assert.equal(
+    calls.filter(call => call.path.endsWith('restore_exclusion')).length,
+    0,
+  );
+  note = 'User requested restoration';
+  await h.find('Restore contributor & their recipes').click();
+  const mutations = calls.filter(call =>
+    call.path.endsWith('restore_exclusion'),
+  );
+  assert.equal(mutations.length, 1);
+  assert.deepEqual(mutations[0].payload, {
+    p_user: 'reporter',
+    p_email: user.email,
+    p_scope: 'contributor',
+    p_product: null,
+    p_recipe: null,
+    p_contributor: 'author',
+    p_note: note,
+  });
+  assert.equal(dialogs[0].reasonMaxLength, 1000);
+  assert.match(
+    dialogs.at(-1).message,
+    /Reports and global publication are unchanged/,
+  );
+});
