@@ -41,6 +41,7 @@ export function classifyPlatformChanges(files) {
       android = true;
     else if (file.startsWith('ios/') || /\.ios\.[jt]sx?$/.test(file))
       ios = true;
+    else if (file === 'scripts/validate-ios-release.py') ios = true;
     else if (file === 'Gemfile' || file === 'Gemfile.lock') ios = true;
     else if (
       [
@@ -75,6 +76,7 @@ export function classifyChanges(files) {
         'src/policies.ts',
         'src/catalog.ts',
         'scripts/build-policy-site.mjs',
+        'scripts/deploy-website.mjs',
         'package.json',
         'package-lock.json',
         '.github/workflows/ci.yml',

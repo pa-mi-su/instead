@@ -255,7 +255,9 @@ test('main releases can reach Play production and staged rollouts', async () => 
     release,
     /options: \[configured, internal, alpha, beta, production\]/,
   );
-  assert.match(release, /vars\.ANDROID_PLAY_TRACK \|\| 'production'/);
+  assert.match(release, /vars\.ANDROID_PLAY_TRACK/);
+  assert.doesNotMatch(release, /vars\.ANDROID_PLAY_TRACK \|\| 'production'/);
+  assert.match(release, /Validate Android release configuration/);
   assert.match(release, /GOOGLE_PLAY_USER_FRACTION/);
   assert.doesNotMatch(release, /GOOGLE_PLAY_TRACK: internal/);
 });
@@ -346,4 +348,45 @@ test('PR updates cancel obsolete checks while main deployments preserve queued m
     'utf8',
   );
   assert.match(release, /cancel-in-progress: false\n  queue: max/);
+});
+
+test('new release helpers route to their actual consumers', () => {
+  assert.deepEqual(classifyChanges(['scripts/validate-ios-release.py']), {
+    android: false,
+    ios: true,
+    website: false,
+    quality: true,
+  });
+  assert.deepEqual(classifyChanges(['scripts/deploy-website.mjs']), {
+    android: false,
+    ios: false,
+    website: true,
+    quality: true,
+  });
+});
+
+test('all workflow shell blocks parse before production execution', async () => {
+  const { createRequire } = await import('node:module');
+  const { spawnSync } = await import('node:child_process');
+  const yaml = createRequire(import.meta.url)('js-yaml');
+  for (const file of [
+    '.github/workflows/ci.yml',
+    '.github/workflows/mobile-release.yml',
+  ]) {
+    const workflow = yaml.load(await readFile(file, 'utf8'));
+    for (const job of Object.values(workflow.jobs)) {
+      for (const step of job.steps ?? []) {
+        if (!step.run) continue;
+        const result = spawnSync('bash', ['-n'], {
+          input: step.run.replace(/\$\{\{[\s\S]*?\}\}/g, 'CONFIGURED_VALUE'),
+          encoding: 'utf8',
+        });
+        assert.equal(
+          result.status,
+          0,
+          `${file} ${step.name}: ${result.stderr}`,
+        );
+      }
+    }
+  }
 });

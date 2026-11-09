@@ -1,6 +1,11 @@
 import { createSign } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
-import { playRelease } from './google-play-release.mjs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import {
+  playRelease,
+  PlayRequestError,
+  reviewMode,
+  commitPlayEdit,
+} from './google-play-release.mjs';
 
 const requiredEnvironment = [
   'GOOGLE_APPLICATION_CREDENTIALS',
@@ -20,6 +25,10 @@ const packageName = process.env.GOOGLE_PLAY_PACKAGE_NAME;
 const bundlePath = process.env.GOOGLE_PLAY_BUNDLE_PATH;
 const track = process.env.GOOGLE_PLAY_TRACK;
 const status = process.env.GOOGLE_PLAY_RELEASE_STATUS ?? 'completed';
+const mode = reviewMode(process.env.GOOGLE_PLAY_REVIEW_MODE);
+const expectedVersion = process.env.GOOGLE_PLAY_EXPECTED_VERSION_CODE;
+if (expectedVersion && !/^[1-9]\d*$/.test(expectedVersion))
+  throw new Error('Invalid expected Android version code');
 const releaseName =
   process.env.GOOGLE_PLAY_RELEASE_NAME ??
   `INSTEAD ${process.env.GITHUB_SHA?.slice(0, 7) ?? 'manual'}`;
@@ -66,6 +75,7 @@ const assertion = `${unsignedToken}.${signer.sign(
 
 const tokenResponse = await fetch(tokenUri, {
   method: 'POST',
+  signal: AbortSignal.timeout(30000),
   headers: { 'content-type': 'application/x-www-form-urlencoded' },
   body: new URLSearchParams({
     grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
@@ -87,6 +97,7 @@ if (!token.access_token) {
 async function googleRequest(url, options = {}) {
   const response = await fetch(url, {
     ...options,
+    signal: AbortSignal.timeout(300000),
     headers: {
       authorization: `Bearer ${token.access_token}`,
       ...options.headers,
@@ -94,12 +105,7 @@ async function googleRequest(url, options = {}) {
   });
   const body = await response.text();
   if (!response.ok) {
-    throw new Error(
-      `Google Play request failed with HTTP ${response.status}: ${body.slice(
-        0,
-        500,
-      )}`,
-    );
+    throw new PlayRequestError(response.status, body);
   }
   return body ? JSON.parse(body) : {};
 }
@@ -128,6 +134,10 @@ try {
     body: readFileSync(bundlePath),
   });
   const versionCode = uploaded.versionCode;
+  if (expectedVersion && String(versionCode) !== expectedVersion)
+    throw new Error(
+      `Uploaded version ${versionCode} does not match expected version ${expectedVersion}`,
+    );
   if (!versionCode) {
     throw new Error('Google Play did not return the uploaded version code.');
   }
@@ -153,14 +163,22 @@ try {
       body: '{}',
     },
   );
-  await googleRequest(`${baseUrl}/edits/${encodeURIComponent(editId)}:commit`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: '{}',
+  const outcome = await commitPlayEdit({
+    request: googleRequest,
+    editUrl: `${baseUrl}/edits/${encodeURIComponent(editId)}`,
+    mode,
   });
-  console.log(
-    `Uploaded ${packageName} version ${versionCode} to ${track} with status ${status}.`,
-  );
+  const message =
+    outcome === 'saved-for-review'
+      ? `Saved ${packageName} version ${versionCode} to ${track}. ACTION REQUIRED: send the saved changes for review in Google Play Console. No rebuild or re-upload is needed.`
+      : `Committed ${packageName} version ${versionCode} to ${track} (${status}). Check Play Console for processing, review and availability; API success is not approval.`;
+  console.log(message);
+  if (outcome === 'saved-for-review') console.log(`::warning::${message}`);
+  if (process.env.GITHUB_STEP_SUMMARY)
+    appendFileSync(
+      process.env.GITHUB_STEP_SUMMARY,
+      `### Android ${versionCode}\n\n${message}\n`,
+    );
 } catch (error) {
   await googleRequest(`${baseUrl}/edits/${encodeURIComponent(editId)}`, {
     method: 'DELETE',
