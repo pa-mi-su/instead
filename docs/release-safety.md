@@ -9,11 +9,19 @@ for App Store submission; uploading does not bypass Apple's review.
 
 Android uploads use `ANDROID_PLAY_TRACK` from the production environment:
 `internal`, `alpha` (closed), `beta` (open), or `production`. The existing setting
-remains `internal` until deliberately changed. If unset, the workflow defaults to
-`production`. Set `ANDROID_PLAY_RELEASE_STATUS` to `completed`, `draft`, or
+remains `internal` until deliberately changed. If unset, preflight fails before reserving a build; a missing variable never silently selects production. Set `ANDROID_PLAY_RELEASE_STATUS` to `completed`, `draft`, or
 `inProgress`; staged rollouts also require `ANDROID_PLAY_USER_FRACTION` strictly
 between 0 and 1. The uploader validates the Play edit before committing it and
-fails visibly if Play rejects the release. Store permissions, app review, and
+fails visibly on unrelated validation, authentication, network or review-conflict errors.
+`ANDROID_PLAY_REVIEW_MODE=auto` (default) commits normally, but if Google returns
+the specific `changesNotSentForReview` rejection, the same edit is committed with
+that flag. The job then succeeds with a warning and an ACTION REQUIRED summary:
+send the saved changes from Play Console. No second bundle upload or rebuild is
+needed. `ANDROID_PLAY_REVIEW_MODE=save` always stages for Console submission.
+Every commit uses `ERROR_IF_IN_REVIEW`, so uploads cannot implicitly cancel a
+review already in progress. A saved/committed edit is not approval or proof of
+availability. Network requests have bounded timeouts; ambiguous failures are not
+blindly retried. Signed artifacts are preserved before upload for recovery. Store permissions, app review, and
 required testing still apply. The recovery dispatch supports selecting one
 platform and an explicit Android track, and requires green CI for the exact main
 commit. Normal merge deployments do not require dispatch or manual build steps.
@@ -107,3 +115,33 @@ Official references:
 - [GitHub runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
 - [Intel macOS 26 image inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md)
 - [GitHub concurrency queues](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
+
+
+## November 9 pipeline audit
+
+See [the audit and validation record](pipeline-audit-2026-11-09.md).
+
+Before TestFlight upload, the pipeline verifies an unexpired App Store profile,
+exact app/team/profile identity, debugging disabled, exactly one exported IPA,
+expected bundle ID/version/build and physical-device platform. Export options use
+plistlib so special characters in a profile name are escaped correctly. Apple
+server validation precedes upload. Upload acceptance does not establish that
+Apple processing or App Review completed. Temporary signing paths are recorded
+before import so partial failures still reach cleanup.
+
+The web build starts with an empty generated directory and records its source
+commit. Deployment preflight requires policy/deletion/admin files and the exact
+commit marker. A complete recursive upload refreshes cache metadata even for
+unchanged files; an S3 sync would skip those. After requesting invalidation,
+bounded checks compare the public unversioned policy/admin URLs byte-for-byte
+against the built files. This uses existing IAM permissions (CreateInvalidation,
+not GetInvalidation) and does not bypass CDN caching with query strings. It does
+not claim every global CloudFront edge has finished invalidation. Website
+artifacts are retained for diagnosis. Remote orphaned objects are not deleted;
+this avoids deleting manually hosted material. Multi-object S3 upload is not
+atomic: a failed partial upload requires retry/recovery; do not claim success
+until public verification passes.
+
+This PR must stay unmerged until the owner chooses the next release window.
+PR validation does not publish apps or the website. Merging later runs the usual
+applicable-platform release/deployment workflows; there is no new rollout now.

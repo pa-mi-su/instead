@@ -77,8 +77,11 @@ jobs:
           sudo apt-get install -y postgresql
           INSTEAD_PG_BIN="$(pg_config --bindir)" python3 scripts/test-community-db.py
 
+      - name: Verify iOS release metadata
+        run: python3 scripts/test-ios-release.py
+
       - name: Verify pipeline routing
-        run: node --test scripts/test-detect-platform-changes.mjs scripts/test-require-release-ci.mjs scripts/test-google-play-release.mjs
+        run: node --test scripts/test-detect-platform-changes.mjs scripts/test-require-release-ci.mjs scripts/test-google-play-release.mjs scripts/test-upload-google-play.mjs scripts/test-deploy-website.mjs
 
       - name: Verify static administration site
         if: needs.changes.outputs.website == 'true'
@@ -210,7 +213,7 @@ jobs:
 
   deploy-website:
     name: Deploy website and admin
-    timeout-minutes: 10
+    timeout-minutes: 25
     if: >-
       always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.quality.result == 'success' && needs.changes.outputs.website == 'true'
@@ -243,6 +246,14 @@ jobs:
           test -n "$SUPABASE_PUBLISHABLE_KEY"
           npm run website:build
 
+      - name: Preserve website artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: instead-website-${{ github.sha }}-${{ github.run_attempt }}
+          path: website/dist/
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
@@ -252,11 +263,7 @@ jobs:
       - name: Publish site and refresh CloudFront
         run: |
           set -euo pipefail
-          aws s3 sync website/dist/ s3://insteadtry-website-160885294528/ --no-cli-pager
-          aws cloudfront create-invalidation \
-            --distribution-id EMXS0LG36D5KE \
-            --paths '/*' \
-            --no-cli-pager
+          node scripts/deploy-website.mjs
 
   mobile-release:
     name: Release changed mobile platforms

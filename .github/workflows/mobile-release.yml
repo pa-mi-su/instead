@@ -101,6 +101,21 @@ jobs:
           java-version: 17
           cache: gradle
 
+      - name: Validate Android release configuration
+        env:
+          GOOGLE_PLAY_TRACK: ${{ inputs.android_track != '' && inputs.android_track != 'configured' && inputs.android_track || vars.ANDROID_PLAY_TRACK }}
+          GOOGLE_PLAY_RELEASE_STATUS: ${{ vars.ANDROID_PLAY_RELEASE_STATUS || 'completed' }}
+          GOOGLE_PLAY_REVIEW_MODE: ${{ vars.ANDROID_PLAY_REVIEW_MODE || 'auto' }}
+          GOOGLE_PLAY_USER_FRACTION: ${{ vars.ANDROID_PLAY_USER_FRACTION }}
+        run: |
+          node --input-type=module <<'JS'
+          import { playRelease, reviewMode } from './scripts/google-play-release.mjs';
+          playRelease({track: process.env.GOOGLE_PLAY_TRACK,
+            status: process.env.GOOGLE_PLAY_RELEASE_STATUS,
+            fraction: process.env.GOOGLE_PLAY_USER_FRACTION});
+          reviewMode(process.env.GOOGLE_PLAY_REVIEW_MODE);
+          JS
+
       - name: Reserve next build number
         env:
           GH_TOKEN: ${{ github.token }}
@@ -161,8 +176,10 @@ jobs:
         env:
           ANDROID_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.ANDROID_PLAY_SERVICE_ACCOUNT_JSON }}
           GOOGLE_PLAY_PACKAGE_NAME: ${{ vars.ANDROID_PLAY_PACKAGE_NAME }}
-          GOOGLE_PLAY_TRACK: ${{ inputs.android_track != '' && inputs.android_track != 'configured' && inputs.android_track || vars.ANDROID_PLAY_TRACK || 'production' }}
+          GOOGLE_PLAY_TRACK: ${{ inputs.android_track != '' && inputs.android_track != 'configured' && inputs.android_track || vars.ANDROID_PLAY_TRACK }}
           GOOGLE_PLAY_RELEASE_STATUS: ${{ vars.ANDROID_PLAY_RELEASE_STATUS || 'completed' }}
+          GOOGLE_PLAY_REVIEW_MODE: ${{ vars.ANDROID_PLAY_REVIEW_MODE || 'auto' }}
+          GOOGLE_PLAY_EXPECTED_VERSION_CODE: ${{ env.INSTEAD_BUILD_NUMBER }}
           GOOGLE_PLAY_USER_FRACTION: ${{ vars.ANDROID_PLAY_USER_FRACTION }}
           GOOGLE_PLAY_RELEASE_NAME: INSTEAD ${{ vars.APP_VERSION }} (${{ env.INSTEAD_BUILD_NUMBER }})
         run: |
@@ -291,6 +308,10 @@ jobs:
           test "$application_identifier" = "${IOS_TEAM_ID}.com.pamisu.instead"
           test "$profile_team" = "$IOS_TEAM_ID"
           test "$profile_name" = "$IOS_PROFILE_NAME_EXPECTED"
+          python3 scripts/validate-ios-release.py profile "$profile_plist" "$IOS_TEAM_ID" "$IOS_PROFILE_NAME_EXPECTED"
+
+          # Record cleanup paths before importing any material, including on a partial failure.
+          echo "IOS_SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
           security create-keychain -p "$keychain_password" "$keychain"
           security set-keychain-settings -lut 21600 "$keychain"
@@ -310,6 +331,7 @@ jobs:
 
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           installed_profile="$HOME/Library/MobileDevice/Provisioning Profiles/${profile_uuid}.mobileprovision"
+          echo "IOS_PROFILE_PATH=$installed_profile" >> "$GITHUB_ENV"
           cp "$profile" "$installed_profile"
 
           echo "IOS_PROFILE_NAME=$profile_name" >> "$GITHUB_ENV"
@@ -347,18 +369,18 @@ jobs:
             -showBuildTimingSummary \
             archive
 
-          cat > "$export_options" <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-            <key>method</key><string>app-store-connect</string>
-            <key>signingStyle</key><string>manual</string>
-            <key>teamID</key><string>${IOS_TEAM_ID}</string>
-            <key>provisioningProfiles</key><dict>
-              <key>com.pamisu.instead</key><string>${IOS_PROFILE_NAME}</string>
-            </dict>
-          </dict></plist>
-          EOF
+          python3 - "$export_options" <<'PY'
+          import os, plistlib, sys
+          with open(sys.argv[1], 'wb') as output:
+              plistlib.dump({
+                  'method': 'app-store-connect',
+                  'signingStyle': 'manual',
+                  'teamID': os.environ['IOS_TEAM_ID'],
+                  'provisioningProfiles': {
+                      'com.pamisu.instead': os.environ['IOS_PROFILE_NAME'],
+                  },
+              }, output)
+          PY
 
           xcodebuild \
             -exportArchive \
@@ -366,6 +388,7 @@ jobs:
             -exportPath "$export_path" \
             -exportOptionsPlist "$export_options"
 
+          python3 scripts/validate-ios-release.py ipa "$export_path" "$IOS_MARKETING_VERSION" "$build_number"
           mkdir -p ios/build/ios
           cp "$export_path"/*.ipa ios/build/ios/
 
@@ -379,6 +402,7 @@ jobs:
 
       - name: Upload to TestFlight
         env:
+          IOS_MARKETING_VERSION: ${{ vars.APP_VERSION }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ vars.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_API_ISSUER_ID }}
           APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64 }}
@@ -387,17 +411,22 @@ jobs:
           test -n "$APP_STORE_CONNECT_API_KEY_ID"
           test -n "$APP_STORE_CONNECT_API_ISSUER_ID"
           test -n "$APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64"
+          ipa=$(python3 scripts/validate-ios-release.py ipa ios/build/ios "$IOS_MARKETING_VERSION" "$INSTEAD_BUILD_NUMBER")
           key_dir="$HOME/.appstoreconnect/private_keys"
           private_key="$key_dir/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
           mkdir -p "$key_dir"
           printf '%s' "$APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64" | /usr/bin/base64 -D > "$private_key"
           chmod 600 "$private_key"
+          xcrun altool --validate-app --type ios --file "$ipa" \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
           xcrun altool \
             --upload-app \
             --type ios \
-            --file ios/build/ios/*.ipa \
+            --file "$ipa" \
             --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
             --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
+          echo "iOS build $INSTEAD_BUILD_NUMBER uploaded. Apple processing, TestFlight availability and App Review are separate; verify App Store Connect." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove temporary iOS credentials
         if: always()

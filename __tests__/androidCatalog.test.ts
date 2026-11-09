@@ -1,5 +1,5 @@
 import { productCatalog as androidCatalog } from '../src/catalog.android';
-import { productCatalog as sharedCatalog } from '../src/catalog';
+import { productCatalog as sharedCatalog } from '../src/catalog.ts';
 import { categories as androidCategories } from '../src/categories.android';
 import { categories as sharedCategories } from '../src/categories';
 import { applyBuiltinRecipeChanges } from '../src/lib/builtinRecipes';

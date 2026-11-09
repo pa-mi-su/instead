@@ -112,7 +112,13 @@ const pages = [
   ],
   ['delete-account', 'Delete your INSTEAD account', deletion],
 ];
+// Generated output must never carry obsolete admin files into the next deploy.
+await fs.rm(output, { recursive: true, force: true });
 await fs.mkdir(output, { recursive: true });
+await fs.writeFile(
+  new URL('deployment.json', output),
+  JSON.stringify({ sha: process.env.GITHUB_SHA ?? 'local' }),
+);
 await fs.writeFile(
   new URL('styles.css', output),
   'body{margin:0;background:#f6f3eb;color:#20201c;font:17px/1.65 system-ui,sans-serif}header,main,footer{max-width:780px;margin:auto;padding:24px}nav{display:flex;flex-wrap:wrap;gap:18px}a{color:#265f43;text-underline-offset:4px}h1{font-size:clamp(2rem,6vw,3rem);line-height:1.15}h2{font-size:1.2rem;margin-top:2rem}main{background:#fffdf7;border:1px solid #ddd8cb;border-radius:12px}footer{font-size:.9rem}.button{display:inline-block;border:2px solid;padding:10px 16px;border-radius:6px}a:focus-visible{outline:3px solid #265f43;outline-offset:5px}',
