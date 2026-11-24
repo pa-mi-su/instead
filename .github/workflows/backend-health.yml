@@ -1,0 +1,81 @@
+name: Backend availability
+
+on:
+  schedule:
+    - cron: '23 2,8,14,20 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/backend-health.yml'
+      - 'scripts/check-backend-health.mjs'
+      - 'scripts/test-backend-health.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-health-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: node --test scripts/test-backend-health.mjs
+
+  health:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: test
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Check public authentication and database access
+        id: probe
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: node scripts/check-backend-health.mjs
+      - name: Record outage or recovery
+        if: always() && steps.probe.outcome != 'skipped'
+        uses: actions/github-script@v8
+        env:
+          PROBE_OUTCOME: ${{ steps.probe.outcome }}
+        with:
+          script: |
+            const title = '[Backend monitor] Supabase unavailable';
+            const { owner, repo } = context.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', creator: 'github-actions[bot]', per_page: 100,
+            });
+            const issue = issues.find(item => !item.pull_request && item.title === title);
+            const run = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            if (process.env.PROBE_OUTCOME === 'success') {
+              await core.summary.addHeading('Backend reachable')
+                .addRaw('Public email-auth settings and published-guide database reads passed. This does not test reviewer credentials or guarantee against Free-plan pausing.').write();
+              if (issue) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: issue.number,
+                  body: `Backend checks recovered: ${run}. Reviewer login still requires device verification.` });
+                await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' });
+              }
+            } else {
+              if (!issue) await github.rest.issues.create({ owner, repo, title,
+                body: `Authentication settings or the public guide database could not be checked. See ${run} for the failing step. Check whether the Supabase project is paused; resume it in the dashboard if needed. Do not reset reviewer credentials based on this check. A paid plan prevents inactivity pausing; scheduled requests do not guarantee it.` });
+              core.setFailed(`Backend check failed. Inspect ${run} and the Supabase dashboard.`);
+            }
+      - name: Fail visibly if the probe failed
+        if: always() && steps.probe.outcome != 'success'
+        run: exit 1
